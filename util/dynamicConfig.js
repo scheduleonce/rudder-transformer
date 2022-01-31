@@ -29,6 +29,7 @@ function getDynamicConfigValue(event, value) {
 
 // eslint-disable-next-line consistent-return
 function configureVal(value, event) {
+  console.log("configureVal test Soni=>",value,event);
   if (value) {
     if (Array.isArray(value)) {
       value.forEach((key, index) => {
@@ -42,16 +43,20 @@ function configureVal(value, event) {
       value = getDynamicConfigValue(event, value);
     }
   }
+  console.log("configureVal test1 Soni=>",value,event);
   return value;
 }
 
 function getDynamicConfig(event) {
   const { Config } = event.destination;
   event.destination.Config = configureVal(Config, event);
+  console.log("getDynamicConfig test Config Soni=>",event.destination.Config);
+  console.log("getDynamicConfig test event Soni=>",event);
   return event;
 }
 
 function processDynamicConfig(event, type) {
+  console.log("processDynamicConfig test Soni=>",event,type);
   if (type === "router" || type === "batch") {
     const eventRetArr = [];
     event.forEach(e => {
@@ -60,6 +65,7 @@ function processDynamicConfig(event, type) {
     });
     return eventRetArr;
   }
+  console.log("processDynamicConfig test event Soni=>",event);
   return getDynamicConfig(event);
 }
 

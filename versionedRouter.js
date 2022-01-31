@@ -94,9 +94,12 @@ async function handleDest(ctx, version, destination) {
   await Promise.all(
     events.map(async event => {
       try {
-        let parsedEvent = oncehubTransformer(destination,event);
-        parsedEvent.request = { query: reqParams };
+        console.log("handleDest event test Soni=>",destination,event);
+        let parsedEvent = oncehubTransformer(destination, event);
+        parsedEvent.request = { query: reqParams };        
+        console.log("handleDest parsedEvent test1 Soni=>",parsedEvent);
         parsedEvent = processDynamicConfig(parsedEvent);
+        console.log("handleDest parsedEvent test Soni=>", parsedEvent);
         let respEvents = await destHandler.process(parsedEvent);
         if (respEvents) {
           if (!Array.isArray(respEvents)) {

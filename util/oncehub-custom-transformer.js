@@ -9,6 +9,9 @@ const getPIIDestinationList = () => {
   };
   
   const oncehubTransformer = (destination, event) => {
+    // eslint-disable-next-line no-console
+    console.log("oncehubTransformer event test1 Soni=>", event, destination);
+    console.log("oncehubTransformer getPIIDestinationList test Soni=>", getPIIDestinationList(), doesEventContainsTraits(event));
     if (
       !getPIIDestinationList().includes(destination) &&
       doesEventContainsTraits(event)
@@ -21,7 +24,7 @@ const getPIIDestinationList = () => {
       delete event.message.traits.lastName;
     }
     // eslint-disable-next-line no-console
-    //console.log("event", event, destination);
+    console.log("oncehubTransformer event test Soni=>", event, destination);
     return event;
   };
   
