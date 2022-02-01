@@ -94,7 +94,10 @@ if (typeArg) {
         )
       );
       destination = destination || "heap"; // default
+      console.log("reqBody test Soni",JSON.stringify(reqBody));
       const output = await vRouter.handleDest(reqBody, version, destination);
+      console.log("output test Soni",JSON.stringify(output));
+      console.log("respBody test Soni",JSON.stringify(respBody));
       expect(output).toEqual(respBody);
     });
     it(`Testing: batchHandler`, async () => {
