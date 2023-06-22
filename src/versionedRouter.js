@@ -37,7 +37,6 @@ const { PlatformError } = require('./v0/util/errorTypes');
 const { getCachedWorkflowEngine, processCdkV2Workflow } = require('./cdk/v2/handler');
 const { processCdkV1 } = require('./cdk/v1/handler');
 const {oncehubTransformer} = require("./util/oncehub-custom-transformer");
-const { extractLibraries } = require('./util/customTransformer');
 
 const CDK_V1_DEST_PATH = 'cdk/v1';
 
