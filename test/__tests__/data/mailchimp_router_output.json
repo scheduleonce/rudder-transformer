@@ -4,10 +4,10 @@
       "version": "1",
       "type": "REST",
       "method": "POST",
-      "endpoint": "https://us20.api.mailchimp.com/3.0/lists/df42a82d07?skip_merge_validation=true&skip_duplicate_check=false",
+      "endpoint": "https://usXX.api.mailchimp.com/3.0/lists/aud111?skip_merge_validation=true&skip_duplicate_check=false",
       "headers": {
         "Content-Type": "application/json",
-        "Authorization": "Basic YXBpS2V5Ojk0ZjcxOTE3ZDg1MjI3NzBjOTc0NDliMGM5MGNhYTRjLXVzMjA="
+        "Authorization": "Basic YXBpS2V5OmFwaWtleQ=="
       },
       "params": {},
       "body": {
@@ -57,9 +57,116 @@
         "DisplayName": "MailChimp"
       },
       "Config": {
-        "apiKey": "94f71917d8522770c97449b0c90caa4c-us20",
-        "audienceId": "df42a82d07",
-        "datacenterId": "us20",
+        "apiKey": "apikey",
+        "audienceId": "aud111",
+        "datacenterId": "usXX",
+        "enableMergeFields": true
+      },
+      "Enabled": true,
+      "Transformations": []
+    }
+  },
+  {
+    "batchedRequest": {
+      "version": "1",
+      "type": "REST",
+      "method": "POST",
+      "endpoint": "https://usXX.api.mailchimp.com/3.0/lists/aud111/members/48cd6232dc124497369f59c33d3eb4ab/events",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Basic YXBpS2V5OmFwaWtleQ=="
+      },
+      "params": {},
+      "body": {
+        "JSON": {
+          "name": "local_testing",
+          "occurred_at": "2019-11-15T10:26:53+00:00",
+          "properties": {
+            "brand": "Aster",
+            "product": "Garments"
+          }
+        },
+        "XML": {},
+        "JSON_ARRAY": {},
+        "FORM": {}
+      },
+      "files": {},
+      "audienceId": "aud111"
+    },
+    "metadata": [
+      {
+        "jobId": 5
+      }
+    ],
+    "batched": false,
+    "statusCode": 200,
+    "destination": {
+      "ID": "1Tdi0lpXwSVwXG1lcdP2pXHKrJ6",
+      "Name": "test-mc",
+      "DestinationDefinition": {
+        "ID": "1SujZGrVEPqYmpUJcV4vSl9tfxn",
+        "Name": "MC",
+        "DisplayName": "MailChimp"
+      },
+      "Config": {
+        "apiKey": "apikey",
+        "audienceId": "aud111",
+        "datacenterId": "usXX",
+        "enableMergeFields": true
+      },
+      "Enabled": true,
+      "Transformations": []
+    }
+  },
+  {
+    "batchedRequest": {
+      "version": "1",
+      "type": "REST",
+      "method": "POST",
+      "endpoint": "https://usXX.api.mailchimp.com/3.0/lists/aud111/members/48cd6232dc124497369f59c33d3eb4ab/events",
+      "headers": {
+        "Content-Type": "application/json",
+        "Authorization": "Basic YXBpS2V5OmFwaWtleQ=="
+      },
+      "params": {},
+      "body": {
+        "JSON": {
+          "name": "local_testing",
+          "occurred_at": "2019-11-15T10:26:53+00:00",
+          "is_syncing": false,
+          "properties": {
+            "brand": "Aster",
+            "product": "Garments",
+            "products": "[{\"product_id\":\"123\",\"price\":\"14\"},{\"product_id\":\"123\",\"price\":14}]",
+            "purchased": "false"
+          }
+        },
+        "XML": {},
+        "JSON_ARRAY": {},
+        "FORM": {}
+      },
+      "files": {},
+      "audienceId": "aud111"
+    },
+    "metadata": [
+      {
+        "jobId": 7
+      }
+    ],
+    "batched": false,
+    "statusCode": 200,
+    "destination": {
+      "ID": "1Tdi0lpXwSVwXG1lcdP2pXHKrJ6",
+      "Name": "test-mc",
+      "DestinationDefinition": {
+        "ID": "1SujZGrVEPqYmpUJcV4vSl9tfxn",
+        "Name": "MC",
+        "DisplayName": "MailChimp"
+      },
+      "Config": {
+        "apiKey": "apikey",
+        "audienceId": "aud111",
+        "datacenterId": "usXX",
         "enableMergeFields": true
       },
       "Enabled": true,
@@ -76,9 +183,40 @@
         "DisplayName": "MailChimp"
       },
       "Config": {
-        "apiKey": "94f71917d8522770c97449b0c90caa4c-us20",
-        "audienceId": "df42a82d07",
-        "datacenterId": "us20",
+        "apiKey": "apikey",
+        "audienceId": "aud111",
+        "datacenterId": "usXX",
+        "enableMergeFields": true
+      },
+      "Enabled": true,
+      "Transformations": []
+    },
+    "metadata": [
+      {
+        "jobId": 6
+      }
+    ],
+    "batched": false,
+    "statusCode": 400,
+    "error": "Missing required value from \"event\"",
+    "statTags": {
+      "errorCategory": "dataValidation",
+      "errorType": "instrumentation"
+    }
+  },
+  {
+    "destination": {
+      "ID": "1Tdi0lpXwSVwXG1lcdP2pXHKrJ6",
+      "Name": "test-mc",
+      "DestinationDefinition": {
+        "ID": "1SujZGrVEPqYmpUJcV4vSl9tfxn",
+        "Name": "MC",
+        "DisplayName": "MailChimp"
+      },
+      "Config": {
+        "apiKey": "apikey",
+        "audienceId": "aud111",
+        "datacenterId": "usXX",
         "enableMergeFields": true
       },
       "Enabled": true,

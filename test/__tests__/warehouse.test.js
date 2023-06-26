@@ -120,6 +120,16 @@ describe("event types", () => {
       });
     });
   });
+
+  describe("extract", () => {
+    it("should generate one event for every extract call", () => {
+      const i = input("extract");
+      transformers.forEach((transformer, index) => {
+        const received = transformer.process(i);
+        expect(received).toMatchObject(output("extract", integrations[index]));
+      });
+    });
+  });
 });
 
 describe("column & table names", () => {
@@ -353,7 +363,7 @@ describe("handle reserved words", () => {
         Object.keys(reserverdKeywordsMap).forEach(k => {
           expect(out.metadata.columns).not.toHaveProperty(k.toLowerCase());
           expect(out.metadata.columns).not.toHaveProperty(k.toUpperCase());
-          snakeCasedKey = _.snakeCase(k).toUpperCase();
+          let snakeCasedKey = _.snakeCase(k).toUpperCase();
           if (k === snakeCasedKey) {
             k = `_${k}`;
           } else {
