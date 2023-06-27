@@ -6,12 +6,14 @@ const PlatformError = require('./platformError');
 const OAuthSecretError = require('./oAuthSecretError');
 const NetworkError = require('./networkError');
 const ThrottledError = require('./throttledError');
+const RedisError = require('./redisError');
 const RetryableError = require('./retryableError');
 const InvalidAuthTokenError = require('./invalidAuthTokenError');
 const AbortedError = require('./abortedError');
 const UnhandledStatusCodeError = require('./unhandledStatusCodeError');
 const UnauthorizedError = require('./unauthorizedError');
 const NetworkInstrumentationError = require('./networkInstrumentationError');
+const UnsupportedEventError = require('./unsupportedEventError');
 
 module.exports = {
   BaseError,
@@ -28,4 +30,6 @@ module.exports = {
   UnhandledStatusCodeError,
   UnauthorizedError,
   NetworkInstrumentationError,
+  UnsupportedEventError,
+  RedisError,
 };

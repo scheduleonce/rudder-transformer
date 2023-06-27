@@ -38,6 +38,8 @@ const {
 } = require("./freshsales.mock");
 const { sendgridGetRequestHandler } = require("./sendgrid.mock");
 const { sendinblueGetRequestHandler } = require("./sendinblue.mock");
+const { courierGetRequestHandler } = require("./courier.mock");
+const { brazePostRequestHandler } = require("./braze.mock");
 
 const urlDirectoryMap = {
   "api.hubapi.com": "hs",
@@ -49,7 +51,9 @@ const urlDirectoryMap = {
   "api.profitwell.com": "profitwell",
   "ruddertest2.mautic.net": "mautic",
   "api.sendgrid.com": "sendgrid",
-  "api.sendinblue.com": "sendinblue"
+  "api.sendinblue.com": "sendinblue",
+  "api.criteo.com": "criteo_audience",
+  "api.courier.com": "courier"
 };
 
 const fs = require("fs");
@@ -151,6 +155,9 @@ function get(url, options) {
   if (url.includes("https://api.sendinblue.com/v3/contacts/")) {
     return Promise.resolve(sendinblueGetRequestHandler(url, mockData));
   }
+  if (url.includes("https://api.courier.com")) {
+    return Promise.resolve(courierGetRequestHandler(url, mockData));
+  }
   return new Promise((resolve, reject) => {
     if (mockData) {
       resolve({ data: mockData, status: 200 });
@@ -165,6 +172,11 @@ function post(url, payload) {
   if (url.includes("https://active.campaigns.rudder.com")) {
     return new Promise((resolve, reject) => {
       resolve(acPostRequestHandler(url, payload));
+    });
+  }
+  if(url.includes("braze.com")) {
+    return new Promise((resolve, reject) => {
+      resolve(brazePostRequestHandler(url, payload));
     });
   }
   if (url.includes("https://a.klaviyo.com")) {
@@ -226,7 +238,7 @@ function post(url, payload) {
     payload.query.includes("query")
   ) {
     return new Promise((resolve, reject) => {
-      resolve(mondayPostRequestHandler(url));
+      resolve(mondayPostRequestHandler(payload));
     });
   }
   if (url.includes("https://api.custify.com")) {

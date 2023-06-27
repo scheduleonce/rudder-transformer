@@ -5,13 +5,17 @@ const {
   constructPayload,
   simpleProcessRouterDest,
   getHashFromArray,
+  extractCustomFields,
 } = require('../../util');
 const { EventType } = require('../../../constants');
-const { CONFIG_CATEGORIES, MAPPING_CONFIG } = require('./config');
+const { CONFIG_CATEGORIES, MAPPING_CONFIG, ROCKERBOX_DEFINED_PROPERTIES } = require('./config');
 const { ConfigurationError, InstrumentationError } = require('../../util/errorTypes');
 
 const responseBuilderSimple = (message, category, destination) => {
   const payload = constructPayload(message, MAPPING_CONFIG[category.name]);
+  if (!payload.customer_id && !payload.anonymous_id) {
+    throw new InstrumentationError('Anyone of userId or anonymousId is required to make the call');
+  }
   // conversion_source is explicitly set to RudderStack
   payload.conversion_source = 'RudderStack';
 
@@ -25,6 +29,7 @@ const responseBuilderSimple = (message, category, destination) => {
   } else {
     payload.action = eventsHashMap[message.event.toLowerCase()];
   }
+  extractCustomFields(message, payload, ['properties'], ROCKERBOX_DEFINED_PROPERTIES);
   const response = defaultRequestConfig();
   response.endpoint = category.endpoint;
   // the endpoint has advertiser = ADVERTISER_ID in the query params
@@ -48,12 +53,10 @@ const process = (event) => {
 
   let response;
   const messageType = message.type.toLowerCase();
-  switch (messageType) {
-    case EventType.TRACK:
-      response = responseBuilderSimple(message, CONFIG_CATEGORIES.TRACK, destination);
-      break;
-    default:
-      throw new InstrumentationError(`Message type ${messageType} is not supported`);
+  if (messageType === EventType.TRACK) {
+    response = responseBuilderSimple(message, CONFIG_CATEGORIES.TRACK, destination);
+  } else {
+    throw new InstrumentationError(`Message type ${messageType} is not supported`);
   }
   return response;
 };
