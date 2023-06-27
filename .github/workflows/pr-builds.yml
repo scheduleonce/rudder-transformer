@@ -10,7 +10,7 @@ on:
       - synchronize
 env:
   REPO_NAME: dockeronce.azurecr.io/kubernetes/rudder-transformer
-  REPO_NAME_OLD: rudderlabs/develop-rudder-transformer
+  REPO_NAME_OLD: dockeronce.azurecr.io/kubernetes/rudder-transformer
   DOCKERHUB_USERNAME: rudderlabs
 
 jobs:
