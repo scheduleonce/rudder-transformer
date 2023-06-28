@@ -49,6 +49,8 @@ const ERROR_TYPES = {
   RETRYABLE: 'retryable',
   ABORTED: 'aborted',
   OAUTH_SECRET: 'oAuthSecret',
+  UNSUPPORTED: 'unsupported',
+  REDIS: 'redis',
 };
 
 const METADATA = {

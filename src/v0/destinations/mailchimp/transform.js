@@ -3,6 +3,10 @@ const {
   defaultPutRequestConfig,
   handleRtTfSingleEventError,
   checkInvalidRtTfEvents,
+  constructPayload,
+  defaultPostRequestConfig,
+  isDefinedAndNotNull,
+  formatTimeStamp,
 } = require('../../util');
 const { EventType } = require('../../../constants');
 const {
@@ -15,15 +19,20 @@ const {
   mailChimpSubscriptionEndpoint,
   getAudienceId,
   generateBatchedPaylaodForArray,
+  mailchimpEventsEndpoint,
+  stringifyPropertiesValues,
 } = require('./utils');
-const { MAX_BATCH_SIZE, VALID_STATUSES } = require('./config');
+const { MAX_BATCH_SIZE, VALID_STATUSES, TRACK_CONFIG } = require('./config');
 const { InstrumentationError, ConfigurationError } = require('../../util/errorTypes');
+const { JSON_MIME_TYPE } = require('../../util/constant');
 
-const responseBuilderSimple = (finalPayload, email, Config, audienceId) => {
-  const { datacenterId, apiKey } = Config;
+const responseBuilderSimple = (finalPayload, endpoint, Config, audienceId) => {
+  const { apiKey } = Config;
   const response = defaultRequestConfig();
-  response.endpoint = mailChimpSubscriptionEndpoint(datacenterId, audienceId, email);
-  response.method = defaultPutRequestConfig.requestMethod;
+  response.endpoint = endpoint;
+  response.method = endpoint.includes('events')
+    ? defaultPostRequestConfig.requestMethod
+    : defaultPutRequestConfig.requestMethod;
   response.body.JSON = finalPayload;
   const basicAuth = Buffer.from(`apiKey:${apiKey}`).toString('base64');
   if (finalPayload.status && !VALID_STATUSES.includes(finalPayload.status)) {
@@ -34,21 +43,49 @@ const responseBuilderSimple = (finalPayload, email, Config, audienceId) => {
   return {
     ...response,
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': JSON_MIME_TYPE,
       Authorization: `Basic ${basicAuth}`,
     },
     audienceId,
   };
 };
 
+const trackResponseBuilder = (message, { Config }) => {
+  const { datacenterId } = Config;
+  const audienceId = getAudienceId(message, Config);
+  const email = getFieldValueFromMessage(message, 'email');
+  if (!email) {
+    throw new InstrumentationError('Email is required for track');
+  }
+  const endpoint = mailchimpEventsEndpoint(datacenterId, audienceId, email);
+  const processedPayload = constructPayload(message, TRACK_CONFIG);
+  if (processedPayload?.properties) {
+    processedPayload.properties = stringifyPropertiesValues(processedPayload.properties);
+  }
+  if (processedPayload.name && !(processedPayload.name.length >= 2 && processedPayload.name.length <= 30)) {
+    throw new InstrumentationError('Event name should be between 2 and 30 characters');
+  }
+  processedPayload.name = processedPayload.name.trim().replace(/\s+/g, '_');
+  processedPayload.occurred_at = formatTimeStamp(
+    processedPayload.occurred_at,
+    'YYYY-MM-DDTHH:mm:ssZ',
+  );
+  if (isDefinedAndNotNull(processedPayload.properties?.isSyncing)) {
+    delete processedPayload.properties.isSyncing;
+  }
+  return responseBuilderSimple(processedPayload, endpoint, Config, audienceId);
+};
+
 const identifyResponseBuilder = async (message, { Config }) => {
+  const { datacenterId } = Config;
   const email = getFieldValueFromMessage(message, 'email');
   if (!email) {
     throw new InstrumentationError('Email is required for identify');
   }
   const audienceId = getAudienceId(message, Config);
+  const endpoint = mailChimpSubscriptionEndpoint(datacenterId, audienceId, email);
   const processedPayload = await processPayload(message, Config, audienceId);
-  return responseBuilderSimple(processedPayload, email, Config, audienceId);
+  return responseBuilderSimple(processedPayload, endpoint, Config, audienceId);
 };
 
 const process = async (event) => {
@@ -76,6 +113,9 @@ const process = async (event) => {
   switch (messageType) {
     case EventType.IDENTIFY:
       response = await identifyResponseBuilder(message, destination);
+      break;
+    case EventType.TRACK:
+      response = trackResponseBuilder(message, destination);
       break;
     default:
       throw new InstrumentationError(`message type ${messageType} is not supported`);
@@ -109,6 +149,15 @@ const batchEvents = (successRespList) => {
   return batchedResponseList;
 };
 
+// This function separates identify and track call in chunks
+const getEventChunks = (event, identifyRespList, trackRespList) => {
+  if (event.message.endpoint.includes('events')) {
+    trackRespList.push(event);
+  } else {
+    identifyRespList.push(event);
+  }
+};
+
 const processRouterDest = async (inputs, reqMetadata) => {
   const errorRespEvents = checkInvalidRtTfEvents(inputs);
   if (errorRespEvents.length > 0) {
@@ -116,26 +165,30 @@ const processRouterDest = async (inputs, reqMetadata) => {
   }
   let batchResponseList = [];
   const batchErrorRespList = [];
-  const successRespList = [];
+  const identifyRespList = [];
+  const trackRespList = [];
   const { destination } = inputs[0];
   await Promise.all(
     inputs.map(async (event) => {
       try {
         if (event.message.statusCode) {
           // already transformed event
-          successRespList.push({
-            message: event.message,
-            metadata: event.metadata,
-            destination,
-          });
+          getEventChunks(
+            { message: event.message, metadata: event.metadata, destination },
+            identifyRespList,
+            trackRespList,
+          );
         } else {
           // if not transformed
-          const transformedPayload = {
-            message: await process(event),
-            metadata: event.metadata,
-            destination,
-          };
-          successRespList.push(transformedPayload);
+          getEventChunks(
+            {
+              message: await process(event),
+              metadata: event.metadata,
+              destination,
+            },
+            identifyRespList,
+            trackRespList,
+          );
         }
       } catch (error) {
         const errRespEvent = handleRtTfSingleEventError(event, error, reqMetadata);
@@ -143,9 +196,15 @@ const processRouterDest = async (inputs, reqMetadata) => {
       }
     }),
   );
-  if (successRespList.length > 0) {
-    batchResponseList = batchEvents(successRespList);
+  let batchedIdentifyResponseList = [];
+  if (identifyRespList.length > 0) {
+    batchedIdentifyResponseList = batchEvents(identifyRespList);
   }
+  const trackResponseList = [];
+  trackRespList.forEach((resp) => {
+    trackResponseList.push(getSuccessRespEvents(resp.message, [resp.metadata], resp.destination));
+  });
+  batchResponseList = batchResponseList.concat(batchedIdentifyResponseList, trackResponseList);
 
   return [...batchResponseList, ...batchErrorRespList];
 };

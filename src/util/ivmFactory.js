@@ -2,12 +2,15 @@ const ivm = require('isolated-vm');
 const fetch = require('node-fetch');
 const _ = require('lodash');
 
-const stats = require('./stats');
-const { getLibraryCodeV1 } = require('./customTransforrmationsStore-v1');
-const { parserForImport } = require('./parser');
+const { getLibraryCodeV1, getRudderLibByImportName } = require('./customTransforrmationsStore-v1');
 const logger = require('../logger');
+const stats = require('./stats');
 
-const isolateVmMem = 128;
+const ISOLATE_VM_MEMORY = parseInt(process.env.ISOLATE_VM_MEMORY || '128', 10);
+const RUDDER_LIBRARY_REGEX = /^@rs\/[A-Za-z]+\/v[0-9]{1,3}$/;
+const GEOLOCATION_TIMEOUT_IN_MS = parseInt(process.env.GEOLOCATION_TIMEOUT_IN_MS || '1000', 10);
+
+const isolateVmMem = ISOLATE_VM_MEMORY;
 async function evaluateModule(isolate, context, moduleCode) {
   const module = await isolate.compileModule(moduleCode);
   await module.instantiate(context, (specifier, referrer) => referrer);
@@ -21,21 +24,42 @@ async function loadModule(isolateInternal, contextInternal, moduleCode) {
   return module;
 }
 
-async function createIvm(code, libraryVersionIds, versionId, testMode) {
+async function createIvm(code, libraryVersionIds, versionId, secrets, testMode) {
   const createIvmStartTime = new Date();
   const logs = [];
   const libraries = await Promise.all(
-    libraryVersionIds.map(async (libraryVersionId) => getLibraryCodeV1(libraryVersionId)),
+    libraryVersionIds.map(async (libraryVersionId) => await getLibraryCodeV1(libraryVersionId)),
   );
   const librariesMap = {};
   if (code && libraries) {
-    const extractedLibraries = Object.keys(parserForImport(code));
+    const extractedLibraries = Object.keys(
+      await require('./customTransformer').extractLibraries(
+        code,
+        null,
+        false,
+        [],
+        'javascript',
+        testMode,
+      ),
+    );
+
     // TODO: Check if this should this be &&
     libraries.forEach((library) => {
       const libHandleName = _.camelCase(library.name);
       if (extractedLibraries.includes(libHandleName)) {
         librariesMap[libHandleName] = library.code;
       }
+    });
+
+    // Extract ruddder libraries from import names
+    const rudderLibImportNames = extractedLibraries.filter((name) =>
+      RUDDER_LIBRARY_REGEX.test(name),
+    );
+    const rudderLibraries = await Promise.all(
+      rudderLibImportNames.map(async (importName) => await getRudderLibByImportName(importName)),
+    );
+    rudderLibraries.forEach((library) => {
+      librariesMap[library.importName] = library.code;
     });
   }
 
@@ -98,7 +122,7 @@ async function createIvm(code, libraryVersionIds, versionId, testMode) {
               }
               if (!isObject(transformedOutput)) {
                 return outputEvents.push({error: "returned event from transformEvent(event) is not an object", metadata: eventsMetadata[currMsgId] || {}});
-              } 
+              }
               outputEvents.push({transformedEvent: transformedOutput, metadata: eventsMetadata[currMsgId] || {}});
               return;
             } catch (error) {
@@ -111,7 +135,7 @@ async function createIvm(code, libraryVersionIds, versionId, testMode) {
       return outputEvents
     }
   `;
-  const isolate = new ivm.Isolate({ memoryLimit: isolateVmMem });
+  const isolate = new ivm.Isolate({ memoryLimit: ISOLATE_VM_MEMORY });
   const isolateStartWallTime = isolate.wallTime;
   const isolateStartCPUTime = isolate.cpuTime;
   const context = await isolate.createContext();
@@ -182,6 +206,36 @@ async function createIvm(code, libraryVersionIds, versionId, testMode) {
     }),
   );
 
+  await jail.set(
+    '_geolocation',
+    new ivm.Reference(async (resolve, reject, ...args) => {
+      try {
+        const geoStartTime = new Date();
+        if (args.length < 1) {
+          throw new Error('ip address is required');
+        }
+        if (!process.env.GEOLOCATION_URL) throw new Error('geolocation is not available right now');
+        const res = await fetch(`${process.env.GEOLOCATION_URL}/geoip/${args[0]}`, {
+          timeout: GEOLOCATION_TIMEOUT_IN_MS,
+        });
+        if (res.status !== 200) {
+          throw new Error(`request to fetch geolocation failed with status code: ${res.status}`);
+        }
+        const geoData = await res.json();
+        stats.timing('geo_call_duration', geoStartTime, { versionId });
+        resolve.applyIgnored(undefined, [new ivm.ExternalCopy(geoData).copyInto()]);
+      } catch (error) {
+        const err = JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        reject.applyIgnored(undefined, [new ivm.ExternalCopy(err).copyInto()]);
+      }
+    }),
+  );
+
+  await jail.set('_rsSecrets', function (...args) {
+    if (args.length == 0 || !secrets || !secrets[args[0]]) return 'ERROR';
+    return secrets[args[0]];
+  });
+
   await jail.set('log', function (...args) {
     if (testMode) {
       let logString = 'Log:';
@@ -231,6 +285,26 @@ async function createIvm(code, libraryVersionIds, versionId, testMode) {
         });
       };
 
+      let geolocation = _geolocation;
+      delete _geolocation;
+      global.geolocation = function(...args) {
+        return new Promise((resolve, reject) => {
+          geolocation.applyIgnored(undefined, [
+            new ivm.Reference(resolve),
+            new ivm.Reference(reject),
+            ...args.map(arg => new ivm.ExternalCopy(arg).copyInto())
+          ]);
+        });
+      };
+      
+      let rsSecrets = _rsSecrets;
+      delete _rsSecrets;
+      global.rsSecrets = function(...args) {
+        return rsSecrets([
+          ...args.map(arg => new ivm.ExternalCopy(arg).copyInto())
+        ]);
+      };
+
       return new ivm.Reference(function forwardMainPromise(
         fnRef,
         resolve,
@@ -259,10 +333,12 @@ async function createIvm(code, libraryVersionIds, versionId, testMode) {
   const bootstrapScriptResult = await bootstrap.run(context);
   // const customScript = await isolate.compileScript(`${library} ;\n; ${code}`);
   const customScriptModule = await isolate.compileModule(`${codeWithWrapper}`);
-  await customScriptModule.instantiate(context, (spec) => {
+  await customScriptModule.instantiate(context, async (spec) => {
     if (librariesMap[spec]) {
       return compiledModules[spec].module;
     }
+    // Release the isolate context before throwing an error
+    await context.release();
     console.log(`import from ${spec} failed. Module not found.`);
     throw new Error(`import from ${spec} failed. Module not found.`);
   });
@@ -313,15 +389,15 @@ async function createIvm(code, libraryVersionIds, versionId, testMode) {
 }
 
 async function compileUserLibrary(code) {
-  const isolate = new ivm.Isolate({ memoryLimit: 128 });
+  const isolate = new ivm.Isolate({ memoryLimit: ISOLATE_VM_MEMORY });
   const context = await isolate.createContext();
   return evaluateModule(isolate, context, code);
 }
 
-async function getFactory(code, libraryVersionIds, versionId, testMode) {
+async function getFactory(code, libraryVersionIds, versionId, secrets, testMode) {
   const factory = {
     create: async () => {
-      return createIvm(code, libraryVersionIds, versionId, testMode);
+      return createIvm(code, libraryVersionIds, versionId, secrets, testMode);
     },
     destroy: async (client) => {
       client.fnRef.release();

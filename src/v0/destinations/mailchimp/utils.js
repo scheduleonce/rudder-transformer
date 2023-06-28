@@ -19,6 +19,7 @@ const { InstrumentationError, NetworkError } = require('../../util/errorTypes');
 const { MERGE_CONFIG, MERGE_ADDRESS, SUBSCRIPTION_STATUS, VALID_STATUSES } = require('./config');
 const { getDynamicErrorType } = require('../../../adapters/utils/networkUtils');
 const tags = require('../../util/tags');
+const { JSON_MIME_TYPE } = require('../../util/constant');
 
 const ADDRESS_MANDATORY_FIELDS = ['addr1', 'city', 'state', 'zip'];
 
@@ -61,6 +62,9 @@ const getMailChimpBaseEndpoint = (datacenterId, audienceId) =>
 const mailChimpSubscriptionEndpoint = (datacenterId, audienceId, email) =>
   `${getMailChimpBaseEndpoint(datacenterId, audienceId)}/members/${md5(email)}`;
 
+const mailchimpEventsEndpoint = (datacenterId, audienceId, email) =>
+  `${getMailChimpBaseEndpoint(datacenterId, audienceId)}/members/${md5(email)}/events`;
+
 /**
  * Returns common endpoint for mailchimp
  * If enableMergeFields option is not present in config, we will set it to false
@@ -82,6 +86,21 @@ const getBatchEndpoint = (destConfig, audienceId) => {
   const BASE_URL = `https://${datacenterId}.api.mailchimp.com/3.0/lists/${audienceId}`;
   const BATCH_ENDPOINT = `${BASE_URL}?skip_merge_validation=${mergeFieldOption}&skip_duplicate_check=false`;
   return BATCH_ENDPOINT;
+};
+
+/**
+ * Returns the properties object with stringified values of properties[key] as mailchimp only supports string as the values for properties[key]
+ * @param {*} properties
+ * @returns
+ */
+const stringifyPropertiesValues = (properties) => {
+  const updatedProperties = properties;
+  const keys = Object.keys(updatedProperties);
+  keys.forEach((key) => {
+    if (typeof updatedProperties[key] !== 'string')
+      updatedProperties[key] = JSON.stringify(updatedProperties[key]);
+  });
+  return updatedProperties;
 };
 
 /**
@@ -185,16 +204,17 @@ const checkIfDoubleOptIn = async (apiKey, datacenterId, audienceId) => {
  * @returns
  */
 const mergeAdditionalTraitsFields = (traits, mergedFieldPayload) => {
+  const clonedMergedFieldPayload = { ...mergedFieldPayload };
   if (isDefined(traits)) {
     Object.keys(traits).forEach((traitKey) => {
       // if any trait field is present, other than the fixed mapping, that is passed as well.
       if (!MAILCHIMP_IDENTIFY_EXCLUSION.includes(traitKey)) {
         const tag = filterTagValue(traitKey);
-        mergedFieldPayload[tag] = traits[traitKey];
+        clonedMergedFieldPayload[tag] = traits[traitKey];
       }
     });
   }
-  return mergedFieldPayload;
+  return clonedMergedFieldPayload;
 };
 
 /**
@@ -205,19 +225,20 @@ const mergeAdditionalTraitsFields = (traits, mergedFieldPayload) => {
  * @returns
  */
 const validateAddressObject = (mergedAddressPayload) => {
-  const providedAddressKeys = Object.keys(mergedAddressPayload);
+  const clonedMergedAddressPayload = { ...mergedAddressPayload };
+  const providedAddressKeys = Object.keys(clonedMergedAddressPayload);
   if (providedAddressKeys.length > 0) {
     if (checkSubsetOfArray(providedAddressKeys, ADDRESS_MANDATORY_FIELDS)) {
       ADDRESS_MANDATORY_FIELDS.forEach((addressField) => {
         if (
-          !isDefinedAndNotNullAndNotEmpty(mergedAddressPayload[addressField]) ||
-          typeof mergedAddressPayload[addressField] !== 'string'
+          !isDefinedAndNotNullAndNotEmpty(clonedMergedAddressPayload[addressField]) ||
+          typeof clonedMergedAddressPayload[addressField] !== 'string'
         ) {
           throw new InstrumentationError(
             `To send as address information, ${addressField} field should be valid string`,
           );
         } else {
-          mergedAddressPayload[addressField] = `${mergedAddressPayload[addressField]}`;
+          clonedMergedAddressPayload[addressField] = `${clonedMergedAddressPayload[addressField]}`;
         }
       });
     } else {
@@ -226,7 +247,7 @@ const validateAddressObject = (mergedAddressPayload) => {
       );
     }
   }
-  return mergedAddressPayload;
+  return clonedMergedAddressPayload;
 };
 
 /**
@@ -356,7 +377,7 @@ const generateBatchedPaylaodForArray = (audienceId, events) => {
   const basicAuth = Buffer.from(`apiKey:${destination.Config.apiKey}`).toString('base64');
 
   batchEventResponse.batchedRequest.headers = {
-    'Content-Type': 'application/json',
+    'Content-Type': JSON_MIME_TYPE,
     Authorization: `Basic ${basicAuth}`,
   };
 
@@ -372,5 +393,7 @@ module.exports = {
   getAudienceId,
   generateBatchedPaylaodForArray,
   mailChimpSubscriptionEndpoint,
+  mailchimpEventsEndpoint,
   processPayload,
+  stringifyPropertiesValues,
 };
