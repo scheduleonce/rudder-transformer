@@ -4,7 +4,9 @@ on:
     branches:
       - 'master'
 env:
+  REPO_NAME_OLD: dockeronce.azurecr.io/kubernetes/rudder-transformer
   REPO_NAME: dockeronce.azurecr.io/kubernetes/rudder-transformer
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
 jobs:
   user-transformer-build:
