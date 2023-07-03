@@ -44,7 +44,6 @@ const handleFirstLoginGA4Property = (destination, event, traits) => {
         );
       }
     }
-
   };
 
   const oncehubTransformer = (destination, event) => {
