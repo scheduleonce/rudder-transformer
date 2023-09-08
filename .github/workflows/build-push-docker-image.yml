@@ -44,6 +44,7 @@ jobs:
       - name: Login to DockerHub
         uses: docker/login-action@v2.1.0
         with:
+          registry: dockeronce.azurecr.io
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
