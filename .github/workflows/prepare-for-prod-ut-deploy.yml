@@ -3,12 +3,12 @@ name: Prepare for Production Environment Deployment
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     types:
       - closed
     branches:
-      - master
+      - main
 
 env:
   REPO_NAME_OLD: dockeronce.azurecr.io/kubernetes/rudder-transformer
