@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Generate Tag Names
     # Skip for the release pull requests as staging artifacts will be generated
-    if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'master'
+    if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'main'
     outputs:
       tag_name: ${{ steps.gen_tag_names.outputs.tag_name }}
       tag_name_ut: ${{ steps.gen_tag_names.outputs.tag_name_ut }}
@@ -42,7 +42,7 @@ jobs:
     name: Build Transformer Docker Image - PR
     # Skip for the release pull requests as staging artifacts will be generated
     # Skip master to develop sync pull requests
-    if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'master'
+    if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'main'
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
     with:
@@ -60,7 +60,7 @@ jobs:
   build-user-transformer-image:
     name: Build User Transformer Docker Image - PR
     # Skip for the release pull requests as staging artifacts will be generated
-    if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'master'
+    if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'main'
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
     with:
