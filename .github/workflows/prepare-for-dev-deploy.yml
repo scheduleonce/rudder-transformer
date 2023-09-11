@@ -1,14 +1,13 @@
 name: Prepare for Dev Environment Deployment
 
 on:
-  push:
-    branches:
-      - develop
   pull_request:
     types:
       - closed
-    branches:
-      - develop
+    
+env:
+  REPO_NAME_OLD: dockeronce.azurecr.io/kubernetes/rudder-transformer
+  REPO_NAME: dockeronce.azurecr.io/kubernetes/rudder-transformer
 
 jobs:
   report-coverage:
@@ -50,14 +49,16 @@ jobs:
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
     with:
-      build_tag: rudderstack/develop-rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }}
-      push_tags: rudderstack/develop-rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }},rudderlabs/develop-rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }}
+      build_tag: ${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name }}
+      push_tags: ${{ env.REPO_NAME_OLD }}:${{ needs.generate-tag-names.outputs.tag_name }},${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name }}
       img_tag: ${{ needs.generate-tag-names.outputs.tag_name }}
       dockerfile: Dockerfile
       load_target: development
       push_target: production
     secrets:
       DOCKERHUB_PROD_TOKEN: ${{ secrets.DOCKERHUB_PROD_TOKEN }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   build-user-transformer-image:
     name: Build User Transformer Docker Image - Dev
@@ -66,11 +67,13 @@ jobs:
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
     with:
-      build_tag: rudderstack/develop-rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name_ut }}
-      push_tags: rudderstack/develop-rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name_ut }},rudderlabs/develop-rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name_ut }}
+      build_tag: ${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name_ut }}
+      push_tags: ${{ env.REPO_NAME_OLD }}:${{ needs.generate-tag-names.outputs.tag_name_ut }},${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name_ut }}
       img_tag: ${{ needs.generate-tag-names.outputs.tag_name_ut }}
       dockerfile: Dockerfile-ut-func
       load_target: development
       push_target: production
     secrets:
       DOCKERHUB_PROD_TOKEN: ${{ secrets.DOCKERHUB_PROD_TOKEN }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
