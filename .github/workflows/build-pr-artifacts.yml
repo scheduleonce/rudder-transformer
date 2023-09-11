@@ -41,9 +41,11 @@ jobs:
     if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'main'
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
+    env:
+      REPO_NAME: dockeronce.azurecr.io/kubernetes/rudder-transformer
     with:
-      build_tag: dockeronce.azurecr.io/kubernetes/rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }}
-      push_tags: dockeronce.azurecr.io/kubernetes/rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }}
+      build_tag: ${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name }}
+      push_tags: ${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name }}
       img_tag: ${{ needs.generate-tag-names.outputs.tag_name }}
       dockerfile: Dockerfile
       load_target: development
