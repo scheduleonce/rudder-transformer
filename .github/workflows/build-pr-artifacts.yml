@@ -36,16 +36,14 @@ jobs:
 
   build-transformer-image:
     name: Build Transformer Docker Image - PR
-    env:
-      REPO_NAME: dockeronce.azurecr.io/kubernetes/rudder-transformer
     # Skip for the release pull requests as staging artifacts will be generated
     # Skip main to develop sync pull requests
     if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'main'
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
     with:
-      build_tag: ${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name }}
-      push_tags: ${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name }}
+      build_tag: dockeronce.azurecr.io/kubernetes/rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }}
+      push_tags: dockeronce.azurecr.io/kubernetes/rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }}
       img_tag: ${{ needs.generate-tag-names.outputs.tag_name }}
       dockerfile: Dockerfile
       load_target: development
@@ -57,15 +55,13 @@ jobs:
 
   build-user-transformer-image:
     name: Build User Transformer Docker Image - PR
-    env:
-      REPO_NAME: dockeronce.azurecr.io/kubernetes/rudder-transformer
     # Skip for the release pull requests as staging artifacts will be generated
     if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'main'
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
     with:
-      build_tag: ${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name_ut }}
-      push_tags: ${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name_ut }}
+      build_tag: dockeronce.azurecr.io/kubernetes/rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name_ut }}
+      push_tags: dockeronce.azurecr.io/kubernetes/rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name_ut }}
       img_tag: ${{ needs.generate-tag-names.outputs.tag_name_ut }}
       dockerfile: Dockerfile-ut-func
       load_target: development
