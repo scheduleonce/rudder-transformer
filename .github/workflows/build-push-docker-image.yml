@@ -28,6 +28,7 @@ on:
         required: true
       DOCKERHUB_TOKEN:
         required: true
+        
 env:
   DOCKERHUB_USERNAME: rudderlabs
 
