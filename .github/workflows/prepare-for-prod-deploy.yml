@@ -3,12 +3,16 @@ name: Prepare for Production Environment Deployment
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     types:
       - closed
     branches:
-      - main
+      - master
+
+env:
+  REPO_NAME_OLD: dockeronce.azurecr.io/kubernetes/rudder-transformer
+  REPO_NAME: dockeronce.azurecr.io/kubernetes/rudder-transformer
 
 jobs:
   report-coverage:
@@ -46,14 +50,16 @@ jobs:
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
     with:
-      build_tag: rudderstack/rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }}
-      push_tags: rudderstack/rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }},rudderstack/rudder-transformer:latest,rudderlabs/rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }},rudderlabs/rudder-transformer:latest
+      build_tag: ${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name }}
+      push_tags: ${{ env.REPO_NAME_OLD }}:${{ needs.generate-tag-names.outputs.tag_name }},${{ env.REPO_NAME_OLD }}:latest,${{ env.REPO_NAME }}:${{ needs.generate-tag-names.outputs.tag_name }},${{ env.REPO_NAME }}:latest
       img_tag: ${{ needs.generate-tag-names.outputs.tag_name }}
       dockerfile: Dockerfile
       load_target: development
       push_target: production
     secrets:
       DOCKERHUB_PROD_TOKEN: ${{ secrets.DOCKERHUB_PROD_TOKEN }}
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
 
   create-pull-request:
     name: Update Helm Charts For Production and Create Pull Request

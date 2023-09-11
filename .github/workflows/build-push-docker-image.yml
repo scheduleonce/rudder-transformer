@@ -24,6 +24,10 @@ on:
     secrets:
       DOCKERHUB_PROD_TOKEN:
         required: true
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
 
 env:
   DOCKERHUB_USERNAME: rudderlabs
@@ -52,11 +56,11 @@ jobs:
         with:
           context: .
           file: ${{ inputs.dockerfile }}
-          target: ${{ inputs.load_target }}
+          #target: ${{ inputs.load_target }}
           load: true
           tags: ${{ inputs.build_tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          #cache-from: type=gha
+          #cache-to: type=gha,mode=max
 
       - name: Run Tests
         run: |
@@ -68,7 +72,7 @@ jobs:
         with:
           context: .
           file: ${{ inputs.dockerfile }}
-          target: ${{ inputs.push_target }}
+          #target: ${{ inputs.push_target }}
           push: true
           tags: ${{ inputs.push_tags }}
           platforms: |
@@ -77,5 +81,5 @@ jobs:
           build-args: |
             version=${{ inputs.img_tag }}
             GIT_COMMIT_SHA=${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          #cache-from: type=gha
+          #cache-to: type=gha,mode=max
