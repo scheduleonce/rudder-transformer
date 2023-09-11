@@ -1,14 +1,9 @@
 name: Prepare for Dev Environment Deployment
 
 on:
-  push:
-    branches:
-      - develop
   pull_request:
     types:
       - closed
-    branches:
-      - develop
 
 jobs:
   report-coverage:

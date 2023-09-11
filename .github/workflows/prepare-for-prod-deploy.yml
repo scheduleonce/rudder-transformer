@@ -3,12 +3,12 @@ name: Prepare for Production Environment Deployment
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     types:
       - closed
     branches:
-      - main
+      - master
 
 jobs:
   report-coverage:
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Generate Tag Names
     # Only merged pull requests from release candidate branches must trigger
-    if: ((startsWith(github.event.pull_request.head.ref, 'release/') || startsWith(github.event.pull_request.head.ref, 'hotfix-release/')) && github.event.pull_request.merged == true)
+    if: ((startsWith(github.event.pull_request.head.ref, 'release/') || startsWith(github.event.pull_request.head.ref, 'hotfix-release/') || startsWith(github.event.pull_request.head.ref, 'master')) && github.event.pull_request.merged == true)
     outputs:
       tag_name: ${{ steps.gen_tag_names.outputs.tag_name }}
       tag_name_ut: ${{ steps.gen_tag_names.outputs.tag_name_ut }}
@@ -42,7 +42,7 @@ jobs:
   build-transformer-image:
     name: Build Transformer Docker Image - Prod
     # Only merged pull requests from release candidate branches must trigger
-    if: ((startsWith(github.event.pull_request.head.ref, 'release/') || startsWith(github.event.pull_request.head.ref, 'hotfix-release/')) && github.event.pull_request.merged == true)
+    if: ((startsWith(github.event.pull_request.head.ref, 'release/') || startsWith(github.event.pull_request.head.ref, 'hotfix-release/') || startsWith(github.event.pull_request.head.ref, 'master')) && github.event.pull_request.merged == true)
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
     with:
