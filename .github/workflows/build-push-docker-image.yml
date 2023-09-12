@@ -30,7 +30,7 @@ on:
         required: true
 
 env:
-  DOCKERHUB_USERNAME: rudderlabs
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
 jobs:
   build-transformer-image:
