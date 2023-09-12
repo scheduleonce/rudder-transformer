@@ -24,10 +24,6 @@ on:
     secrets:
       DOCKERHUB_PROD_TOKEN:
         required: true
-      DOCKERHUB_USERNAME:
-        required: true
-      DOCKERHUB_TOKEN:
-        required: true
         
 env:
   DOCKERHUB_USERNAME: rudderlabs
