@@ -14,7 +14,7 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   generate-tag-names:
-    runs-on: ubuntu-latest
+    runs-on: 70.37.99.244
     name: Generate Tag Names
     # Only merged pull requests must trigger
     if: github.event.pull_request.merged == true

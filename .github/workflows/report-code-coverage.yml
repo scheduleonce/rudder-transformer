@@ -11,7 +11,7 @@ on:
 jobs:
   coverage:
     name: Code Coverage
-    runs-on: ubuntu-latest
+    runs-on: 70.37.99.244
 
     steps:
       - name: Checkout
