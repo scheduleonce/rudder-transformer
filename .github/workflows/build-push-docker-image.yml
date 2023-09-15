@@ -28,6 +28,7 @@ on:
         required: true
 
 env:
+  DOCKERHUB_PROD_TOKEN: ${{ secrets.DOCKERHUB_PROD_TOKEN }}
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
 
 jobs:
