@@ -39,7 +39,6 @@ const { PlatformError } = require('../v0/util/errorTypes');
 const { processCdkV1 } = require('../cdk/v1/handler');
 const { extractLibraries } = require('../util/customTransformer');
 const { getCompatibleStatusCode } = require('../adapters/utils/networkUtils');
-const { oncehubTransformer } = require("../util/oncehub-custom-transformer");
 const CDK_V1_DEST_PATH = 'cdk/v1';
 
 const transformerMode = process.env.TRANSFORMER_MODE;
@@ -154,19 +153,16 @@ async function handleDest(ctx, version, destination) {
   const respList = await Promise.all(
     events.map(async (event) => {
       try {        
-        // look for traits under every object in file v0\util\data\GenericFieldMapping.json like
-        // "traits": ["traits", "context.traits"]
-        let parsedEvent = oncehubTransformer(destination,event);
-        parsedEvent.request = { query: reqParams };
-        parsedEvent = processDynamicConfig(parsedEvent);
+        event.request = { query: reqParams };
+        event = processDynamicConfig(event);
         let respEvents;
-        if (isCdkDestination(parsedEvent)) {
-          respEvents = await processCdkV1(destination, parsedEvent);
+        if (isCdkDestination(event)) {
+          respEvents = await processCdkV1(destination, event);
         } else {
           if (destHandler === null) {
             destHandler = getDestHandler(version, destination);
           }
-          respEvents = await handleV0Destination(destHandler.process, [parsedEvent]);
+          respEvents = await handleV0Destination(destHandler.process, [event]);
         }
         if (respEvents) {
           if (!Array.isArray(respEvents)) {
@@ -177,7 +173,7 @@ async function handleDest(ctx, version, destination) {
             metadata: destHandler?.processMetadata
               ? destHandler.processMetadata({
                   metadata: event.metadata,
-                  inputEvent: parsedEvent,
+                  inputEvent: event,
                   outputEvent: ev,
                 })
               : event.metadata,
