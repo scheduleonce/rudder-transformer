@@ -1,3 +1,5 @@
+import { defaultApiKey } from '../../../common/secrets';
+
 export const data = [
   {
     name: 'lytics',
@@ -113,7 +115,7 @@ export const data = [
             },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -137,12 +139,13 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://api.lytics.io/collect/json/default?access_token=dummyApiKey',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
               headers: { 'Content-Type': 'application/json' },
               params: {},
               body: {
                 JSON: {
                   _e: 'Order Completed',
+                  anonymous_id: '4eb021e9-a2af-4926-ae82-fe996d12f3c5',
                   checkout_id: 'what is checkout id here??',
                   coupon: 'APPARELSALE',
                   currency: 'GBP',
@@ -190,6 +193,7 @@ export const data = [
                   'products[2].url': 'https://www.example.com/product/offer-t-shirt',
                   'products[2].value': 12.99,
                   'products[2].variant': 'Black',
+                  user_id: 'rudder123',
                   revenue: 31.98,
                   shipping: 4,
                   value: 31.98,
@@ -264,7 +268,7 @@ export const data = [
             },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -288,11 +292,12 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://api.lytics.io/collect/json/default?access_token=dummyApiKey',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
               headers: { 'Content-Type': 'application/json' },
               params: {},
               body: {
                 JSON: {
+                  anonymous_id: '4eb021e9-a2af-4926-ae82-fe996d12f3c5',
                   user_id: 'rudder123',
                   'company.id': 'abc123',
                   createdAt: 'Thu Mar 24 2016 17:46:45 GMT+0000 (UTC)',
@@ -378,7 +383,7 @@ export const data = [
             },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -402,11 +407,12 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://api.lytics.io/collect/json/default?access_token=dummyApiKey',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
               headers: { 'Content-Type': 'application/json' },
               params: {},
               body: {
                 JSON: {
+                  anonymous_id: '4eb021e9-a2af-4926-ae82-fe996d12f3c5',
                   user_id: 'rudder123',
                   'company.id': 'abc123',
                   createdAt: 'Thu Mar 24 2016 17:46:45 GMT+0000 (UTC)',
@@ -485,7 +491,7 @@ export const data = [
             destination: {
               ID: '1pYpzzvcn7AQ2W9GGIAZSsN6Mfq',
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -509,11 +515,12 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://api.lytics.io/collect/json/default?access_token=dummyApiKey',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
               headers: { 'Content-Type': 'application/json' },
               params: {},
               body: {
                 JSON: {
+                  anonymous_id: '4eb021e9-a2af-4926-ae82-fe996d12f3c5',
                   user_id: 'rudder123',
                   'company.id': 'abc123',
                   createdAt: 'Thu Mar 24 2016 17:46:45 GMT+0000 (UTC)',
@@ -591,7 +598,7 @@ export const data = [
             },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -615,7 +622,7 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://api.lytics.io/collect/json/default?access_token=dummyApiKey',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
               headers: { 'Content-Type': 'application/json' },
               params: {},
               body: {
@@ -626,6 +633,7 @@ export const data = [
                   email: 'rudderTest@gmail.com',
                   name: 'Rudder Test',
                   plan: 'Enterprise',
+                  anonymous_id: '4eb021e9-a2af-4926-ae82-fe996d12f3c5',
                 },
                 XML: {},
                 JSON_ARRAY: {},
@@ -697,7 +705,7 @@ export const data = [
             },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -721,7 +729,7 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://api.lytics.io/collect/json/default?access_token=dummyApiKey',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
               headers: { 'Content-Type': 'application/json' },
               params: {},
               body: {
@@ -732,6 +740,7 @@ export const data = [
                   email: 'rudderTest@gmail.com',
                   name: 'Rudder Test',
                   plan: 'Enterprise',
+                  anonymous_id: '4eb021e9-a2af-4926-ae82-fe996d12f3c5',
                 },
                 XML: {},
                 JSON_ARRAY: {},
@@ -803,7 +812,7 @@ export const data = [
             metadata: { destinationID: 'ewksfdgDFSdvzsdmwsdfvcxj' },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -890,7 +899,7 @@ export const data = [
             metadata: { destinationID: 'ewksfdgDFSdvzsdmwsdfvcxj' },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -1036,7 +1045,7 @@ export const data = [
             },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -1060,7 +1069,7 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://api.lytics.io/collect/json/default?access_token=dummyApiKey',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
               headers: { 'Content-Type': 'application/json' },
               params: {},
               body: {
@@ -1116,6 +1125,7 @@ export const data = [
                   revenue: 31.98,
                   shipping: 4,
                   value: 31.98,
+                  user_id: 'rudder123',
                 },
                 XML: {},
                 JSON_ARRAY: {},
@@ -1179,7 +1189,7 @@ export const data = [
             },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -1203,17 +1213,19 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://api.lytics.io/collect/json/default?access_token=dummyApiKey',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
               headers: { 'Content-Type': 'application/json' },
               params: {},
               body: {
                 JSON: {
                   event: 'ApplicationLoaded',
+                  anonymous_id: '00000000000000000000000000',
                   path: '',
                   referrer: '',
                   search: '',
                   title: '',
                   url: '',
+                  user_id: '12345',
                 },
                 XML: {},
                 JSON_ARRAY: {},
@@ -1277,7 +1289,7 @@ export const data = [
             },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -1301,17 +1313,19 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://api.lytics.io/collect/json/default?access_token=dummyApiKey',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
               headers: { 'Content-Type': 'application/json' },
               params: {},
               body: {
                 JSON: {
                   event: 'ApplicationLoaded',
+                  anonymous_id: '00000000000000000000000000',
                   path: '',
                   referrer: '',
                   search: '',
                   title: '',
                   url: '',
+                  user_id: '12345',
                 },
                 XML: {},
                 JSON_ARRAY: {},
@@ -1385,7 +1399,7 @@ export const data = [
             },
             destination: {
               DestinationDefinition: { Config: { cdkV2Enabled: true } },
-              Config: { apiKey: 'dummyApiKey', stream: 'default' },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
               Enabled: true,
               Transformations: [],
               IsProcessorEnabled: true,
@@ -1409,12 +1423,122 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://api.lytics.io/collect/json/default?access_token=dummyApiKey',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
               headers: { 'Content-Type': 'application/json' },
               params: {},
               body: {
                 JSON: {
+                  anonymous_id: '4eb021e9-a2af-4926-ae82-fe996d12f3c5',
                   user_id: 'rudder123',
+                  'company.id': 'abc123',
+                  createdAt: 'Thu Mar 24 2016 17:46:45 GMT+0000 (UTC)',
+                  email: 'rudderTest@gmail.com',
+                  name: 'Rudder Test',
+                  plan: 'Enterprise',
+                  first_name: 'Rudderstack',
+                  last_name: 'Test',
+                },
+                JSON_ARRAY: {},
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: '',
+            },
+            statusCode: 200,
+            metadata: {
+              destinationId: 'destId',
+              workspaceId: 'wspId',
+            },
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: 'lytics',
+    description: 'Test 11: user_id is mapped to userIdOnly',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            message: {
+              anonymousId: '4eb021e9-a2af-4926-ae82-fe996d12f3c5',
+              channel: 'web',
+              context: {
+                app: {
+                  build: '1.0.0',
+                  name: 'RudderLabs JavaScript SDK',
+                  namespace: 'com.rudderlabs.javascript',
+                  version: '1.1.6',
+                },
+                library: { name: 'RudderLabs JavaScript SDK', version: '1.1.6' },
+                locale: 'en-GB',
+                os: { name: '', version: '' },
+                page: {
+                  path: '/testing/script-test.html',
+                  referrer: '',
+                  search: '',
+                  title: '',
+                  url: 'http://localhost:3243/testing/script-test.html',
+                },
+                screen: { density: 2 },
+                traits: {
+                  company: { id: 'abc123' },
+                  createdAt: 'Thu Mar 24 2016 17:46:45 GMT+0000 (UTC)',
+                  email: 'rudderTest@gmail.com',
+                  name: 'Rudder Test',
+                  plan: 'Enterprise',
+                  firstName: 'Rudderstack',
+                  lastname: 'Test',
+                },
+                userAgent:
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.80 Safari/537.36',
+              },
+              integrations: { All: true },
+              messageId: 'e108eb05-f6cd-4624-ba8c-568f2e2b3f92',
+              originalTimestamp: '2020-10-16T08:26:14.938Z',
+              receivedAt: '2020-10-16T13:56:14.945+05:30',
+              request_ip: '[::1]',
+              sentAt: '2020-10-16T08:26:14.939Z',
+              timestamp: '2020-10-16T13:56:14.944+05:30',
+              type: 'identify',
+            },
+            destination: {
+              DestinationDefinition: { Config: { cdkV2Enabled: true } },
+              Config: { apiKey: defaultApiKey, stream: 'default' },
+              Enabled: true,
+              Transformations: [],
+              IsProcessorEnabled: true,
+            },
+            metadata: {
+              destinationId: 'destId',
+              workspaceId: 'wspId',
+            },
+          },
+        ],
+        method: 'POST',
+      },
+      pathSuffix: '',
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: `https://api.lytics.io/collect/json/default?access_token=${defaultApiKey}`,
+              headers: { 'Content-Type': 'application/json' },
+              params: {},
+              body: {
+                JSON: {
+                  anonymous_id: '4eb021e9-a2af-4926-ae82-fe996d12f3c5',
                   'company.id': 'abc123',
                   createdAt: 'Thu Mar 24 2016 17:46:45 GMT+0000 (UTC)',
                   email: 'rudderTest@gmail.com',

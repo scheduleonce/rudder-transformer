@@ -1,10 +1,9 @@
 /* eslint-disable global-require, import/no-dynamic-require */
-import fs from 'fs';
 import { Context } from 'koa';
-import path from 'path';
 import { DestHandlerMap } from '../constants/destinationCanonicalNames';
 import { getCPUProfile, getHeapProfile } from '../middleware';
 import { Metadata } from '../types';
+import defaultFeaturesConfig from '../features';
 
 export class MiscService {
   public static getDestHandler(dest: string, version: string) {
@@ -15,6 +14,9 @@ export class MiscService {
   }
 
   public static getSourceHandler(source: string, version: string) {
+    if (version === 'v2') {
+      return require(`../sources/${source}/transform`);
+    }
     return require(`../${version}/sources/${source}/transform`);
   }
 
@@ -34,7 +36,7 @@ export class MiscService {
     };
   }
 
-  public static getMetaTags(metadata: Metadata) {
+  public static getMetaTags(metadata?: Metadata) {
     if (!metadata) {
       return {};
     }
@@ -62,9 +64,8 @@ export class MiscService {
     return process.env.npm_package_version || 'Version Info not found';
   }
 
-  public static getFetaures() {
-    const obj = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../features.json'), 'utf8'));
-    return JSON.stringify(obj);
+  public static getFeatures() {
+    return JSON.stringify(defaultFeaturesConfig);
   }
 
   public static async getCPUProfile(seconds: number) {

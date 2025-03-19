@@ -1,12 +1,13 @@
+import { authHeader1, authHeader2, authHeader3 } from './maskedSecrets';
 const commonHeaders = {
   Accept: 'application/json',
-  Authorization: 'Bearer testApiKey',
+  Authorization: authHeader1,
   'Content-Type': 'application/json',
 };
 
 const v0VersionHeaders = {
   'Content-Type': 'application/json',
-  Authorization: 'Bearer testApiKey',
+  Authorization: authHeader1,
   Accept: 'application/json',
   'Intercom-Version': '1.4',
   'User-Agent': 'RudderStack',
@@ -14,7 +15,7 @@ const v0VersionHeaders = {
 
 const v1VersionHeaders = {
   'Content-Type': 'application/json',
-  Authorization: 'Bearer testApiKey',
+  Authorization: authHeader1,
   Accept: 'application/json',
   'Intercom-Version': '2.10',
   'User-Agent': 'RudderStack',
@@ -45,7 +46,7 @@ const companyPayload = {
 
 const v1Headers = {
   'Content-Type': 'application/json',
-  Authorization: 'Bearer abcd=',
+  Authorization: authHeader3,
   Accept: 'application/json',
   'Intercom-Version': '1.4',
 };
@@ -434,7 +435,7 @@ const deliveryCallsData = [
       },
       headers: {
         Accept: 'application/json',
-        Authorization: 'Bearer invalidApiKey',
+        Authorization: authHeader2,
         'Content-Type': 'application/json',
       },
     },
@@ -529,7 +530,7 @@ const deliveryCallsData = [
       params: {},
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer invalidApiKey',
+        Authorization: authHeader2,
         Accept: 'application/json',
         'Intercom-Version': '1.4',
         'User-Agent': 'RudderStack',
@@ -1036,6 +1037,43 @@ const deliveryCallsData = [
           {
             code: 'company_not_found',
             message: 'Company Not Found',
+          },
+        ],
+      },
+    },
+  },
+  {
+    httpReq: {
+      method: 'post',
+      url: 'https://api.intercom.io/contacts/search',
+      data: {
+        query: {
+          operator: 'AND',
+          value: [{ field: 'external_id', operator: '=', value: '10156' }],
+        },
+      },
+      headers: { ...commonHeaders, 'Intercom-Version': '2.10', 'User-Agent': 'RudderStack' },
+    },
+    httpRes: {
+      status: 200,
+      statusText: 'ok',
+      data: {
+        type: 'list',
+        total_count: 1,
+        pages: {
+          type: 'pages',
+          page: 1,
+          per_page: 50,
+          total_pages: 1,
+        },
+        data: [
+          {
+            type: 'contact',
+            id: '7070129940741e45d040',
+            workspace_id: 'rudderWorkspace',
+            external_id: 'user@2',
+            role: 'user',
+            email: 'test+2@rudderlabs.com',
           },
         ],
       },

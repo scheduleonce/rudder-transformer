@@ -31,14 +31,14 @@ export const otherScenariosV1: ProxyV1TestData[] = [
         body: {
           output: {
             status: 429,
-            message: 'API User Too Many Calls',
+            message: 'User request limit reached',
             statTags: {
               ...statTags,
               errorType: 'throttled',
             },
             response: [
               {
-                error: 'API User Too Many Calls',
+                error: 'User request limit reached',
                 statusCode: 429,
                 metadata: generateMetadata(1),
               },
@@ -72,7 +72,13 @@ export const otherScenariosV1: ProxyV1TestData[] = [
         body: {
           output: {
             status: 500,
-            message: 'Unhandled random error',
+            message: JSON.stringify({
+              message: 'Unhandled random error',
+              type: 'RandomException',
+              code: 5,
+              error_subcode: 12,
+              fbtrace_id: 'facebook_px_trace_id_10',
+            }),
             statTags: {
               ...statTags,
               errorType: 'retryable',
@@ -80,7 +86,13 @@ export const otherScenariosV1: ProxyV1TestData[] = [
             },
             response: [
               {
-                error: 'Unhandled random error',
+                error: JSON.stringify({
+                  message: 'Unhandled random error',
+                  type: 'RandomException',
+                  code: 5,
+                  error_subcode: 12,
+                  fbtrace_id: 'facebook_px_trace_id_10',
+                }),
                 statusCode: 500,
                 metadata: generateMetadata(1),
               },

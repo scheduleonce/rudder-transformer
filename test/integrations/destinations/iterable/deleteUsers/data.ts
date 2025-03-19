@@ -1,3 +1,5 @@
+import { defaultApiKey } from '../../../common/secrets';
+
 const destType = 'iterable';
 
 export const data = [
@@ -50,7 +52,7 @@ export const data = [
               },
             ],
             config: {
-              apiToken: 'dummyApiKey',
+              apiToken: defaultApiKey,
             },
           },
         ],
@@ -88,7 +90,7 @@ export const data = [
               },
             ],
             config: {
-              apiKey: 'dummyApiKey',
+              apiKey: defaultApiKey,
             },
           },
         ],
@@ -165,7 +167,43 @@ export const data = [
               },
             ],
             config: {
-              apiKey: 'dummyApiKey',
+              apiKey: defaultApiKey,
+            },
+          },
+        ],
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            statusCode: 200,
+            status: 'successful',
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: destType,
+    description: 'Test 5: should pass when dataCenter is selected as EUDC',
+    feature: 'userDeletion',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            destType: destType.toUpperCase(),
+            userAttributes: [
+              {
+                userId: 'rudder7',
+              },
+            ],
+            config: {
+              apiKey: defaultApiKey,
+              dataCenter: 'EUDC',
             },
           },
         ],

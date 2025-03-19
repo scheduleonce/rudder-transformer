@@ -1,4 +1,6 @@
-import { API_VERSION } from '../../../../../src/v0/destinations/google_adwords_remarketing_lists/config';
+import { authHeader1, secret1 } from '../maskedSecrets';
+const API_VERSION = 'v18';
+
 export const data = [
   {
     name: 'google_adwords_remarketing_lists',
@@ -12,7 +14,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -20,7 +22,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -72,7 +74,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -120,7 +122,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -143,7 +145,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -151,7 +153,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '769-372-9833',
                 loginCustomerId: '870-483-0944',
                 subAccount: true,
@@ -204,7 +206,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
                 'login-customer-id': '8704830944',
@@ -238,7 +240,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -261,7 +263,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -269,7 +271,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -323,7 +325,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -356,7 +358,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -379,7 +381,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -387,7 +389,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -454,7 +456,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -487,7 +489,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -495,7 +497,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -544,7 +546,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -577,7 +579,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -585,7 +587,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -633,7 +635,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -665,7 +667,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -673,7 +675,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -709,7 +711,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -741,7 +743,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -749,7 +751,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: true,
@@ -805,7 +807,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -837,7 +839,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -845,7 +847,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -1424,7 +1426,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -2709,7 +2711,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -2732,7 +2734,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -2740,7 +2742,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -2818,7 +2820,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -2883,7 +2885,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -2897,7 +2899,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -2962,7 +2964,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -2985,7 +2987,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -2993,7 +2995,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -4109,7 +4111,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -5394,7 +5396,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -5408,7 +5410,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -6693,7 +6695,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -6716,7 +6718,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -6724,7 +6726,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -6784,7 +6786,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -6849,7 +6851,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -6872,7 +6874,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -6880,7 +6882,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -6936,7 +6938,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -6969,7 +6971,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -6977,7 +6979,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -8093,7 +8095,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -9378,7 +9380,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -9392,7 +9394,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -10677,7 +10679,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -10700,7 +10702,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -10708,7 +10710,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -10786,7 +10788,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -10851,7 +10853,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -10865,7 +10867,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -10930,7 +10932,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -10953,7 +10955,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -10961,7 +10963,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -11039,7 +11041,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -11102,7 +11104,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11116,7 +11118,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -11176,7 +11178,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11199,7 +11201,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11207,7 +11209,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -11259,7 +11261,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -11301,7 +11303,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11328,7 +11330,7 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
+                audienceId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -11404,7 +11406,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11412,7 +11414,6 @@ export const data = [
             destination: {
               Config: {
                 rudderAccountId: 'rudder-acc-id',
-                listId: 'list111',
                 customerId: '7693729833',
                 loginCustomerId: '',
                 subAccount: false,
@@ -11465,7 +11466,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -11507,7 +11508,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11530,7 +11531,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11603,7 +11604,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -11644,7 +11645,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11667,7 +11668,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11740,7 +11741,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -11781,7 +11782,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11804,7 +11805,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11879,7 +11880,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -11923,7 +11924,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -11946,7 +11947,7 @@ export const data = [
           {
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },
@@ -12021,7 +12022,7 @@ export const data = [
               method: 'POST',
               endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
               headers: {
-                Authorization: 'Bearer dummy-access',
+                Authorization: authHeader1,
                 'Content-Type': 'application/json',
                 'developer-token': 'dummy-dev-token',
               },
@@ -12062,7 +12063,7 @@ export const data = [
             },
             metadata: {
               secret: {
-                access_token: 'dummy-access',
+                access_token: secret1,
                 refresh_token: 'dummy-refresh',
                 developer_token: 'dummy-dev-token',
               },

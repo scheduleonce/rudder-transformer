@@ -13,6 +13,8 @@ const JSON_MIME_TYPE = 'application/json';
 const FEATURE_FILTER_CODE = 'filter-code';
 const FEATURE_GZIP_SUPPORT = 'gzip-support';
 
+const VDM_V2_SCHEMA_VERSION = '1.1';
+
 const HTTP_STATUS_CODES = {
   // 1xx Informational
   CONTINUE: 100,
@@ -83,6 +85,11 @@ const HTTP_STATUS_CODES = {
   NETWORK_AUTHENTICATION_REQUIRED: 511,
 };
 
+const ERROR_MESSAGES = {
+  MALFORMED_JSON_IN_REQUEST_BODY: 'Malformed JSON in request body',
+  REQUEST_BODY_NOT_PRESENT_IN_V2_SPEC_PAYLOAD: 'request.body is not present in V2 spec payload',
+};
+
 module.exports = {
   API_CALL,
   AUTH_CACHE_TTL,
@@ -91,4 +98,6 @@ module.exports = {
   USER_LEAD_CACHE_TTL,
   FEATURE_FILTER_CODE,
   FEATURE_GZIP_SUPPORT,
+  VDM_V2_SCHEMA_VERSION,
+  ERROR_MESSAGES,
 };

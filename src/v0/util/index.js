@@ -10,27 +10,28 @@ const Handlebars = require('handlebars');
 const fs = require('fs');
 const path = require('path');
 const lodash = require('lodash');
-const set = require('set-value');
+const { setValue: set } = require('@rudderstack/integrations-lib');
 const get = require('get-value');
 const uaParser = require('ua-parser-js');
 const moment = require('moment-timezone');
 const sha256 = require('sha256');
 const crypto = require('crypto');
+const { v5 } = require('uuid');
 const {
   InstrumentationError,
   BaseError,
   PlatformError,
   TransformationError,
   OAuthSecretError,
-  getErrorRespEvents,
 } = require('@rudderstack/integrations-lib');
 
 const { JsonTemplateEngine, PathType } = require('@rudderstack/json-template-engine');
+const isString = require('lodash/isString');
 const logger = require('../../logger');
 const stats = require('../../util/stats');
-const { DestCanonicalNames, DestHandlerMap } = require('../../constants/destinationCanonicalNames');
+const { DestCanonicalNames } = require('../../constants/destinationCanonicalNames');
 const { client: errNotificationClient } = require('../../util/errorNotifier');
-const { HTTP_STATUS_CODES } = require('./constant');
+const { HTTP_STATUS_CODES, VDM_V2_SCHEMA_VERSION, ERROR_MESSAGES } = require('./constant');
 const {
   REFRESH_TOKEN,
   AUTH_STATUS_INACTIVE,
@@ -968,6 +969,8 @@ const handleMetadataForValue = (value, metadata, destKey, integrationsObj = null
     strictMultiMap,
     validateTimestamp,
     allowedKeyCheck,
+    toArray,
+    regex,
   } = metadata;
 
   // if value is null and defaultValue is supplied - use that
@@ -1035,6 +1038,20 @@ const handleMetadataForValue = (value, metadata, destKey, integrationsObj = null
     }
   }
 
+  if (toArray) {
+    if (Array.isArray(formattedVal)) {
+      return formattedVal;
+    }
+    return [formattedVal];
+  }
+  if (regex) {
+    const regexPattern = new RegExp(regex);
+    if (!regexPattern.test(formattedVal)) {
+      throw new InstrumentationError(
+        `The value '${formattedVal}' does not match the regex pattern, ${regex}`,
+      );
+    }
+  }
   return formattedVal;
 };
 
@@ -1552,6 +1569,18 @@ const getErrorStatusCode = (error, defaultStatusCode = HTTP_STATUS_CODES.INTERNA
   }
 };
 
+function isAxiosError(err) {
+  return (
+    Array.isArray(err?.config?.adapter) &&
+    err?.config?.adapter?.length > 1 &&
+    typeof err?.request?.socket === 'object' &&
+    !!err?.request?.protocol &&
+    !!err?.request?.method &&
+    !!err?.request?.path &&
+    !!err?.status
+  );
+}
+
 /**
  * Used for generating error response with stats from native and built errors
  */
@@ -1567,11 +1596,15 @@ function generateErrorObject(error, defTags = {}, shouldEnrichErrorMessage = tru
     error.authErrorCategory,
   );
   let errorMessage = error.message;
+  if (isAxiosError(errObject.destinationResponse)) {
+    delete errObject?.destinationResponse.config;
+    delete errObject?.destinationResponse.request;
+  }
   if (shouldEnrichErrorMessage) {
-    if (error.destinationResponse) {
+    if (errObject.destinationResponse) {
       errorMessage = JSON.stringify({
         message: errorMessage,
-        destinationResponse: error.destinationResponse,
+        destinationResponse: errObject.destinationResponse,
       });
     }
     errObject.message = errorMessage;
@@ -1606,7 +1639,7 @@ function isHttpStatusRetryable(status) {
 function generateUUID() {
   return crypto.randomUUID({
     disableEntropyCache: true,
-  }); /* using disableEntropyCache as true to not cache the generated uuids. 
+  }); /* using disableEntropyCache as true to not cache the generated uuids.
   For more Info https://nodejs.org/api/crypto.html#cryptorandomuuidoptions:~:text=options%20%3CObject%3E-,disableEntropyCache,-%3Cboolean%3E%20By
   */
 }
@@ -1629,7 +1662,18 @@ function isAppleFamily(platform) {
   return false;
 }
 
+function isAndroidFamily(platform) {
+  const androidOsNames = ['android'];
+  if (typeof platform === 'string') {
+    return androidOsNames.includes(platform?.toLowerCase());
+  }
+  return false;
+}
+
 function removeHyphens(str) {
+  if (!isString(str)) {
+    return str;
+  }
   return str.replace(/-/g, '');
 }
 
@@ -1681,6 +1725,14 @@ function getValidDynamicFormConfig(
   }
   return res;
 }
+
+const getErrorRespEvents = (metadata, statusCode, error, statTags, batched = false) => ({
+  metadata,
+  batched,
+  statusCode,
+  error,
+  statTags,
+});
 
 /**
  * This method is used to check if the input events sent to router transformation are valid
@@ -1846,31 +1898,6 @@ const flattenMultilevelPayload = (payload) => {
 };
 
 /**
- * Gets the destintion's transform.js file used for transformation
- * **Note**: The transform.js file is imported from
- *  `v0/destinations/${dest}/transform`
- * @param {*} _version -> version for the transfor
- * @param {*} dest destination name
- * @returns
- *  The transform.js instance used for destination transformation
- */
-const getDestHandler = (dest) => {
-  const destName = DestHandlerMap[dest] || dest;
-  // eslint-disable-next-line import/no-dynamic-require, global-require
-  return require(`../destinations/${destName}/transform`);
-};
-
-/**
- * Obtain the authCache instance used to store the access token information to send/get information to/from destination
- * @param {string} destType destination name
- * @returns {Cache | undefined} The instance of "v0/util/cache.js"
- */
-const getDestAuthCacheInstance = (destType) => {
-  const destInf = getDestHandler(destType);
-  return destInf?.authCache || {};
-};
-
-/**
  * This function removes all those variables which are
  * empty or undefined or null from all levels of object.
  * @param {*} obj
@@ -1893,12 +1920,6 @@ const refinePayload = (obj) => {
     }
   });
   return refinedPayload;
-};
-
-const validateEmail = (email) => {
-  const regex =
-    /^(([^\s"(),.:;<>@[\\\]]+(\.[^\s"(),.:;<>@[\\\]]+)*)|(".+"))@((\[(?:\d{1,3}\.){3}\d{1,3}])|(([\dA-Za-z-]+\.)+[A-Za-z]{2,}))$/;
-  return !!regex.test(email);
 };
 
 const validatePhoneWithCountryCode = (phone) => {
@@ -2265,8 +2286,14 @@ const validateEventAndLowerCaseConversion = (event, isMandatory, convertToLowerC
   return convertToLowerCase ? event.toString().toLowerCase() : event.toString();
 };
 
-const applyCustomMappings = (message, mappings) =>
-  JsonTemplateEngine.createAsSync(mappings, { defaultPathType: PathType.JSON }).evaluate(message);
+/**
+ * This function applies custom mappings to the event.
+ * @param {*} event The event to be transformed.
+ * @param {*} mappings The custom mappings to be applied.
+ * @returns {object} The transformed event.
+ */
+const applyCustomMappings = (event, mappings) =>
+  JsonTemplateEngine.createAsSync(mappings, { defaultPathType: PathType.JSON }).evaluate(event);
 
 const applyJSONStringTemplate = (message, template) =>
   JsonTemplateEngine.createAsSync(template.replace(/{{/g, '${').replace(/}}/g, '}'), {
@@ -2274,6 +2301,17 @@ const applyJSONStringTemplate = (message, template) =>
   }).evaluate(message);
 
 /**
+ * This groups the events by destination ID and source ID.
+ * Note: sourceID is only used for rETL events.
+ * @param {*} events The events to be grouped.
+ * @returns {array} The array of grouped events.
+ */
+const groupRouterTransformEvents = (events) =>
+  Object.values(
+    lodash.groupBy(events, (ev) => [ev.destination?.ID, ev.context?.sources?.job_id || 'default']),
+  );
+
+/*
  * Gets url path omitting the hostname & protocol
  *
  * **Note**:
@@ -2289,6 +2327,45 @@ const getRelativePathFromURL = (inputUrl) => {
   return inputUrl;
 };
 
+const isEventSentByVDMV1Flow = (event) => event?.message?.context?.mappedToDestination;
+
+const isEventSentByVDMV2Flow = (event) =>
+  event?.connection?.config?.destination?.schemaVersion === VDM_V2_SCHEMA_VERSION;
+
+const convertToUuid = (input) => {
+  const NAMESPACE = v5.DNS;
+
+  if (!isDefinedAndNotNull(input)) {
+    throw new InstrumentationError('Input is undefined or null.');
+  }
+
+  try {
+    // Stringify and trim the input
+    const trimmedInput = String(input).trim();
+
+    // Check for empty input after trimming
+    if (!trimmedInput) {
+      throw new InstrumentationError('Input is empty or invalid.');
+    }
+    // Generate and return UUID
+    return v5(trimmedInput, NAMESPACE);
+  } catch (error) {
+    const errorMessage = `Failed to transform input to uuid: ${error.message}`;
+    throw new InstrumentationError(errorMessage);
+  }
+};
+
+const getBodyFromV2SpecPayload = ({ request }) => {
+  if (request?.body) {
+    try {
+      const parsedBody = JSON.parse(request.body);
+      return parsedBody;
+    } catch (error) {
+      throw new TransformationError(ERROR_MESSAGES.MALFORMED_JSON_IN_REQUEST_BODY);
+    }
+  }
+  throw new TransformationError(ERROR_MESSAGES.REQUEST_BODY_NOT_PRESENT_IN_V2_SPEC_PAYLOAD);
+};
 // ========================================================================
 // EXPORTS
 // ========================================================================
@@ -2322,11 +2399,13 @@ module.exports = {
   generateErrorObject,
   generateUUID,
   getBrowserInfo,
+  getBodyFromV2SpecPayload,
   getDateInFormat,
   getDestinationExternalID,
   getDestinationExternalIDInfoForRetl,
   getDestinationExternalIDObjectForRetl,
   getDeviceModel,
+  getErrorRespEvents,
   getEventTime,
   getFieldValueFromMessage,
   getFirstAndLastName,
@@ -2348,14 +2427,18 @@ module.exports = {
   getValueFromMessage,
   getValueFromPropertiesOrTraits,
   getValuesAsArrayFromConfig,
+  groupRouterTransformEvents,
   handleSourceKeysOperation,
   hashToSha256,
   isAppleFamily,
+  isAndroidFamily,
   isBlank,
   isDefined,
   isDefinedAndNotNull,
   isDefinedAndNotNullAndNotEmpty,
   isEmpty,
+  isEventSentByVDMV1Flow,
+  isEventSentByVDMV2Flow,
   isNotEmpty,
   isNull,
   isEmptyObject,
@@ -2386,9 +2469,7 @@ module.exports = {
   simpleProcessRouterDestSync,
   handleRtTfSingleEventError,
   getErrorStatusCode,
-  getDestAuthCacheInstance,
   refinePayload,
-  validateEmail,
   validateEventName,
   validatePhoneWithCountryCode,
   getEventReqMetadata,
@@ -2411,4 +2492,7 @@ module.exports = {
   validateEventAndLowerCaseConversion,
   getRelativePathFromURL,
   removeEmptyKey,
+  isAxiosError,
+  convertToUuid,
+  handleMetadataForValue,
 };

@@ -10,7 +10,11 @@ const {
   createResponseArray,
   checkIfPricePresent,
 } = require('./utils');
-const { InstrumentationError, ConfigurationError } = require('@rudderstack/integrations-lib');
+const {
+  InstrumentationError,
+  ConfigurationError,
+  generateRandomString,
+} = require('@rudderstack/integrations-lib');
 const { API_HEADER_METHOD, API_PROTOCOL_VERSION, API_VERSION } = require('./config');
 
 describe('formatEmail', () => {
@@ -29,12 +33,13 @@ describe('formatEmail', () => {
 });
 
 describe('calculateConversionObject', () => {
-  // Returns a conversion object with currency code 'USD' and amount 0 when message properties are empty
-  it('should throw instrumentation error when message properties are empty', () => {
+  // Returns empty object when message properties are empty
+  it('should return empty object when message properties are empty', () => {
     const message = { properties: {} };
     expect(() => {
-      fetchUserIds(calculateConversionObject(message));
-    }).toThrow(InstrumentationError);
+      const conversionObject = calculateConversionObject(message);
+      expect(conversionObject).toEqual({});
+    });
   });
 
   // Returns a conversion object with currency code 'USD' and amount 0 when message properties price is defined but quantity is 0
@@ -179,7 +184,7 @@ describe('generateHeader', () => {
   // Returns a headers object with Content-Type, X-RestLi-Method, X-Restli-Protocol-Version, LinkedIn-Version, and Authorization keys when passed a valid access token.
   it('should return a headers object with all keys when passed a valid access token', () => {
     // Arrange
-    const accessToken = 'validAccessToken';
+    const accessToken = generateRandomString();
 
     // Act
     const result = generateHeader(accessToken);
@@ -197,7 +202,7 @@ describe('generateHeader', () => {
   // Returns a headers object with default values for all keys when passed an invalid access token.
   it('should return a headers object with default values for all keys when passed an invalid access token', () => {
     // Arrange
-    const accessToken = 'invalidAccessToken';
+    const accessToken = generateRandomString();
 
     // Act
     const result = generateHeader(accessToken);

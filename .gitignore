@@ -38,6 +38,7 @@ bower_components
 
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 build/Release
+build/
 
 # Dependency directories
 node_modules/
@@ -91,6 +92,7 @@ out
 # Nuxt.js build / generate output
 .nuxt
 dist
+dist-test
 
 # Gatsby files
 .cache/
@@ -122,6 +124,7 @@ dist
 
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
+.vscode
 
 # yarn v2
 .yarn/cache
@@ -133,9 +136,16 @@ dist
 # Others
 **/.DS_Store
 .dccache
-
+.python-version
 .idea
 
 # component test report
 test_reports/
 temp/
+
+# Allure
+allure-results/
+allure-report/
+
+# local scripts
+*/scripts/local/

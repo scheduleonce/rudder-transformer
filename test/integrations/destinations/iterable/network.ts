@@ -1,10 +1,12 @@
+import { defaultApiKey } from '../../common/secrets';
+
 const deleteNwData = [
   {
     httpReq: {
       method: 'delete',
       url: 'https://api.iterable.com/api/users/byUserId/rudder1',
       headers: {
-        api_key: 'dummyApiKey',
+        api_key: defaultApiKey,
       },
     },
     httpRes: {
@@ -21,7 +23,7 @@ const deleteNwData = [
       method: 'delete',
       url: 'https://api.iterable.com/api/users/byUserId/rudder2',
       headers: {
-        api_key: 'dummyApiKey',
+        api_key: defaultApiKey,
       },
     },
     httpRes: {
@@ -76,7 +78,7 @@ const deleteNwData = [
       method: 'delete',
       url: 'https://api.iterable.com/api/users/byUserId/rudder5',
       headers: {
-        api_key: 'dummyApiKey',
+        api_key: defaultApiKey,
       },
     },
     httpRes: {
@@ -93,12 +95,29 @@ const deleteNwData = [
       method: 'delete',
       url: 'https://api.iterable.com/api/users/byUserId/rudder6',
       headers: {
-        api_key: 'dummyApiKey',
+        api_key: defaultApiKey,
       },
     },
     httpRes: {
       data: {
         msg: 'All users associated with rudder6 were successfully deleted',
+        code: 'Success',
+        params: null,
+      },
+      status: 200,
+    },
+  },
+  {
+    httpReq: {
+      method: 'delete',
+      url: 'https://api.eu.iterable.com/api/users/byUserId/rudder7',
+      headers: {
+        api_key: defaultApiKey,
+      },
+    },
+    httpRes: {
+      data: {
+        msg: 'All users associated with rudder7 were successfully deleted',
         code: 'Success',
         params: null,
       },

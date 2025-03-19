@@ -1,5 +1,6 @@
 const md5 = require('md5');
 const axios = require('axios');
+const { generateRandomString } = require('@rudderstack/integrations-lib');
 const {
   getName,
   getHeaders,
@@ -314,6 +315,18 @@ describe('getName utility test', () => {
 describe('filterCustomAttributes utility test', () => {
   it('Should return an empty object when all custom attributes are reserved attributes', () => {
     const payload = { custom_attributes: { email: 'test@rudder.com', name: 'rudder test' } };
+    const result = filterCustomAttributes(payload, 'user', { Config: { apiVersion: 'v2' } });
+    expect(result).toBeUndefined();
+  });
+
+  it('Should filter out custom attributes that are reserved attributes and that are false', () => {
+    const payload = { custom_attributes: { unsubscribedFromEmails: false } };
+    const result = filterCustomAttributes(payload, 'user', { Config: { apiVersion: 'v2' } });
+    expect(result).toBeUndefined();
+  });
+
+  it('Should filter out custom attributes that are reserved attributes and that are null', () => {
+    const payload = { custom_attributes: { unsubscribedFromEmails: null } };
     const result = filterCustomAttributes(payload, 'user', { Config: { apiVersion: 'v2' } });
     expect(result).toBeUndefined();
   });
@@ -731,7 +744,7 @@ describe('attachUserAndCompany utility test', () => {
     };
     const Config = {
       sendAnonymousId: false,
-      apiKey: 'testApiKey',
+      apiKey: generateRandomString(),
     };
 
     const expectedResponse = {
@@ -743,7 +756,7 @@ describe('attachUserAndCompany utility test', () => {
       files: {},
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer testApiKey',
+        Authorization: `Bearer ${Config.apiKey}`,
         Accept: 'application/json',
         'Intercom-Version': '1.4',
         'User-Agent': 'RudderStack',

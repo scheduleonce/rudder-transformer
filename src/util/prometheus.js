@@ -440,6 +440,42 @@ class Prometheus {
         labelNames: ['writeKey', 'source', 'shopifyTopic'],
       },
       {
+        name: 'shopify_pixel_cart_token_not_found',
+        help: 'shopify_pixel_cart_token_not_found',
+        type: 'counter',
+        labelNames: ['event', 'writeKey'],
+      },
+      {
+        name: 'shopify_pixel_cart_token_set',
+        help: 'shopify_pixel_cart_token_set',
+        type: 'counter',
+        labelNames: ['event', 'writeKey'],
+      },
+      {
+        name: 'shopify_pixel_cart_token_redis_error',
+        help: 'shopify_pixel_cart_token_redis_error',
+        type: 'counter',
+        labelNames: ['event', 'writeKey'],
+      },
+      {
+        name: 'shopify_pixel_id_stitch_gaps',
+        help: 'shopify_pixel_id_stitch_gaps',
+        type: 'counter',
+        labelNames: ['event', 'reason', 'source', 'writeKey'],
+      },
+      {
+        name: 'shopify_pixel_userid_mapping',
+        help: 'shopify_pixel_userid_mapping',
+        type: 'counter',
+        labelNames: ['action', 'operation'],
+      },
+      {
+        name: 'shopify_pixel_cart_token_mapping',
+        help: 'shopify_pixel_cart_token_mapping',
+        type: 'counter',
+        labelNames: ['action', 'operation'],
+      },
+      {
         name: 'outgoing_request_count',
         help: 'Outgoing HTTP requests count',
         type: 'counter',
@@ -501,6 +537,24 @@ class Prometheus {
         help: 'braze_alias_missconfigured_count',
         type: 'counter',
         labelNames: ['destination_id'],
+      },
+      {
+        name: 'braze_batch_subscription_size',
+        help: 'braze_batch_subscription_size',
+        type: 'gauge',
+        labelNames: ['destination_id'],
+      },
+      {
+        name: 'braze_batch_subscription_combined_size',
+        help: 'braze_batch_subscription_combined_size',
+        type: 'gauge',
+        labelNames: ['destination_id'],
+      },
+      {
+        name: 'mailjet_packing_size',
+        help: 'mailjet_packing_size',
+        type: 'gauge',
+        labelNames: ['group'],
       },
       {
         name: 'hs_batch_size',
@@ -823,6 +877,18 @@ class Prometheus {
       // User transform metrics
       // counter
       {
+        name: 'user_transform_input_events',
+        help: 'Number of input events to user transform',
+        type: 'counter',
+        labelNames: ['workspaceId'],
+      },
+      {
+        name: 'user_transform_output_events',
+        help: 'user_transform_output_events',
+        type: 'counter',
+        labelNames: ['workspaceId'],
+      },
+      {
         name: 'user_transform_function_group_size',
         help: 'user_transform_function_group_size',
         type: 'counter',
@@ -911,20 +977,6 @@ class Prometheus {
         help: 'geo_call_duration',
         type: 'histogram',
         labelNames: ['identifier', 'transformationId', 'workspaceId'],
-      },
-      {
-        name: 'user_transform_input_events',
-        help: 'Number of input events to user transform',
-        type: 'histogram',
-        labelNames: [],
-        buckets: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200],
-      },
-      {
-        name: 'user_transform_output_events',
-        help: 'user_transform_output_events',
-        type: 'histogram',
-        labelNames: [],
-        buckets: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200],
       },
       // summary
       {

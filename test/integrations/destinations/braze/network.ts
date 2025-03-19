@@ -1,3 +1,4 @@
+import { authHeader1, authHeader2 } from './maskedSecrets';
 const dataDeliveryMocksData = [
   {
     httpReq: {
@@ -13,7 +14,7 @@ const dataDeliveryMocksData = [
       params: { destination: 'braze' },
       headers: {
         Accept: 'application/json',
-        Authorization: 'Bearer api_key',
+        Authorization: authHeader1,
         'Content-Type': 'application/json',
         'User-Agent': 'RudderLabs',
       },
@@ -35,7 +36,7 @@ const dataDeliveryMocksData = [
       params: { destination: 'braze' },
       headers: {
         Accept: 'application/json',
-        Authorization: 'Bearer api_key',
+        Authorization: authHeader1,
         'Content-Type': 'application/json',
         'User-Agent': 'RudderLabs',
       },
@@ -57,7 +58,7 @@ const dataDeliveryMocksData = [
       params: { destination: 'braze' },
       headers: {
         Accept: 'application/json',
-        Authorization: 'Bearer api_key',
+        Authorization: authHeader1,
         'Content-Type': 'application/json',
         'User-Agent': 'RudderLabs',
       },
@@ -82,7 +83,7 @@ const dataDeliveryMocksData = [
       params: { destination: 'braze' },
       headers: {
         Accept: 'application/json',
-        Authorization: 'Bearer api_key',
+        Authorization: authHeader1,
         'Content-Type': 'application/json',
         'User-Agent': 'RudderLabs',
       },
@@ -104,7 +105,7 @@ const dataDeliveryMocksData = [
       params: { destination: 'braze' },
       headers: {
         Accept: 'application/json',
-        Authorization: 'Bearer api_key',
+        Authorization: authHeader1,
         'Content-Type': 'application/json',
         'User-Agent': 'RudderLabs',
       },
@@ -126,7 +127,7 @@ const dataDeliveryMocksData = [
       params: { destination: 'braze' },
       headers: {
         Accept: 'application/json',
-        Authorization: 'Bearer api_key',
+        Authorization: authHeader1,
         'Content-Type': 'application/json',
         'User-Agent': 'RudderLabs',
       },
@@ -197,7 +198,7 @@ const deleteNwData = [
       },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer 1234',
+        Authorization: authHeader2,
       },
     },
     httpRes: {
@@ -269,7 +270,7 @@ const deleteNwData = [
       },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer 1234',
+        Authorization: authHeader2,
       },
     },
     httpRes: {
@@ -288,7 +289,7 @@ const deleteNwData = [
       data: { external_ids: ['test_user_id51'] },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer 1234',
+        Authorization: authHeader2,
       },
     },
     httpRes: {
@@ -311,7 +312,7 @@ const deleteNwData = [
       },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer 1234',
+        Authorization: authHeader2,
       },
     },
     httpRes: {
@@ -339,7 +340,7 @@ const deleteNwData = [
       params: { destination: 'braze' },
       headers: {
         Accept: 'application/json',
-        Authorization: 'Bearer api_key',
+        Authorization: authHeader1,
         'Content-Type': 'application/json',
         'User-Agent': 'RudderLabs',
       },
@@ -386,7 +387,7 @@ const deleteNwData = [
       params: { destination: 'braze' },
       headers: {
         Accept: 'application/json',
-        Authorization: 'Bearer api_key',
+        Authorization: authHeader1,
         'Content-Type': 'application/json',
         'User-Agent': 'RudderLabs',
       },
@@ -406,8 +407,22 @@ const deleteNwData = [
           { alias_name: '77e278c9-e984-4cdd-950c-cd0b61befd03', alias_label: 'rudder_id' },
           { alias_name: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca', alias_label: 'rudder_id' },
         ],
+        fields_to_export: [
+          'created_at',
+          'custom_attributes',
+          'dob',
+          'email',
+          'first_name',
+          'gender',
+          'home_city',
+          'last_name',
+          'phone',
+          'time_zone',
+          'external_id',
+          'user_aliases',
+        ],
       },
-      headers: { Authorization: 'Bearer dummyApiKey' },
+      headers: { Authorization: authHeader1 },
       url: 'https://rest.iad-03.braze.com/users/export/ids',
     },
     httpRes: {
@@ -416,12 +431,8 @@ const deleteNwData = [
           {
             created_at: '2023-03-17T20:51:58.297Z',
             external_id: 'braze_test_user',
-            user_aliases: [],
-            appboy_id: '6414d2ee33326e3354e3040b',
-            braze_id: '6414d2ee33326e3354e3040b',
             first_name: 'Jackson',
             last_name: 'Miranda',
-            random_bucket: 8134,
             email: 'jackson24miranda@gmail.com',
             custom_attributes: {
               pwa: false,
@@ -437,17 +448,6 @@ const deleteNwData = [
               },
               custom_arr: [1, 2, 'str1'],
             },
-            custom_events: [
-              {
-                name: 'Sign In Completed',
-                first: '2023-03-10T18:36:05.028Z',
-                last: '2023-03-10T18:36:05.028Z',
-                count: 2,
-              },
-            ],
-            total_revenue: 0,
-            push_subscribe: 'subscribed',
-            email_subscribe: 'subscribed',
           },
         ],
       },
@@ -512,7 +512,7 @@ const deleteNwData = [
       params: { destination: 'braze' },
       headers: {
         Accept: 'application/json',
-        Authorization: 'Bearer api_key',
+        Authorization: authHeader1,
         'Content-Type': 'application/json',
         'User-Agent': 'RudderLabs',
       },

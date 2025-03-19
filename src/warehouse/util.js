@@ -1,7 +1,5 @@
-const _ = require('lodash');
 const get = require('get-value');
 
-const v0 = require('./v0/util');
 const v1 = require('./v1/util');
 const { PlatformError, InstrumentationError } = require('@rudderstack/integrations-lib');
 const { isBlank } = require('./config/helpers');
@@ -112,14 +110,7 @@ function validTimestamp(input) {
 }
 
 function getVersionedUtils(schemaVersion) {
-  switch (schemaVersion) {
-    case 'v0':
-      return v0;
-    case 'v1':
-      return v1;
-    default:
-      return v1;
-  }
+  return v1;
 }
 
 function isRudderSourcesEvent(event) {
@@ -145,6 +136,27 @@ const getRecordIDForExtract = (message) => {
   return recordId;
 };
 
+function mergeJSONPathsFromDataWarehouse(message, options) {
+  const dataWarehouseOptions = message.integrations?.['DATA_WAREHOUSE']?.options;
+  if (!dataWarehouseOptions?.jsonPaths) return;
+
+  const dataWarehouseJSONPaths = Array.isArray(dataWarehouseOptions.jsonPaths)
+    ? dataWarehouseOptions.jsonPaths
+    : [];
+  const currentJSONPaths = Array.isArray(options.integrationOptions?.jsonPaths)
+    ? options.integrationOptions.jsonPaths
+    : [];
+
+  switch (options.provider) {
+    case 'rs':
+    case 'postgres':
+    case 'snowflake':
+    case 'bq':
+      options.integrationOptions.jsonPaths = [...dataWarehouseJSONPaths, ...currentJSONPaths];
+      break;
+  }
+}
+
 module.exports = {
   isObject,
   isValidJsonPathKey,
@@ -157,4 +169,5 @@ module.exports = {
   sourceCategoriesToUseRecordId,
   getCloudRecordID,
   getRecordIDForExtract,
+  mergeJSONPathsFromDataWarehouse,
 };

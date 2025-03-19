@@ -8,6 +8,7 @@ import request from 'supertest';
 import networkHandlerFactory from '../../src/adapters/networkHandlerFactory';
 import { FetchHandler } from '../../src/helpers/fetchHandlers';
 import { applicationRoutes } from '../../src/routes';
+import defaultFeaturesConfig from '../../src/features';
 
 let server: any;
 const OLD_ENV = process.env;
@@ -21,7 +22,7 @@ beforeAll(async () => {
     }),
   );
   applicationRoutes(app);
-  server = app.listen(9090);
+  server = app.listen();
 });
 
 afterAll(async () => {
@@ -43,12 +44,9 @@ const getDataFromPath = (pathInput) => {
 
 describe('features tests', () => {
   test('successful features response', async () => {
-    const expectedData = JSON.parse(
-      fs.readFileSync(path.resolve(__dirname, '../../src/features.json'), 'utf8'),
-    );
     const response = await request(server).get('/features');
     expect(response.status).toEqual(200);
-    expect(JSON.parse(response.text)).toEqual(expectedData);
+    expect(JSON.parse(response.text)).toEqual(defaultFeaturesConfig);
   });
 
   test('features regulations should be array', async () => {
@@ -79,6 +77,13 @@ describe('features tests', () => {
     expect(response.status).toEqual(200);
     const supportTransformerProxyV1 = JSON.parse(response.text).supportTransformerProxyV1;
     expect(typeof supportTransformerProxyV1).toBe('boolean');
+  });
+
+  test('features upgradedToSourceTransformV2 to be boolean', async () => {
+    const response = await request(server).get('/features');
+    expect(response.status).toEqual(200);
+    const upgradedToSourceTransformV2 = JSON.parse(response.text).upgradedToSourceTransformV2;
+    expect(typeof upgradedToSourceTransformV2).toBe('boolean');
   });
 });
 
@@ -449,7 +454,6 @@ describe('Destination api tests', () => {
       expect(response.status).toEqual(200);
       expect(JSON.parse(response.text)).toEqual(data.output);
     });
-
     test('(webhook) success snceario for batch of input', async () => {
       const data = getDataFromPath('./data_scenarios/destination/proc/batch_input.json');
       const response = await request(server)
@@ -539,32 +543,10 @@ describe('Destination api tests', () => {
 });
 
 describe('Source api tests', () => {
-  test('(shopify) successful source transform', async () => {
-    const data = getDataFromPath('./data_scenarios/source/v0/successful.json');
-    const response = await request(server)
-      .post('/v0/sources/shopify')
-      .set('Accept', 'application/json')
-      .send(data.input);
-    const parsedResp = JSON.parse(response.text);
-    delete parsedResp[0].output.batch[0].anonymousId;
-    expect(response.status).toEqual(200);
-    expect(parsedResp).toEqual(data.output);
-  });
-
-  test('(shopify) failure source transform (shopify)', async () => {
-    const data = getDataFromPath('./data_scenarios/source/v0/failure.json');
-    const response = await request(server)
-      .post('/v0/sources/shopify')
-      .set('Accept', 'application/json')
-      .send(data.input);
-    expect(response.status).toEqual(200);
-    expect(JSON.parse(response.text)).toEqual(data.output);
-  });
-
   test('(shopify) success source transform (monday)', async () => {
-    const data = getDataFromPath('./data_scenarios/source/v0/response_to_caller.json');
+    const data = getDataFromPath('./data_scenarios/source/v2/response_to_caller.json');
     const response = await request(server)
-      .post('/v0/sources/monday')
+      .post('/v2/sources/monday')
       .set('Accept', 'application/json')
       .send(data.input);
     expect(response.status).toEqual(200);

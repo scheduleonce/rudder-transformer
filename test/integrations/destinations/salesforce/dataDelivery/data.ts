@@ -2,6 +2,7 @@ import { AxiosError } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { testScenariosForV1API } from './business';
 import { otherSalesforceScenariosV1 } from './other';
+import { authHeader1, authHeader2 } from '../maskedSecrets';
 
 const legacyDataValue = {
   Email: 'danis.archurav@sbermarket.ru',
@@ -28,7 +29,7 @@ const legacyTests = [
           userId: '',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
           },
           version: '1',
           endpoint: 'https://rudderstack.my.salesforce.com/services/data/v50.0/sobjects/Lead/1',
@@ -83,7 +84,7 @@ const legacyTests = [
           userId: '',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
           },
           version: '1',
           endpoint: 'https://rudderstack.my.salesforce.com/services/data/v50.0/sobjects/Lead/3',
@@ -152,7 +153,7 @@ const legacyTests = [
           userId: '',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer Incorrect_token',
+            Authorization: authHeader2,
           },
           version: '1',
           endpoint: 'https://rudderstack.my.salesforce.com/services/data/v50.0/sobjects/Lead/2',
@@ -221,7 +222,7 @@ const legacyTests = [
           userId: '',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
           },
           version: '1',
           endpoint: 'https://rudderstack.my.salesforce.com/services/data/v50.0/sobjects/Lead/4',
@@ -290,7 +291,7 @@ const legacyTests = [
           userId: '',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
           },
           version: '1',
           endpoint: 'https://rudderstack.my.salesforce.com/services/data/v50.0/sobjects/Lead/5',
@@ -314,12 +315,12 @@ const legacyTests = [
     },
     output: {
       response: {
-        status: 500,
+        status: 429,
         body: {
           output: {
-            status: 500,
+            status: 429,
             message:
-              'Salesforce Request Failed - due to "Server Unavailable", (Retryable) during Salesforce Response Handling',
+              'Salesforce Request Failed: 503 - due to Server Unavailable, during Salesforce Response Handling',
             destinationResponse: {
               response: [
                 {
@@ -334,7 +335,7 @@ const legacyTests = [
               errorCategory: 'network',
               destinationId: 'Non-determininable',
               workspaceId: 'Non-determininable',
-              errorType: 'retryable',
+              errorType: 'throttled',
               feature: 'dataDelivery',
               implementation: 'native',
               module: 'destination',
@@ -359,7 +360,7 @@ const legacyTests = [
           userId: '',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
           },
           version: '1',
           endpoint: 'https://rudderstack.my.salesforce.com/services/data/v50.0/sobjects/Lead/6',
@@ -426,7 +427,7 @@ const legacyTests = [
           userId: '',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
           },
           version: '1',
           endpoint: 'https://rudderstack.my.salesforce.com/services/data/v50.0/sobjects/Lead/7',
@@ -461,7 +462,7 @@ const legacyTests = [
               status: 503,
             },
             message:
-              'Salesforce Request Failed - due to "{"message":"Server Unavailable","errorCode":"SERVER_UNAVAILABLE"}", (Retryable) during Salesforce Response Handling',
+              'Salesforce Request Failed: 503 - due to "{"message":"Server Unavailable","errorCode":"SERVER_UNAVAILABLE"}", (Retryable) during Salesforce Response Handling',
             statTags: {
               destType: 'SALESFORCE',
               errorCategory: 'network',
@@ -493,7 +494,7 @@ const legacyTests = [
             'https://rudderstack.my.salesforce.com/services/data/v50.0/parameterizedSearch/?q=123&sobject=object_name&in=External_ID__c&object_name.fields=id,External_ID__c',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
           },
           body: {
             JSON: {
@@ -567,7 +568,7 @@ const legacyTests = [
           userId: '',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
           },
           version: '1',
           endpoint: 'https://rudderstack.my.salesforce.com/services/data/v50.0/sobjects/Lead/101',
@@ -603,7 +604,7 @@ const legacyTests = [
           output: {
             status: 500,
             message:
-              'Salesforce Request Failed - due to ""[ECONNABORTED] :: Connection aborted"", (Retryable) during Salesforce Response Handling',
+              'Salesforce Request Failed: 500 - due to ""[ECONNABORTED] :: Connection aborted"", (Retryable) during Salesforce Response Handling',
             destinationResponse: {
               response: '[ECONNABORTED] :: Connection aborted',
               status: 500,
@@ -637,7 +638,7 @@ const legacyTests = [
           },
           {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
             'User-Agent': 'RudderLabs',
             Accept: 'application/json, text/plain, */*',
           },
@@ -660,7 +661,7 @@ const legacyTests = [
           userId: '',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
           },
           version: '1',
           endpoint: 'https://rudder.my.salesforce.com/services/data/v50.0/sobjects/Lead/102',
@@ -696,7 +697,7 @@ const legacyTests = [
           output: {
             status: 500,
             message:
-              'Salesforce Request Failed - due to ""[EAI_AGAIN] :: Temporary failure in name resolution"", (Retryable) during Salesforce Response Handling',
+              'Salesforce Request Failed: 500 - due to ""[EAI_AGAIN] :: Temporary failure in name resolution"", (Retryable) during Salesforce Response Handling',
             destinationResponse: {
               response: '[EAI_AGAIN] :: Temporary failure in name resolution',
               status: 500,
@@ -730,7 +731,7 @@ const legacyTests = [
           },
           {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer token',
+            Authorization: authHeader1,
             'User-Agent': 'RudderLabs',
             Accept: 'application/json, text/plain, */*',
           },

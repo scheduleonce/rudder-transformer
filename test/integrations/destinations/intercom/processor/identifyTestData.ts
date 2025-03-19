@@ -1,3 +1,4 @@
+import { authHeader1, secret1, authHeader4, secret4 } from '../maskedSecrets';
 import { Destination } from '../../../../../src/types';
 import {
   generateMetadata,
@@ -6,14 +7,14 @@ import {
 } from '../../../testUtils';
 
 const v1Config = {
-  apiKey: 'intercomApiKey',
+  apiKey: secret4,
   apiVersion: 'v1',
   appId: '9e9cdea1-78fa-4829-a9b2-5d7f7e96d1a0',
   collectContext: false,
 };
 
 const v2Config = {
-  apiKey: 'testApiKey',
+  apiKey: secret1,
   apiVersion: 'v2',
   apiServer: 'standard',
   sendAnonymousId: false,
@@ -21,7 +22,7 @@ const v2Config = {
 
 const v2Headers = {
   Accept: 'application/json',
-  Authorization: 'Bearer testApiKey',
+  Authorization: authHeader1,
   'Content-Type': 'application/json',
   'Intercom-Version': '2.10',
   'User-Agent': 'RudderStack',
@@ -29,7 +30,7 @@ const v2Headers = {
 
 const v1Headers = {
   'Content-Type': 'application/json',
-  Authorization: 'Bearer intercomApiKey',
+  Authorization: authHeader4,
   Accept: 'application/json',
   'Intercom-Version': '1.4',
   'User-Agent': 'RudderStack',
@@ -80,6 +81,10 @@ const user3Traits = {
   name: 'Test Rudderlabs',
   phone: '+91 9999999999',
   email: 'test@rudderlabs.com',
+  custom_attributes: {
+    ca1: 'value1',
+    ca2: 'value2',
+  },
 };
 
 const user4Traits = {
@@ -170,6 +175,10 @@ const expectedUser3Traits = {
   name: 'Test Rudderlabs',
   phone: '+91 9999999999',
   email: 'test@rudderlabs.com',
+  custom_attributes: {
+    ca1: 'value1',
+    ca2: 'value2',
+  },
 };
 
 const expectedUser4Traits = {
@@ -226,11 +235,22 @@ const expectedUser6Traits = {
       company_id: 'company_id',
       custom_attributes: {
         key1: 'value1',
-        key2: '{"a":"a"}',
+        key2: JSON.stringify({ a: 'a' }),
         key3: '[1,2,3]',
       },
     },
   ],
+};
+
+const expectedUser7Traits = {
+  custom_attributes: {
+    anonymousId: '58b21c2d-f8d5-4410-a2d0-b268a26b7e33',
+    key1: 'value1',
+  },
+  email: 'test_1@test.com',
+  name: 'Test Name',
+  phone: '9876543210',
+  signed_up_at: 1601493060,
 };
 
 const timestamp = '2023-11-22T10:12:44.757+05:30';
@@ -692,8 +712,8 @@ export const identifyTestData = [
                     ...expectedUser6Traits.companies[0],
                     custom_attributes: {
                       key1: 'value1',
-                      key3: '["value1","value2"]',
-                      key4: '{"foo":"bar"}',
+                      key3: JSON.stringify(['value1', 'value2']),
+                      key4: JSON.stringify({ foo: 'bar' }),
                     },
                     company_id: 'c0277b5c814453e5135f515f943d085a',
                   },
@@ -1016,6 +1036,65 @@ export const identifyTestData = [
                 name: 'Test Name',
                 update_last_request_at: true,
               },
+            }),
+            statusCode: 200,
+            metadata: generateMetadata(1),
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'intercom-identify-test-16',
+    name: 'intercom',
+    description: 'V1 version : Identify test with different lookup field than email',
+    scenario: 'Business',
+    successCriteria:
+      'Response status code should be 200 and response should contain update user payload with all traits',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            destination: v2Destination,
+            message: {
+              context: {
+                externalId: [
+                  {
+                    id: '10156',
+                    type: 'INTERCOM-customer',
+                    identifierType: 'user_id',
+                  },
+                ],
+                traits: { ...user5Traits, external_id: '10156' },
+              },
+              type: 'identify',
+              timestamp,
+              originalTimestamp,
+              integrations: {
+                INTERCOM: {
+                  lookup: 'external_id',
+                },
+              },
+            },
+            metadata: generateMetadata(1),
+          },
+        ],
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: transformResultBuilder({
+              userId: '',
+              endpoint: `${v2Endpoint}/7070129940741e45d040`,
+              headers: v2Headers,
+              method: 'PUT',
+              JSON: expectedUser7Traits,
             }),
             statusCode: 200,
             metadata: generateMetadata(1),

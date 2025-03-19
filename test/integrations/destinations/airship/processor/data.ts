@@ -1,4 +1,8 @@
+import { authHeader1, secret1 } from '../maskedSecrets';
+import { identifyTestCases } from './business';
+
 export const data = [
+  ...identifyTestCases,
   {
     name: 'airship',
     description: 'Test 0',
@@ -51,7 +55,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'O2YARRI15I',
                 dataCenter: false,
               },
@@ -75,7 +79,7 @@ export const data = [
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
                 'X-UA-Appkey': 'O2YARRI15I',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -162,7 +166,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'O2YARRI15I',
                 dataCenter: false,
               },
@@ -243,7 +247,7 @@ export const data = [
               sentAt: '2019-10-14T09:03:22.563Z',
             },
             destination: {
-              Config: { apiKey: 'dummyApiKey', dataCenter: false },
+              Config: { apiKey: secret1, dataCenter: false },
             },
           },
         ],
@@ -322,7 +326,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'O2YARRI15I',
                 dataCenter: true,
               },
@@ -346,7 +350,7 @@ export const data = [
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
                 'X-UA-Appkey': 'O2YARRI15I',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -425,7 +429,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'O2YARRI15I',
                 dataCenter: false,
               },
@@ -448,7 +452,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -549,7 +553,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'O2YARRI15I',
                 dataCenter: false,
               },
@@ -572,7 +576,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -640,7 +644,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'O2YARRI15I',
                 dataCenter: false,
               },
@@ -663,7 +667,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -690,7 +694,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -806,7 +810,7 @@ export const data = [
               version: '1',
             },
             destination: {
-              Config: { apiKey: 'dummyApiKey', dataCenter: true },
+              Config: { apiKey: secret1, dataCenter: true },
             },
           },
         ],
@@ -826,7 +830,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -853,7 +857,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -954,7 +958,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'O2YARRI15I',
                 appSecret: 'fhf',
                 dataCenter: true,
@@ -1027,7 +1031,7 @@ export const data = [
               version: '1',
             },
             destination: {
-              Config: { apiKey: 'dummyApiKey', dataCenter: false },
+              Config: { apiKey: secret1, dataCenter: false },
             },
           },
         ],
@@ -1047,7 +1051,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -1147,7 +1151,7 @@ export const data = [
               version: '1',
             },
             destination: {
-              Config: { apiKey: 'dummyApiKey', dataCenter: false },
+              Config: { apiKey: secret1, dataCenter: false },
             },
           },
         ],
@@ -1167,7 +1171,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -1234,7 +1238,7 @@ export const data = [
               version: '1',
             },
             destination: {
-              Config: { apiKey: 'dummyApiKey', dataCenter: false },
+              Config: { apiKey: secret1, dataCenter: false },
             },
           },
         ],
@@ -1254,7 +1258,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -1281,7 +1285,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -1397,7 +1401,7 @@ export const data = [
               version: '1',
             },
             destination: {
-              Config: { apiKey: 'dummyApiKey', dataCenter: true },
+              Config: { apiKey: secret1, dataCenter: true },
             },
           },
         ],
@@ -1417,7 +1421,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -1444,7 +1448,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -1545,7 +1549,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'O2YARRI15I',
                 appSecret: 'fhf',
                 dataCenter: true,
@@ -1621,7 +1625,7 @@ export const data = [
               version: '1',
             },
             destination: {
-              Config: { apiKey: 'dummyApiKey', dataCenter: false },
+              Config: { apiKey: secret1, dataCenter: false },
             },
           },
         ],
@@ -1641,7 +1645,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -1668,7 +1672,7 @@ export const data = [
               headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -1887,7 +1891,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'ffdf',
                 appSecret: 'fhf',
                 dataCenter: false,
@@ -1912,7 +1916,7 @@ export const data = [
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
                 'X-UA-Appkey': 'ffdf',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -1920,6 +1924,77 @@ export const data = [
                   occured: '2019-10-14T09:03:17.562Z',
                   user: { named_user_id: 'testuserId1' },
                   body: { name: 'product_clicked', value: 'dfd' },
+                },
+                JSON_ARRAY: {},
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: '',
+            },
+            statusCode: 200,
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: 'airship',
+    description: 'Test 16',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            message: {
+              type: 'track',
+              messageId: '84e26acc-56a5-4835-8233-591137fca468',
+              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
+              originalTimestamp: '2019-10-14T09:03:17.562Z',
+              anonymousId: '123456',
+              event: 'Product Clicked',
+              userId: 'testuserId1',
+              properties: { value: 55 },
+              integrations: { All: true },
+              sentAt: '2019-10-14T09:03:22.563Z',
+            },
+            destination: {
+              Config: {
+                apiKey: secret1,
+                appKey: 'ffdf',
+                appSecret: 'fhf',
+                dataCenter: false,
+              },
+            },
+          },
+        ],
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: 'https://go.urbanairship.com/api/custom-events',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/vnd.urbanairship+json; version=3',
+                'X-UA-Appkey': 'ffdf',
+                Authorization: authHeader1,
+              },
+              params: {},
+              body: {
+                JSON: {
+                  occured: '2019-10-14T09:03:17.562Z',
+                  user: { named_user_id: 'testuserId1' },
+                  body: { name: 'product_clicked', value: 55 },
                 },
                 JSON_ARRAY: {},
                 XML: {},
@@ -1975,7 +2050,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'ffdf',
                 dataCenter: false,
               },
@@ -1999,7 +2074,7 @@ export const data = [
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
                 'X-UA-Appkey': 'ffdf',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -2062,7 +2137,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'ffdf',
                 dataCenter: false,
               },
@@ -2086,7 +2161,7 @@ export const data = [
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
                 'X-UA-Appkey': 'ffdf',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -2267,7 +2342,7 @@ export const data = [
               sentAt: '2019-10-14T09:03:22.563Z',
             },
             destination: {
-              Config: { appKey: 'dummyApiKey', dataCenter: false },
+              Config: { appKey: secret1, dataCenter: false },
             },
           },
         ],
@@ -2296,7 +2371,7 @@ export const data = [
   },
   {
     name: 'airship',
-    description: 'Test 22',
+    description: 'Test 22 : session id from Web SDK gets converted to v5 uuid format',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
@@ -2321,7 +2396,7 @@ export const data = [
                 ip: '0.0.0.0',
                 os: { name: '', version: '' },
                 screen: { density: 2 },
-                sessionId: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
+                sessionId: '1731403898',
               },
               type: 'track',
               messageId: '84e26acc-56a5-4835-8233-591137fca468',
@@ -2333,7 +2408,7 @@ export const data = [
             },
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: secret1,
                 appKey: 'ffdf',
                 dataCenter: false,
               },
@@ -2357,7 +2432,7 @@ export const data = [
                 'Content-Type': 'application/json',
                 Accept: 'application/vnd.urbanairship+json; version=3',
                 'X-UA-Appkey': 'ffdf',
-                Authorization: 'Bearer dummyApiKey',
+                Authorization: authHeader1,
               },
               params: {},
               body: {
@@ -2365,7 +2440,268 @@ export const data = [
                   user: { named_user_id: 'testuserId1' },
                   body: {
                     name: 'product_clicked',
-                    session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
+                    session_id: 'd5627eac-795d-5005-9bb4-2c7c0af6cab0',
+                  },
+                },
+                JSON_ARRAY: {},
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: '',
+            },
+            statusCode: 200,
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: 'airship',
+    description: 'Test 23 : session id from mobile SDK gets converted to v5 uuid format',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            message: {
+              channel: 'web',
+              context: {
+                app: {
+                  build: '1.0.0',
+                  name: 'RudderLabs JavaScript SDK',
+                  namespace: 'com.rudderlabs.javascript',
+                  version: '1.0.0',
+                },
+                traits: { email: 'testone@gmail.com', firstName: 'test', lastName: 'one' },
+                library: { name: 'RudderLabs JavaScript SDK', version: '1.0.0' },
+                userAgent:
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
+                locale: 'en-US',
+                ip: '0.0.0.0',
+                os: { name: '', version: '' },
+                screen: { density: 2 },
+                sessionId: 1731403898,
+              },
+              type: 'track',
+              messageId: '84e26acc-56a5-4835-8233-591137fca468',
+              anonymousId: '123456',
+              event: 'Product    Clicked',
+              userId: 'testuserId1',
+              properties: {},
+              integrations: { All: true },
+            },
+            destination: {
+              Config: {
+                apiKey: secret1,
+                appKey: 'ffdf',
+                dataCenter: false,
+              },
+            },
+          },
+        ],
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: 'https://go.urbanairship.com/api/custom-events',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/vnd.urbanairship+json; version=3',
+                'X-UA-Appkey': 'ffdf',
+                Authorization: authHeader1,
+              },
+              params: {},
+              body: {
+                JSON: {
+                  user: { named_user_id: 'testuserId1' },
+                  body: {
+                    name: 'product_clicked',
+                    session_id: 'd5627eac-795d-5005-9bb4-2c7c0af6cab0',
+                  },
+                },
+                JSON_ARRAY: {},
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: '',
+            },
+            statusCode: 200,
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: 'airship',
+    description: 'Test 24 : session id null gets ignored',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            message: {
+              channel: 'web',
+              context: {
+                app: {
+                  build: '1.0.0',
+                  name: 'RudderLabs JavaScript SDK',
+                  namespace: 'com.rudderlabs.javascript',
+                  version: '1.0.0',
+                },
+                traits: { email: 'testone@gmail.com', firstName: 'test', lastName: 'one' },
+                library: { name: 'RudderLabs JavaScript SDK', version: '1.0.0' },
+                userAgent:
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
+                locale: 'en-US',
+                ip: '0.0.0.0',
+                os: { name: '', version: '' },
+                screen: { density: 2 },
+              },
+              type: 'track',
+              messageId: '84e26acc-56a5-4835-8233-591137fca468',
+              anonymousId: '123456',
+              event: 'Product    Clicked',
+              userId: 'testuserId1',
+              properties: {
+                sessionId: null,
+              },
+              integrations: { All: true },
+            },
+            destination: {
+              Config: {
+                apiKey: secret1,
+                appKey: 'ffdf',
+                dataCenter: false,
+              },
+            },
+          },
+        ],
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: 'https://go.urbanairship.com/api/custom-events',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/vnd.urbanairship+json; version=3',
+                'X-UA-Appkey': 'ffdf',
+                Authorization: authHeader1,
+              },
+              params: {},
+              body: {
+                JSON: {
+                  user: { named_user_id: 'testuserId1' },
+                  body: {
+                    name: 'product_clicked',
+                  },
+                },
+                JSON_ARRAY: {},
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: '',
+            },
+            statusCode: 200,
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: 'airship',
+    description: 'Test 24 : session id undefined gets ignored',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            message: {
+              channel: 'web',
+              context: {
+                app: {
+                  build: '1.0.0',
+                  name: 'RudderLabs JavaScript SDK',
+                  namespace: 'com.rudderlabs.javascript',
+                  version: '1.0.0',
+                },
+                traits: { email: 'testone@gmail.com', firstName: 'test', lastName: 'one' },
+                library: { name: 'RudderLabs JavaScript SDK', version: '1.0.0' },
+                userAgent:
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
+                locale: 'en-US',
+                ip: '0.0.0.0',
+                os: { name: '', version: '' },
+                screen: { density: 2 },
+              },
+              type: 'track',
+              messageId: '84e26acc-56a5-4835-8233-591137fca468',
+              anonymousId: '123456',
+              event: 'Product    Clicked',
+              userId: 'testuserId1',
+              properties: {
+                sessionId: undefined,
+              },
+              integrations: { All: true },
+            },
+            destination: {
+              Config: {
+                apiKey: secret1,
+                appKey: 'ffdf',
+                dataCenter: false,
+              },
+            },
+          },
+        ],
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: 'https://go.urbanairship.com/api/custom-events',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/vnd.urbanairship+json; version=3',
+                'X-UA-Appkey': 'ffdf',
+                Authorization: authHeader1,
+              },
+              params: {},
+              body: {
+                JSON: {
+                  user: { named_user_id: 'testuserId1' },
+                  body: {
+                    name: 'product_clicked',
                   },
                 },
                 JSON_ARRAY: {},

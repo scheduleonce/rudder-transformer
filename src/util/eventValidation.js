@@ -30,6 +30,7 @@ const violationTypes = {
   AdditionalProperties: 'Additional-Properties',
   UnknownViolation: 'Unknown-Violation',
   UnplannedEvent: 'Unplanned-Event',
+  AdvanceRulesViolation: 'Advance-Rules-Violation',
 };
 
 const supportedEventTypes = {
@@ -132,7 +133,7 @@ async function validate(event) {
 
     // UnPlanned event case - since no event schema is found. Violation is raised
     // Return this violation error only in case of track calls.
-    if (!eventSchema || eventSchema === {}) {
+    if (!eventSchema || Object.keys(eventSchema).length === 0) {
       if (event.message.type !== 'track') {
         return [];
       }
@@ -172,7 +173,7 @@ async function validate(event) {
 
     let ajv = isDraft4 ? ajv4 : ajv19;
     const ajvCache = isDraft4 ? ajv4Cache : ajv19Cache;
-    if (merged !== {}) {
+    if (Object.keys(merged).length > 0) {
       const configHash = hash(merged);
       ajv = ajvCache.get(configHash);
       if (!ajv) {
@@ -221,6 +222,28 @@ async function validate(event) {
             type: violationTypes.AdditionalProperties,
             message: `${error.message} '${error.params.additionalProperty}'`,
             property: error.params.additionalProperty,
+            meta: {
+              instancePath: error.instancePath,
+              schemaPath: error.schemaPath,
+            },
+          };
+          break;
+        case 'minLength':
+        case 'maxLength':
+        case 'pattern':
+        case 'format':
+        case 'multipleOf':
+        case 'minimum':
+        case 'maximum':
+        case 'exclusiveMinimum':
+        case 'exclusiveMaximum':
+        case 'minItems':
+        case 'maxItems':
+        case 'uniqueItems':
+        case 'enum':
+          rudderValidationError = {
+            type: violationTypes.AdvanceRulesViolation,
+            message: error.message,
             meta: {
               instancePath: error.instancePath,
               schemaPath: error.schemaPath,

@@ -227,14 +227,10 @@ function getExisitingUserIdentifier(userIdentifierInfo, defaultUserIdentifier) {
   return result;
 }
 
-const getCallConversionPayload = (message, Config, eventLevelConsentsData) => {
+const getCallConversionPayload = (message, eventLevelConsentsData) => {
   const payload = constructPayload(message, trackCallConversionsMapping);
   // here conversions[0] should be present because there are some mandatory properties mapped in the mapping json.
-  payload.conversions[0].consent = finaliseConsent(
-    consentConfigMap,
-    eventLevelConsentsData,
-    Config,
-  );
+  payload.conversions[0].consent = finaliseConsent(consentConfigMap, eventLevelConsentsData);
   return payload;
 };
 
@@ -242,7 +238,7 @@ const getCallConversionPayload = (message, Config, eventLevelConsentsData) => {
  * This Function create the add conversion payload
  * and returns the payload
  */
-const getAddConversionPayload = (message, Config) => {
+const getAddConversionPayload = (message, Config, eventLevelConsentsData) => {
   const { properties } = message;
   const { validateOnly, hashUserIdentifier, defaultUserIdentifier } = Config;
   const payload = constructPayload(message, trackAddStoreConversionsMapping);
@@ -299,22 +295,69 @@ const getAddConversionPayload = (message, Config) => {
     }
   }
   // add consent support for store conversions. Note: No event level consent supported.
-  const consentObject = finaliseConsent(consentConfigMap, {}, Config);
+  const consentObject = finaliseConsent(consentConfigMap, eventLevelConsentsData);
   // create property should be present because there are some mandatory properties mapped in the mapping json.
   set(payload, 'operations.create.consent', consentObject);
   return payload;
 };
 
-const getStoreConversionPayload = (message, Config, event) => {
+const getStoreConversionPayload = (message, Config, event, eventLevelConsentsData) => {
   const { validateOnly } = Config;
   const payload = {
     event,
     isStoreConversion: true,
     createJobPayload: getCreateJobPayload(message),
-    addConversionPayload: getAddConversionPayload(message, Config),
+    addConversionPayload: getAddConversionPayload(message, Config, eventLevelConsentsData),
     executeJobPayload: { validate_only: validateOnly },
   };
   return payload;
+};
+
+const hasClickId = (conversion) => {
+  const { gbraid, wbraid, gclid } = conversion;
+  return gclid || wbraid || gbraid;
+};
+const populateUserIdentifier = ({ email, phone, properties, payload, UserIdentifierSource }) => {
+  const copiedPayload = cloneDeep(payload);
+  // userIdentifierSource
+  // if userIdentifierSource doesn't exist in properties
+  // then it is taken from the webapp config
+  if (!properties.userIdentifierSource && UserIdentifierSource !== 'none') {
+    set(
+      copiedPayload,
+      'conversions[0].userIdentifiers[0].userIdentifierSource',
+      UserIdentifierSource,
+    );
+    // one of email or phone must be provided when none of gclid, wbraid and gbraid provided
+  }
+  if (!email && !phone) {
+    if (!hasClickId(copiedPayload.conversions[0])) {
+      throw new InstrumentationError(
+        `Either an email address or a phone number is required for user identification when none of gclid, wbraid, or gbraid is provided.`,
+      );
+    } else {
+      // we are deleting userIdentifiers if any one of gclid, wbraid and gbraid is there but email or phone is not present
+      delete copiedPayload.conversions[0].userIdentifiers;
+    }
+  }
+  return copiedPayload;
+};
+
+/**
+ * remove redundant ids
+ * @param {*} conversionCopy
+ */
+const updateConversion = (conversion) => {
+  const conversionCopy = cloneDeep(conversion);
+  if (conversionCopy.gclid) {
+    delete conversionCopy.wbraid;
+    delete conversionCopy.gbraid;
+  } else if (conversionCopy.wbraid && conversionCopy.gbraid) {
+    throw new InstrumentationError(`You can't use both wbraid and gbraid.`);
+  } else if (conversionCopy.wbraid || conversionCopy.gbraid) {
+    delete conversionCopy.userIdentifiers;
+  }
+  return conversionCopy;
 };
 
 const getClickConversionPayloadAndEndpoint = (
@@ -335,7 +378,7 @@ const getClickConversionPayloadAndEndpoint = (
     updatedClickMapping = removeHashToSha256TypeFromMappingJson(updatedClickMapping);
   }
 
-  const payload = constructPayload(message, updatedClickMapping);
+  let payload = constructPayload(message, updatedClickMapping);
 
   const endpoint = CLICK_CONVERSION.replace(':customerId', filteredCustomerId);
 
@@ -353,17 +396,8 @@ const getClickConversionPayloadAndEndpoint = (
     set(payload, 'conversions[0].cartData.items', itemList);
   }
 
-  // userIdentifierSource
-  // if userIdentifierSource doesn't exist in properties
-  // then it is taken from the webapp config
-  if (!properties.userIdentifierSource && UserIdentifierSource !== 'none') {
-    set(payload, 'conversions[0].userIdentifiers[0].userIdentifierSource', UserIdentifierSource);
+  payload = populateUserIdentifier({ email, phone, properties, payload, UserIdentifierSource });
 
-    // one of email or phone must be provided
-    if (!email && !phone) {
-      throw new InstrumentationError(`Either of email or phone is required for user identifier`);
-    }
-  }
   // either of email or phone should be passed
   // defaultUserIdentifier depends on the webapp configuration
   // Ref - https://developers.google.com/google-ads/api/rest/reference/rest/v11/customers/uploadClickConversions#ClickConversion
@@ -400,9 +434,10 @@ const getClickConversionPayloadAndEndpoint = (
   }
 
   // add consent support for click conversions
-  const consentObject = finaliseConsent(consentConfigMap, eventLevelConsent, Config);
+  const consentObject = finaliseConsent(consentConfigMap, eventLevelConsent);
   // here conversions[0] is expected to be present there are some mandatory properties mapped in the mapping json.
   set(payload, 'conversions[0].consent', consentObject);
+  payload.conversions[0] = updateConversion(payload.conversions[0]);
   return { payload, endpoint };
 };
 
@@ -423,4 +458,5 @@ module.exports = {
   getExisitingUserIdentifier,
   getConsentsDataFromIntegrationObj,
   getCallConversionPayload,
+  updateConversion,
 };

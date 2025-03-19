@@ -1,6 +1,8 @@
-const { populateIdentifiers, responseBuilder } = require('./util');
+const { populateIdentifiers, responseBuilder, getOperationAudienceId } = require('./util');
 const { API_VERSION } = require('./config');
-const accessToken = 'abcd1234';
+const { generateRandomString } = require('@rudderstack/integrations-lib');
+
+const accessToken = generateRandomString();
 const developerToken = 'ijkl9101';
 const body = {
   operations: [
@@ -29,7 +31,7 @@ const body = {
 const baseDestination = {
   Config: {
     rudderAccountId: '258Yea7usSKNpbkIaesL9oJ9iYw',
-    listId: '7090784486',
+    audienceId: '7090784486',
     customerId: '7693729833',
     loginCustomerId: '',
     subAccount: false,
@@ -68,7 +70,7 @@ const expectedResponse = {
   method: 'POST',
   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
   headers: {
-    Authorization: 'Bearer abcd1234',
+    Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
     'developer-token': 'ijkl9101',
   },
@@ -150,7 +152,7 @@ describe('GARL utils test', () => {
         developerToken,
         body,
         baseDestination,
-        message,
+        getOperationAudienceId(baseDestination.Config.audienceId, message),
         consentBlock,
       );
       expect(response).toEqual(expectedResponse);
@@ -166,7 +168,7 @@ describe('GARL utils test', () => {
           developerToken,
           body,
           destination2,
-          message,
+          getOperationAudienceId(baseDestination.Config.audienceId, message),
           consentBlock,
         );
         expect(response).toEqual();
@@ -178,13 +180,13 @@ describe('GARL utils test', () => {
     it('Should throw error if operationAudienceId is not defined', () => {
       try {
         const destination1 = Object.create(baseDestination);
-        destination1.Config.listId = '';
+        destination1.Config.audienceId = '';
         const response = responseBuilder(
           accessToken,
           developerToken,
           body,
           destination1,
-          message,
+          getOperationAudienceId(baseDestination.Config.audienceId, message),
           consentBlock,
         );
         expect(response).toEqual();
@@ -196,7 +198,13 @@ describe('GARL utils test', () => {
 
   describe('populateIdentifiers function tests', () => {
     it('Should hash and return identifiers for a given list of attributes', () => {
-      const identifier = populateIdentifiers(attributeArray, baseDestination);
+      const { typeOfList, isHashRequired } = baseDestination.Config;
+      const identifier = populateIdentifiers(
+        attributeArray,
+        typeOfList,
+        baseDestination.Config.userSchema,
+        isHashRequired,
+      );
       expect(identifier).toEqual(hashedArray);
     });
   });

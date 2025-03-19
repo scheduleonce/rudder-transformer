@@ -1,3 +1,5 @@
+import { defaultApiKey } from '../../../common/secrets';
+
 export const data = [
   {
     name: 'singular',
@@ -11,7 +13,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -135,7 +137,7 @@ export const data = [
                 install_time: 1630511211,
                 update_time: 1630511211,
                 ua: 'Dalvik/2.1.0 (Linux; U; Android 9; Android SDK built for x86 Build/PSR1.180720.075)',
-                a: 'dummyApiKey',
+                a: defaultApiKey,
               },
               body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
               files: {},
@@ -159,7 +161,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -273,7 +275,7 @@ export const data = [
                 receipt_signature: '1234dfghnh',
                 purchase_product_id: '789',
                 c: 'wifi',
-                a: 'dummyApiKey',
+                a: defaultApiKey,
                 e: {
                   url: 'myapp%3A%2F%2Fhome%2Fpage%3Fqueryparam1%3Dvalue1',
                   install: 'SM-G935F',
@@ -320,7 +322,7 @@ export const data = [
                 amt: 6.9,
                 asid: 'IISqwYJKoZIcNqts0jvcNvPc',
                 receipt_signature: '1234dfghnh',
-                a: 'dummyApiKey',
+                a: defaultApiKey,
                 c: 'wifi',
                 e: {
                   url: 'myapp%3A%2F%2Fhome%2Fpage%3Fqueryparam1%3Dvalue1',
@@ -361,7 +363,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -470,7 +472,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -588,7 +590,7 @@ export const data = [
                 openuri: 'myapp%3A%2F%2Fhome%2Fpage%3Fqueryparam1%3Dvalue1',
                 install_source: '',
                 c: 'wifi',
-                a: 'dummyApiKey',
+                a: defaultApiKey,
               },
               body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
               files: {},
@@ -612,7 +614,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -721,7 +723,7 @@ export const data = [
                 receipt_signature: '1234dfghnh',
                 amt: 20,
                 is_revenue_event: true,
-                a: 'dummyApiKey',
+                a: defaultApiKey,
                 c: 'wifi',
                 e: {
                   url: 'myapp%3A%2F%2Fhome%2Fpage%3Fqueryparam1%3Dvalue1',
@@ -763,7 +765,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -875,7 +877,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -988,7 +990,7 @@ export const data = [
                 install_time: 1630511211,
                 update_time: 1630511211,
                 ua: 'Dalvik/2.1.0 (Linux; U; Android 9; Android SDK built for x86 Build/PSR1.180720.075)',
-                a: 'dummyApiKey',
+                a: defaultApiKey,
               },
               body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
               files: {},
@@ -1012,7 +1014,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -1125,7 +1127,7 @@ export const data = [
                 install_time: 1630511211,
                 update_time: 1630511211,
                 ua: 'Dalvik/2.1.0 (Linux; U; Android 9; Android SDK built for x86 Build/PSR1.180720.075)',
-                a: 'dummyApiKey',
+                a: defaultApiKey,
               },
               body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
               files: {},
@@ -1149,7 +1151,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -1255,7 +1257,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -1376,7 +1378,7 @@ export const data = [
                 idfv: 'fc8d449516de0dfb',
                 install_time: 1630511211,
                 update_time: 1630511211,
-                a: 'dummyApiKey',
+                a: defaultApiKey,
               },
               body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
               files: {},
@@ -1400,7 +1402,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -1509,7 +1511,7 @@ export const data = [
                 purchase_transaction_id: '2134dfg',
                 idfa: '8ecd7512-2864-440c-93f3-a3cabe62525b',
                 idfv: 'fc8d449516de0dfb',
-                a: 'dummyApiKey',
+                a: defaultApiKey,
                 c: 'carrier',
                 e: {
                   asid: 'IISqwYJKoZIcNqts0jvcNvPc',
@@ -1554,7 +1556,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -1669,7 +1671,7 @@ export const data = [
                 idfv: 'fc8d449516de0dfb',
                 install_time: 1630511211,
                 update_time: 1630511211,
-                a: 'dummyApiKey',
+                a: defaultApiKey,
               },
               body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
               files: {},
@@ -1693,7 +1695,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -1804,7 +1806,7 @@ export const data = [
           {
             destination: {
               Config: {
-                apiKey: 'dummyApiKey',
+                apiKey: defaultApiKey,
                 sessionEventList: [
                   { sessionEventName: 'mysessionevent' },
                   { sessionEventName: 'randomuser' },
@@ -1898,6 +1900,291 @@ export const data = [
               module: 'destination',
             },
             statusCode: 400,
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: 'singular',
+    description: '(Unity) Session Event',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            destination: {
+              Config: {
+                apiKey: defaultApiKey,
+                sessionEventList: [
+                  { sessionEventName: 'mysessionevent' },
+                  { sessionEventName: 'randomuser' },
+                  { sessionEventName: 'titanium' },
+                ],
+              },
+            },
+            message: {
+              type: 'track',
+              event: 'mysessionevent',
+              userId: 'ruddersampleX3',
+              request_ip: '14.5.67.21',
+              context: {
+                app: {
+                  build: '1',
+                  name: 'RudderAndroidClient',
+                  namespace: 'com.singular.game',
+                  version: '1.1.5.581823alpha',
+                },
+                device: {
+                  manufacturer: 'Google',
+                  model: 'Android SDK built for x86',
+                  name: 'generic_x86',
+                  type: 'android',
+                  advertisingId: '8ecd7512-2864-440c-93f3-a3cabe62525b',
+                  attStatus: true,
+                  id: '49c2d3a6-326e-4ec5-a16b-0a47e34ed953',
+                  adTrackingEnabled: true,
+                  token: 'testDeviceToken',
+                },
+                library: { name: 'com.rudderstack.android.sdk.core', version: '0.1.4' },
+                locale: 'en-US',
+                network: { carrier: 'Android', bluetooth: false, cellular: true, wifi: true },
+                campaign: {
+                  source: 'google',
+                  medium: 'medium',
+                  term: 'keyword',
+                  content: 'some content',
+                },
+                os: { name: 'nintendo', version: '360v2-2024h1' },
+                screen: { density: 420, height: 1794, width: 1080 },
+                timezone: 'Asia/Mumbai',
+                userAgent:
+                  'Mozilla/5.0 (Nintendo Switch; WebApplet) AppleWebKit/613.0 (KHTML, like Gecko) NF/6.0.3.25.0 NintendoBrowser/5.1.0.32061',
+              },
+              properties: {
+                asid: 'IISqwYJKoZIcNqts0jvcNvPc',
+                url: 'myapp%3A%2F%2Fhome%2Fpage%3Fqueryparam1%3Dvalue1',
+                install: 'false',
+                install_source: 'nintendo',
+                category: 'Games',
+                affiliation: 'Apple Store',
+                receipt_signature: '1234dfghnh',
+                referring_application: '2134dfg',
+                os: 'nintendo_switch',
+                data_sharing_options: '%7B%22limit_data_sharing%22%3Atrue%7D',
+              },
+              timestamp: '2024-06-01T11:26:50.000Z',
+            },
+          },
+        ],
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'GET',
+              endpoint: 'https://s2s.singular.net/api/v1/launch',
+              headers: {},
+              params: {
+                a: defaultApiKey,
+                av: '1.1.5.581823alpha',
+                data_sharing_options: '%7B%22limit_data_sharing%22%3Atrue%7D',
+                i: 'com.singular.game',
+                install: 'false',
+                install_source: 'nintendo',
+                ip: '14.5.67.21',
+                os: 'nintendo_switch',
+                p: 'nintendo',
+                sdid: '49c2d3a6-326e-4ec5-a16b-0a47e34ed953',
+                ua: 'Mozilla/5.0 (Nintendo Switch; WebApplet) AppleWebKit/613.0 (KHTML, like Gecko) NF/6.0.3.25.0 NintendoBrowser/5.1.0.32061',
+                utime: 1717241210,
+                ve: '360v2-2024h1',
+              },
+              body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
+              files: {},
+              userId: '',
+            },
+            statusCode: 200,
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: 'singular',
+    description: '(Unity) Custom Event with multiple products',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            destination: {
+              Config: {
+                apiKey: defaultApiKey,
+                sessionEventList: [
+                  { sessionEventName: 'mysessionevent' },
+                  { sessionEventName: 'randomuser' },
+                  { sessionEventName: 'titanium' },
+                ],
+              },
+            },
+            message: {
+              type: 'track',
+              event: 'myevent',
+              userId: 'ruddersampleX4',
+              request_ip: '14.5.67.21',
+              context: {
+                app: {
+                  build: '1',
+                  name: 'RudderAndroidClient',
+                  namespace: 'com.singular.game',
+                  version: '1.1.5.581823alpha',
+                },
+                device: {
+                  manufacturer: 'Google',
+                  model: 'Android SDK built for x86',
+                  name: 'generic_x86',
+                  type: 'android',
+                  advertisingId: '8ecd7512-2864-440c-93f3-a3cabe62525b',
+                  attStatus: true,
+                  id: '49c2d3a6-326e-4ec5-a16b-0a47e34ed953',
+                  adTrackingEnabled: true,
+                  token: 'testDeviceToken',
+                },
+                library: { name: 'com.rudderstack.android.sdk.core', version: '0.1.4' },
+                locale: 'en-US',
+                network: { carrier: 'Android', bluetooth: false, cellular: true, wifi: true },
+                campaign: {
+                  source: 'google',
+                  medium: 'medium',
+                  term: 'keyword',
+                  content: 'some content',
+                },
+                os: { name: 'metaquest', version: 'qst2-2023h2' },
+                screen: { density: 420, height: 1794, width: 1080 },
+                timezone: 'Asia/Mumbai',
+                userAgent:
+                  'Mozilla/5.0 (Nintendo Switch; WebApplet) AppleWebKit/613.0 (KHTML, like Gecko) NF/6.0.3.25.0 NintendoBrowser/5.1.0.32061',
+              },
+              properties: {
+                asid: 'IISqwYJKoZIcNqts0jvcNvPc',
+                url: 'myapp%3A%2F%2Fhome%2Fpage%3Fqueryparam1%3Dvalue1',
+                install: 'SM-G935F',
+                install_source: 'selfdistributed',
+                category: 'Games',
+                checkout_id: '12345',
+                order_id: '1234',
+                receipt_signature: '1234dfghnh',
+                referring_application: '2134dfg',
+                total: 20,
+                revenue: 15,
+                shipping: 22,
+                tax: 1,
+                discount: 1.5,
+                coupon: 'ImagePro',
+                currency: 'USD',
+                fetch_token: 'dummyFetchToken',
+                product_id: '123',
+                is_revenue_event: true,
+                os: 'metaquest_pro',
+                products: [
+                  {
+                    product_id: '789',
+                    sku: 'G-32',
+                    name: 'Monopoly',
+                    price: 14,
+                    quantity: 2,
+                    category: 'Games',
+                    url: 'https://www.website.com/product/path',
+                    image_url: 'https://www.website.com/product/path.jpg',
+                  },
+                  { sku: 'F-32', name: 'UNO', price: 3.45, quantity: 2, category: 'Games' },
+                ],
+              },
+              timestamp: '2021-09-01T15:46:51.000Z',
+            },
+          },
+        ],
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'GET',
+              endpoint: 'https://s2s.singular.net/api/v1/evt',
+              headers: {},
+              params: {
+                n: 'myevent',
+                ip: '14.5.67.21',
+                av: '1.1.5.581823alpha',
+                is_revenue_event: true,
+                i: 'com.singular.game',
+                utime: 1630511211,
+                cur: 'USD',
+                amt: 28,
+                purchase_product_id: '789',
+                a: defaultApiKey,
+                install_source: 'selfdistributed',
+                os: 'metaquest_pro',
+                p: 'metaquest',
+                sdid: '49c2d3a6-326e-4ec5-a16b-0a47e34ed953',
+                ua: 'Mozilla/5.0 (Nintendo Switch; WebApplet) AppleWebKit/613.0 (KHTML, like Gecko) NF/6.0.3.25.0 NintendoBrowser/5.1.0.32061',
+                ve: 'qst2-2023h2',
+                install: 'SM-G935F',
+              },
+              body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
+              files: {},
+              userId: '',
+            },
+            statusCode: 200,
+          },
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'GET',
+              endpoint: 'https://s2s.singular.net/api/v1/evt',
+              headers: {},
+              params: {
+                n: 'myevent',
+                i: 'com.singular.game',
+                ip: '14.5.67.21',
+                is_revenue_event: true,
+                utime: 1630511211,
+                cur: 'USD',
+                purchase_product_id: 'F-32',
+                install: 'SM-G935F',
+                install_source: 'selfdistributed',
+                amt: 6.9,
+                os: 'metaquest_pro',
+                p: 'metaquest',
+                a: defaultApiKey,
+                sdid: '49c2d3a6-326e-4ec5-a16b-0a47e34ed953',
+                ua: 'Mozilla/5.0 (Nintendo Switch; WebApplet) AppleWebKit/613.0 (KHTML, like Gecko) NF/6.0.3.25.0 NintendoBrowser/5.1.0.32061',
+                ve: 'qst2-2023h2',
+                av: '1.1.5.581823alpha',
+              },
+              body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
+              files: {},
+              userId: '',
+            },
+            statusCode: 200,
           },
         ],
       },

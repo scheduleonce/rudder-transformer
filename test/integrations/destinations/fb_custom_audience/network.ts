@@ -514,6 +514,8 @@ export const networkCallsData = [
         error: {
           message:
             'Error validating access token: Session has expired on Tuesday, 01-Aug-23 10:12:14 PDT. The current time is Sunday, 28-Jan-24 16:01:17 PST.',
+          error_user_msg:
+            'Error validating access token: Session has expired on Tuesday, 01-Aug-23 10:12:14 PDT. The current time is Sunday, 28-Jan-24 16:01:17 PST.',
           type: 'OAuthException',
           code: 190,
           error_subcode: 463,
@@ -619,6 +621,47 @@ export const networkCallsData = [
           type: 'OAuthException',
           code: 100,
           fbtrace_id: 'ADB2jAGDMC_CbfM9430kDdQ',
+        },
+      },
+      status: 400,
+    },
+  },
+  {
+    httpReq: {
+      version: '1',
+      type: 'REST',
+      method: 'DELETE',
+      endpoint: getEndPoint('aud-new'),
+      headers: {
+        'test-dest-response-key': 'messagingTOSNotAccepted',
+      },
+      params: {
+        access_token: 'XYZ',
+        payload: {
+          is_raw: true,
+          data_source: {
+            sub_type: 'ANYTHING',
+          },
+          schema: ['DOBY', 'PHONE', 'GEN', 'FI', 'MADID', 'ZIP', 'ST', 'COUNTRY'],
+          data: [['2013', '@09432457768', 'f', 'Ms.', 'ABC', 'ZIP ', '123abc ', 'IN']],
+        },
+      },
+      userId: '',
+      body: {
+        JSON: {},
+        XML: {},
+        JSON_ARRAY: {},
+        FORM: {},
+      },
+      files: {},
+    },
+    httpRes: {
+      data: {
+        error: {
+          message: '(#2655) Marketing Messaging TOS not accepted',
+          type: 'OAuthException',
+          code: 2655,
+          fbtrace_id: 'fbtrace_id',
         },
       },
       status: 400,

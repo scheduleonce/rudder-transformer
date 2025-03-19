@@ -1,5 +1,6 @@
+import { authHeader1, authHeader2, secret1 } from './maskedSecrets';
 const commonHeaders = {
-  Authorization: 'Bearer token',
+  Authorization: authHeader1,
   'Content-Type': 'application/json',
 };
 
@@ -20,7 +21,7 @@ const tfProxyMocksData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -37,7 +38,7 @@ const tfProxyMocksData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -54,7 +55,7 @@ const tfProxyMocksData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
       },
       method: 'POST',
     },
@@ -70,7 +71,7 @@ const tfProxyMocksData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -87,7 +88,7 @@ const tfProxyMocksData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -104,7 +105,7 @@ const tfProxyMocksData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -121,7 +122,7 @@ const tfProxyMocksData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
       },
       method: 'POST',
     },
@@ -140,7 +141,7 @@ const tfProxyMocksData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -180,8 +181,7 @@ const transformationMocksData = [
     httpRes: {
       status: 200,
       data: {
-        access_token:
-          '00D2v000002lXbX!ARcAQJBSGNA1Rq.MbUdtmlREscrN_nO3ckBz6kc4jRQGxqAzNkhT1XZIF0yPqyCQSnezWO3osMw1ewpjToO7q41E9.LvedWY',
+        access_token: secret1,
         instance_url: 'https://ap15.salesforce.com',
         id: 'https://login.salesforce.com/id/00D2v000002lXbXEAU/0052v00000ga9WqAAI',
         token_type: 'Bearer',
@@ -198,8 +198,7 @@ const transformationMocksData = [
     httpRes: {
       status: 200,
       data: {
-        access_token:
-          '00D2v000002lXbX!ARcAQJBSGNA1Rq.MbUdtmlREscrN_nO3ckBz6kc4jRQGxqAzNkhT1XZIF0yPqyCQSnezWO3osMw1ewpjToO7q41E9.LvedWY',
+        access_token: secret1,
         instance_url: 'https://ap15.salesforce.com',
         id: 'https://login.salesforce.com/id/00D2v000002lXbXEAU/0052v00000ga9WqAAI',
         token_type: 'Bearer',
@@ -247,6 +246,18 @@ const transformationMocksData = [
   },
   {
     httpReq: {
+      url: 'https://ap15.salesforce.com/services/data/v50.0/parameterizedSearch/?q=72727&sobject=customobject&in=CustomObject__c&customobject.fields=id,CustomObject__c',
+      method: 'GET',
+    },
+    httpRes: {
+      status: 200,
+      data: {
+        searchRecords: [],
+      },
+    },
+  },
+  {
+    httpReq: {
       url: 'https://ap15.salesforce.com/services/data/v50.0/parameterizedSearch/?q=peter.gibbons1%40initech.com&sobject=Lead&Lead.fields=id',
       method: 'GET',
     },
@@ -260,6 +271,48 @@ const transformationMocksData = [
               url: '/services/data/v50.0/sobjects/Lead/leadId',
             },
             Id: 'leadId',
+          },
+        ],
+      },
+    },
+  },
+  {
+    httpReq: {
+      url: 'https://ap15.salesforce.com/services/data/v50.0/parameterizedSearch/?q=72728&sobject=customobject2&in=CustomObject2__c&customobject2.fields=id,CustomObject2__c',
+      method: 'GET',
+    },
+    httpRes: {
+      status: 200,
+      data: {
+        searchRecords: [
+          {
+            attributes: {
+              type: 'CustomObject2__c',
+              url: '/services/data/v50.0/CustomObject2__c/id1101',
+            },
+            Id: 'id1101',
+            CustomObject2__c: 72728,
+          },
+        ],
+      },
+    },
+  },
+  {
+    httpReq: {
+      url: 'https://ap15.salesforce.com/services/data/v50.0/parameterizedSearch/?q=72729&sobject=customobject2&in=CustomObject2__c&customobject2.fields=id,CustomObject2__c',
+      method: 'GET',
+    },
+    httpRes: {
+      status: 200,
+      data: {
+        searchRecords: [
+          {
+            attributes: {
+              type: 'CustomObject2__c',
+              url: '/services/data/v50.0/CustomObject2__c/id1102',
+            },
+            Id: 'id1102',
+            CustomObject2__c: '72729',
           },
         ],
       },
@@ -322,7 +375,7 @@ const businessMockData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer Incorrect_token',
+        Authorization: authHeader2,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -339,7 +392,7 @@ const businessMockData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -356,7 +409,7 @@ const businessMockData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -373,7 +426,7 @@ const businessMockData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -390,7 +443,7 @@ const businessMockData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
@@ -410,7 +463,7 @@ const businessMockData = [
       params: { destination: 'salesforce' },
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer token',
+        Authorization: authHeader1,
         'User-Agent': 'RudderLabs',
       },
       method: 'POST',
