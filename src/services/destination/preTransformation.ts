@@ -15,10 +15,16 @@ export class DestinationPreTransformationService {
         // "traits": ["traits", "context.traits"]
         const destination = event?.destination?.DestinationDefinition?.Name;        
         let parsedEvent = oncehubTransformer(destination, event);
-        parsedEvent.request = { query: reqParams };
+        if (parsedEvent) {
+          parsedEvent.request = { query: reqParams };
+        }
         return parsedEvent;
       },
     );
-    return eventsProcessed;
+    // Filter out any undefined or null events after processing
+    // This is important to ensure that we only return valid events to the next step in the pipeline
+    const filteredEvents = eventsProcessed.filter((event: any) => !!event );
+    
+    return filteredEvents;
   }
 }
