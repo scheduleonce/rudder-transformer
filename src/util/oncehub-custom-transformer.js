@@ -13,7 +13,7 @@ const doesEventContainContextTraits = (event) => {
 };
 
 const getPageEventBlockedDestinationsList = () => {
-  return (process.env.BLOCKED_PAGE_DESTINATIONS || 'mp').trim().split(',');
+  return (process.env.BLOCKED_PAGE_DESTINATIONS || '').trim().split(',');
 };
 
 const handleFirstLoginGA4Property = (destination, event, traits) => {
@@ -100,7 +100,7 @@ const oncehubTransformer = (destination, event) => {
 
   // eslint-disable-next-line no-console
   // if(doesEventContainsTraits(event)) console.log("event log=>destination : ", JSON.stringify(destination), " , ==> event traits : ", JSON.stringify(event.message.traits), " , ==> event here : ",JSON.stringify(event));
-
+ 
   return event;
 };
 
