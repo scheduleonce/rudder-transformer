@@ -61,23 +61,51 @@ const changeDateFormatForCustomerio = (
   }
 };
 
+const shouldBlockEvent = (destination, event) => {
+  const checkPageEventBlockedDestination =
+    getPageEventBlockedDestinationsList().includes(destination);
+  if (event?.message?.type === EventType.PAGE && checkPageEventBlockedDestination) {
+    return true;
+  }
+  // Check if event should be blocked based on location-wise blacklist
+  const blacklist = getBlockedEventsByDestination();
+
+  // eslint-disable-next-line sonarjs/prefer-single-boolean-return
+  if (
+    event?.message?.type === EventType.TRACK &&
+    blacklist[destination]?.includes(event?.message?.event)
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
+const removePIIFields = (event, contextTraitsPresent) => {
+  // eslint-disable-next-line no-param-reassign
+  delete event.message.traits.email;
+  // eslint-disable-next-line no-param-reassign
+  delete event.message.traits.firstName;
+  // eslint-disable-next-line no-param-reassign
+  delete event.message.traits.lastName;
+
+  if (contextTraitsPresent) {
+    // eslint-disable-next-line no-param-reassign
+    delete event.message.context.traits.email;
+    // eslint-disable-next-line no-param-reassign
+    delete event.message.context.traits.firstName;
+    // eslint-disable-next-line no-param-reassign
+    delete event.message.context.traits.lastName;
+  }
+};
+
 const oncehubTransformer = (destination, event) => {
   destination = destination.toString().toLowerCase();
   const contextTraitsPresent = doesEventContainContextTraits(event);
   const eventTraitsPresent = doesEventContainsTraits(event);
   const checkDestinationList = getPIIDestinationList().includes(destination);
-  const checkPageEventBlockedDestination =
-    getPageEventBlockedDestinationsList().includes(destination);
-  if (event.message.type === EventType.PAGE && checkPageEventBlockedDestination) {
-    // eslint-disable-next-line no-param-reassign
-    return null;
-  }
-  // Check if event should be blocked based on location-wise blacklist
-  const blacklist = getBlockedEventsByDestination();
-  if (
-    event.message.type === EventType.TRACK &&
-    blacklist[destination]?.includes(event.message.event)
-  ) {
+
+  if (shouldBlockEvent(destination, event)) {
     // eslint-disable-next-line no-param-reassign
     return null;
   }
@@ -90,21 +118,7 @@ const oncehubTransformer = (destination, event) => {
   );
 
   if (!checkDestinationList && eventTraitsPresent) {
-    // eslint-disable-next-line no-param-reassign
-    delete event.message.traits.email;
-    // eslint-disable-next-line no-param-reassign
-    delete event.message.traits.firstName;
-    // eslint-disable-next-line no-param-reassign
-    delete event.message.traits.lastName;
-
-    if (contextTraitsPresent) {
-      // eslint-disable-next-line no-param-reassign
-      delete event.message.context.traits.email;
-      // eslint-disable-next-line no-param-reassign
-      delete event.message.context.traits.firstName;
-      // eslint-disable-next-line no-param-reassign
-      delete event.message.context.traits.lastName;
-    }
+    removePIIFields(event, contextTraitsPresent);
   }
 
   // Adding check for firstLoginGA4 property
