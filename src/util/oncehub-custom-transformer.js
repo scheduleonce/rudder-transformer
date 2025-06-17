@@ -1,5 +1,14 @@
 const { EventType } = require('../constants');
 
+const getBlockedEventsByDestination = () => {
+  try {
+    return JSON.parse(process.env.BLOCKED_EVENTS_DESTINATIONS || '{}');
+  } catch (error) {
+    console.error('Error parsing BLOCKED_EVENTS_DESTINATIONS:', error);
+    return {};
+  }
+};
+
 const getPIIDestinationList = () => {
   return (process.env.WHITELIST_PII_DESTINATION || 'customerio').trim().split(',');
 };
@@ -63,6 +72,15 @@ const oncehubTransformer = (destination, event) => {
     // eslint-disable-next-line no-param-reassign
     return null;
   }
+  // Check if event should be blocked based on location-wise blacklist
+  const blacklist = getBlockedEventsByDestination();
+  if (
+    event.message.type === EventType.TRACK &&
+    blacklist[destination]?.includes(event.message.event)
+  ) {
+    // eslint-disable-next-line no-param-reassign
+    return null;
+  }
 
   changeDateFormatForCustomerio(
     contextTraitsPresent,
@@ -100,7 +118,6 @@ const oncehubTransformer = (destination, event) => {
 
   // eslint-disable-next-line no-console
   // if(doesEventContainsTraits(event)) console.log("event log=>destination : ", JSON.stringify(destination), " , ==> event traits : ", JSON.stringify(event.message.traits), " , ==> event here : ",JSON.stringify(event));
- 
   return event;
 };
 
