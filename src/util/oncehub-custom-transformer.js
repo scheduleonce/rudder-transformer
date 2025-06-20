@@ -1,14 +1,5 @@
 const { EventType } = require('../constants');
 
-const getBlockedEventsByDestination = () => {
-  try {
-    return JSON.parse(process.env.BLOCKED_EVENTS_DESTINATIONS || '{}');
-  } catch (error) {
-    console.error('Error parsing BLOCKED_EVENTS_DESTINATIONS:', error);
-    return {};
-  }
-};
-
 const getPIIDestinationList = () => {
   return (process.env.WHITELIST_PII_DESTINATION || 'customerio').trim().split(',');
 };
@@ -19,10 +10,6 @@ const doesEventContainsTraits = (event) => {
 
 const doesEventContainContextTraits = (event) => {
   return event && event.message && event.message.context && event.message.context.traits;
-};
-
-const getPageEventBlockedDestinationsList = () => {
-  return (process.env.BLOCKED_PAGE_DESTINATIONS || '').trim().split(',');
 };
 
 const handleFirstLoginGA4Property = (destination, event, traits) => {
@@ -61,26 +48,6 @@ const changeDateFormatForCustomerio = (
   }
 };
 
-const shouldBlockEvent = (destination, event) => {
-  const checkPageEventBlockedDestination =
-    getPageEventBlockedDestinationsList().includes(destination);
-  if (event?.message?.type === EventType.PAGE && checkPageEventBlockedDestination) {
-    return true;
-  }
-  // Check if event should be blocked based on location-wise blacklist
-  const blacklist = getBlockedEventsByDestination();
-
-  // eslint-disable-next-line sonarjs/prefer-single-boolean-return
-  if (
-    event?.message?.type === EventType.TRACK &&
-    blacklist[destination]?.includes(event?.message?.event)
-  ) {
-    return true;
-  }
-
-  return false;
-};
-
 const removePIIFields = (event, contextTraitsPresent) => {
   // eslint-disable-next-line no-param-reassign
   delete event.message.traits.email;
@@ -105,11 +72,6 @@ const oncehubTransformer = (destination, event) => {
   const eventTraitsPresent = doesEventContainsTraits(event);
   const checkDestinationList = getPIIDestinationList().includes(destination);
 
-  if (shouldBlockEvent(destination, event)) {
-    // eslint-disable-next-line no-param-reassign
-    return null;
-  }
-
   changeDateFormatForCustomerio(
     contextTraitsPresent,
     eventTraitsPresent,
@@ -132,6 +94,7 @@ const oncehubTransformer = (destination, event) => {
 
   // eslint-disable-next-line no-console
   // if(doesEventContainsTraits(event)) console.log("event log=>destination : ", JSON.stringify(destination), " , ==> event traits : ", JSON.stringify(event.message.traits), " , ==> event here : ",JSON.stringify(event));
+
   return event;
 };
 
