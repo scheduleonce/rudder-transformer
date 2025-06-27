@@ -3,10 +3,12 @@ const { handleHttpRequest } = require('../../../adapters/network');
 const {
   BrazeDedupUtility,
   addAppId,
+  formatGender,
   getPurchaseObjs,
   setAliasObject,
   handleReservedProperties,
   combineSubscriptionGroups,
+  getEndpointFromConfig,
 } = require('./util');
 const { processBatch } = require('./util');
 const {
@@ -343,6 +345,7 @@ describe('dedup utility tests', () => {
         Name: 'Test Destination',
         Config: {
           restApiKey: generateRandomString(),
+          dataCenter: 'EU-01',
         },
       };
 
@@ -434,6 +437,7 @@ describe('dedup utility tests', () => {
         Name: 'Test Destination',
         Config: {
           restApiKey: 'test_rest_api_key',
+          dataCenter: 'EU-01',
         },
       };
       const chunks = [
@@ -1878,5 +1882,96 @@ describe('combineSubscriptionGroups', () => {
 
     const result = combineSubscriptionGroups(input);
     expect(result).toEqual(expectedOutput);
+  });
+});
+
+describe('getEndpointFromConfig', () => {
+  const testCases = [
+    {
+      name: 'returns correct EU endpoint',
+      input: { Config: { dataCenter: 'EU-02' } },
+      expected: 'https://rest.fra-02.braze.eu',
+    },
+    {
+      name: 'returns correct US endpoint',
+      input: { Config: { dataCenter: 'US-03' } },
+      expected: 'https://rest.iad-03.braze.com',
+    },
+    {
+      name: 'returns correct AU endpoint',
+      input: { Config: { dataCenter: 'AU-01' } },
+      expected: 'https://rest.au-01.braze.com',
+    },
+    {
+      name: 'handles lowercase input correctly',
+      input: { Config: { dataCenter: 'eu-03' } },
+      expected: 'https://rest.fra-03.braze.eu',
+    },
+    {
+      name: 'handles whitespace in input',
+      input: { Config: { dataCenter: ' US-02 ' } },
+      expected: 'https://rest.iad-02.braze.com',
+    },
+    {
+      name: 'throws error for empty dataCenter',
+      input: { Config: {} },
+      throws: true,
+      errorMessage: 'Invalid Data Center: valid values are EU, US, AU',
+    },
+    {
+      name: 'throws error for invalid region',
+      input: { Config: { dataCenter: 'INVALID-01' } },
+      throws: true,
+      errorMessage: 'Invalid Data Center: INVALID-01, valid values are EU, US, AU',
+    },
+  ];
+
+  testCases.forEach(({ name, input, expected, throws, errorMessage }) => {
+    test(name, () => {
+      if (throws) {
+        expect(() => getEndpointFromConfig(input)).toThrow(errorMessage);
+      } else {
+        expect(getEndpointFromConfig(input)).toBe(expected);
+      }
+    });
+  });
+});
+
+describe('formatGender', () => {
+  it('should return "F" for female variations', () => {
+    expect(formatGender('woman')).toBe('F');
+    expect(formatGender('female')).toBe('F');
+    expect(formatGender('w')).toBe('F');
+    expect(formatGender('f')).toBe('F');
+    expect(formatGender('WOMAN')).toBe('F');
+    expect(formatGender('FEMALE')).toBe('F');
+    expect(formatGender('W')).toBe('F');
+    expect(formatGender('F')).toBe('F');
+  });
+
+  it('should return "M" for male variations', () => {
+    expect(formatGender('man')).toBe('M');
+    expect(formatGender('male')).toBe('M');
+    expect(formatGender('m')).toBe('M');
+    expect(formatGender('MAN')).toBe('M');
+    expect(formatGender('MALE')).toBe('M');
+    expect(formatGender('M')).toBe('M');
+  });
+
+  it('should return "O" for other variations', () => {
+    expect(formatGender('other')).toBe('O');
+    expect(formatGender('o')).toBe('O');
+    expect(formatGender('OTHER')).toBe('O');
+    expect(formatGender('O')).toBe('O');
+  });
+
+  it('should return null for invalid inputs', () => {
+    expect(formatGender('invalid')).toBeNull();
+    expect(formatGender('')).toBeNull();
+    expect(formatGender(null)).toBeNull();
+    expect(formatGender(undefined)).toBeNull();
+    expect(formatGender(123)).toBeNull();
+    expect(formatGender({})).toBeNull();
+    expect(formatGender([])).toBeNull();
   });
 });

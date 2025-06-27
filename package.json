@@ -1,6 +1,6 @@
 {
   "name": "rudder-transformer",
-  "version": "1.93.0",
+  "version": "1.102.2",
   "description": "",
   "homepage": "https://github.com/rudderlabs/rudder-transformer#readme",
   "bugs": {
@@ -23,7 +23,7 @@
     "lint:fix:json": "eslint --ext .json --fix .",
     "lint": "npm run format && npm run lint:fix",
     "check:merge": "npm run verify || exit 1; codecov",
-    "start": "cd dist && NODE_OPTIONS='--no-node-snapshot' node ./src/index.js && cd ..",
+    "start": "cd dist && node ./src/index.js && cd ..",
     "build:start": "npm run build && npm run start",
     "build:ci": "tsc -p tsconfig.json",
     "build:swagger": "npm run build && npm run setup:swagger",
@@ -52,7 +52,8 @@
     "release": "npx standard-version",
     "release:github": "DEBUG=conventional-github-releaser npx conventional-github-releaser -p angular --config github-release.config.js",
     "clean:node": "modclean",
-    "check:lint": "eslint . -f json -o reports/eslint.json || exit 0"
+    "check:lint": "eslint . -f json -o reports/eslint.json || exit 0",
+    "generate:testcases": "ts-node ./test/scripts/generateJson.ts --location testcases"
   },
   "dependencies": {
     "@amplitude/ua-parser-js": "0.7.24",
@@ -64,9 +65,9 @@
     "@datadog/pprof": "^5.5.1",
     "@koa/router": "^12.0.0",
     "@ndhoule/extend": "^2.0.0",
-    "@pyroscope/nodejs": "^0.2.9",
-    "@rudderstack/integrations-lib": "^0.2.25",
+    "@rudderstack/integrations-lib": "^0.2.35",
     "@rudderstack/json-template-engine": "^0.19.5",
+    "@rudderstack/pyroscope-nodejs": "^0.4.6-fork.1",
     "@rudderstack/workflow-engine": "^0.8.13",
     "@shopify/jest-koa-mocks": "^5.1.1",
     "ajv": "^8.17.1",
@@ -124,7 +125,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@commitlint/config-conventional": "^17.6.3",
+    "@commitlint/config-conventional": "^19.8.0",
     "@digitalroute/cz-conventional-changelog-for-jira": "^8.0.1",
     "@types/fast-json-stable-stringify": "^2.1.0",
     "@types/jest": "^29.5.1",
@@ -141,7 +142,7 @@
     "benchmark-suite": "^0.1.8",
     "commander": "^10.0.1",
     "commitizen": "^4.3.0",
-    "commitlint": "^17.6.3",
+    "commitlint": "^19.8.0",
     "conventional-github-releaser": "^3.1.5",
     "eslint": "^8.40.0",
     "eslint-config-airbnb-base": "^15.0.0",
@@ -160,7 +161,7 @@
     "jest-environment-node": "^29.7.0",
     "jest-sonar": "^0.2.16",
     "jest-when": "^3.5.2",
-    "lint-staged": "^13.2.2",
+    "lint-staged": "^15.5.0",
     "madge": "^6.1.0",
     "mocked-env": "^1.3.5",
     "node-notifier": "^10.0.1",

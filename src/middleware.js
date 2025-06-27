@@ -1,21 +1,14 @@
-const Pyroscope = require('@pyroscope/nodejs');
+const Pyroscope = require('@rudderstack/pyroscope-nodejs').default;
+
 const { getDestTypeFromContext } = require('@rudderstack/integrations-lib');
 const stats = require('./util/stats');
 
-function initPyroscope() {
-  Pyroscope.init({
-    appName: 'rudder-transformer',
-  });
-  Pyroscope.startHeapCollecting();
-}
-
-function getCPUProfile(seconds) {
-  return Pyroscope.collectCpu(seconds);
-}
-
-function getHeapProfile() {
-  return Pyroscope.collectHeap();
-}
+Pyroscope.init({
+  appName: 'rudder-transformer',
+  wall: {
+    collectCpuTime: true, // Enable CPU time collection
+  },
+});
 
 function durationMiddleware() {
   return async (ctx, next) => {
@@ -33,8 +26,21 @@ function durationMiddleware() {
   };
 }
 
-function requestSizeMiddleware() {
-  return async (ctx, next) => {
+function addStatMiddleware(app) {
+  app.use(durationMiddleware());
+}
+
+/**
+ * Adds middleware to track request and response sizes.
+ *
+ * It depends on `koa-bodyparser` for parsing request bodies,
+ * since it makes use of `ctx.request.rawBody`.
+ *
+ * @param {Object} app - The Koa application instance.
+ * @returns {void}
+ */
+function addRequestSizeMiddleware(app) {
+  app.use(async (ctx, next) => {
     await next();
 
     const labels = {
@@ -43,27 +49,19 @@ function requestSizeMiddleware() {
       route: ctx.request.url,
     };
 
-    const inputLength = ctx.request?.body ? Buffer.byteLength(JSON.stringify(ctx.request.body)) : 0;
+    const inputLength = ctx.request?.rawBody ? Buffer.byteLength(ctx.request.rawBody) : 0;
     stats.histogram('http_request_size', inputLength, labels);
-    const outputLength = ctx.response?.body
-      ? Buffer.byteLength(JSON.stringify(ctx.response.body))
-      : 0;
+    const outputLength = ctx.response?.length || 0;
     stats.histogram('http_response_size', outputLength, labels);
-  };
+  });
 }
 
-function addStatMiddleware(app) {
-  app.use(durationMiddleware());
-}
-
-function addRequestSizeMiddleware(app) {
-  app.use(requestSizeMiddleware());
+function addProfilingMiddleware(app) {
+  app.use(Pyroscope.koaMiddleware());
 }
 
 module.exports = {
   addStatMiddleware,
   addRequestSizeMiddleware,
-  getHeapProfile,
-  getCPUProfile,
-  initPyroscope,
+  addProfilingMiddleware,
 };
