@@ -1,4 +1,4 @@
-import type { CatchErr } from '../util/types';
+import type { CatchErr } from './index';
 import type { Source } from './controlPlaneConfig';
 import type { RudderMessage } from './rudderEvents';
 
@@ -28,11 +28,6 @@ export type SourceInput = {
 export type SourceInputV2 = {
   request: SourceRequestV2;
   source?: Source;
-};
-
-export type SourceInputConversionResult<T> = {
-  output?: T;
-  conversionError?: Error;
 };
 
 export type SourceTransformationOutput = {

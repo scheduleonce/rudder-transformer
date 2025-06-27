@@ -6,6 +6,12 @@ import type {
 } from './controlPlaneConfig';
 import type { Metadata, RudderMessage } from './rudderEvents';
 
+export type ProcessorCompactedTransformationRequest<M = RudderMessage, MD = Metadata> = {
+  input: Omit<ProcessorTransformationRequest<M, MD>, 'connection' | 'destination'>[];
+  destinations: Record<string, Destination>;
+  connections: Record<string, Connection>;
+};
+
 /**
  * Processor transformation request/response structures
  */
@@ -98,6 +104,16 @@ export type RouterTransformationRequest<M = RudderMessage, MD = Metadata> = {
   destType: string;
 };
 
+export type RouterCompactedTransformationRequest<M = RudderMessage, MD = Metadata> = {
+  input: Omit<
+    RouterTransformationRequestData<M, Destination, Connection, MD>,
+    'destination' | 'connection'
+  >[];
+  destType: string;
+  connections: Record<string, Connection>;
+  destinations: Record<string, Destination>;
+};
+
 export type RouterTransformationResponse = {
   batchedRequest?: ProcessorTransformationOutput | ProcessorTransformationOutput[];
   metadata: Partial<Metadata>[];
@@ -140,6 +156,7 @@ export type ProxyV0Request = {
     JSON_ARRAY?: Record<string, unknown>;
     XML?: Record<string, unknown>;
     FORM?: Record<string, unknown>;
+    GZIP?: Record<string, unknown>;
   };
   files?: Record<string, unknown>;
   metadata: ProxyMetdata;
@@ -218,6 +235,34 @@ export type DeliveryV1Response = {
   authErrorCategory?: string;
   response: DeliveryJobState[];
 };
+
+/**
+ * Interface for response parameters in network handlers
+ */
+export interface ResponseHandlerParams {
+  destinationResponse: {
+    status: number;
+    response?: any;
+    headers?: any;
+  };
+  destinationRequest?: ProxyRequest;
+  destType?: string;
+  rudderJobMetadata: ProxyMetdata | ProxyMetdata[];
+  [key: string]: any;
+}
+
+/**
+ * Interface for response object from network handlers
+ */
+export interface ResponseProxyObject
+  extends Partial<DeliveryV0Response>,
+    Partial<DeliveryV1Response> {
+  status: number;
+  message: string;
+  destinationResponse?: any;
+  response?: DeliveryJobState[];
+  [key: string]: any;
+}
 
 export type ComparatorInput = {
   events: ProcessorTransformationRequest[] | RouterTransformationRequestData[];

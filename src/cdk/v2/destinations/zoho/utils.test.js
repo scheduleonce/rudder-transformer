@@ -1,114 +1,14 @@
 jest.mock('../../../../adapters/network');
-const { ConfigurationError } = require('@rudderstack/integrations-lib');
+const { ConfigurationError, PlatformError } = require('@rudderstack/integrations-lib');
 const { handleHttpRequest } = require('../../../../adapters/network');
 const {
-  handleDuplicateCheck,
-  deduceModuleInfo,
   deduceModuleInfoV2,
-  validatePresenceOfMandatoryProperties,
   validateConfigurationIssue,
-  formatMultiSelectFields,
   formatMultiSelectFieldsV2,
   calculateTrigger,
-  searchRecordId,
   searchRecordIdV2,
+  getRegion,
 } = require('./utils');
-
-describe('handleDuplicateCheck', () => {
-  const testCases = [
-    {
-      name: 'should return identifierType when addDefaultDuplicateCheck is false',
-      input: {
-        identifierType: 'email',
-        addDefaultDuplicateCheck: false,
-        operationModuleType: 'Leads',
-        moduleWiseDuplicateCheckField: {},
-      },
-      expected: ['email'],
-    },
-    {
-      name: 'handles valid operationModuleType and already included identifierType',
-      input: {
-        identifierType: 'Email',
-        addDefaultDuplicateCheck: true,
-        operationModuleType: 'Leads',
-      },
-      expected: ['Email'],
-    },
-    {
-      name: "should return identifierType and 'Name' when addDefaultDuplicateCheck is true and moduleDuplicateCheckField is not defined",
-      input: {
-        identifierType: 'id',
-        addDefaultDuplicateCheck: true,
-        operationModuleType: 'type3',
-      },
-      expected: ['id', 'Name'],
-    },
-    {
-      name: 'should handle null values in moduleWiseDuplicateCheckField',
-      input: {
-        identifierType: 'Identifier',
-        addDefaultDuplicateCheck: true,
-        operationModuleType: 'type1',
-      },
-      expected: ['Identifier', 'Name'],
-    },
-  ];
-
-  testCases.forEach(({ name, input, expected }) => {
-    it(name, () => {
-      const result = handleDuplicateCheck(
-        input.addDefaultDuplicateCheck,
-        input.identifierType,
-        input.operationModuleType,
-        input.moduleWiseDuplicateCheckField,
-      );
-      expect(result).toEqual(expected);
-    });
-  });
-});
-
-describe('formatMultiSelectFields', () => {
-  const testCases = [
-    {
-      name: 'should convert a field value to an array if a mapping exists in multiSelectFieldLevelDecision',
-      input: {
-        config: {
-          multiSelectFieldLevelDecision: [{ from: 'tags', to: 'tagsArray' }],
-        },
-        fields: { tags: 'value' },
-      },
-      expected: { tags: ['value'] },
-    },
-    {
-      name: 'should leave fields unchanged if mapping fields exists but null',
-      input: {
-        config: {
-          multiSelectFieldLevelDecision: [{ from: 'tags', to: 'tagsArray' }],
-        },
-        fields: { tags: null, other: 'val' },
-      },
-      expected: { tags: null, other: 'val' },
-    },
-    {
-      name: 'should leave fields unchanged if no mapping exists',
-      input: {
-        config: {
-          multiSelectFieldLevelDecision: [{ from: 'categories', to: 'catArray' }],
-        },
-        fields: { tags: 'value', other: 'val' },
-      },
-      expected: { tags: 'value', other: 'val' },
-    },
-  ];
-
-  testCases.forEach(({ name, input, expected }) => {
-    it(name, () => {
-      const result = formatMultiSelectFields(input.config, { ...input.fields });
-      expect(result).toEqual(expected);
-    });
-  });
-});
 
 describe('formatMultiSelectFieldsV2', () => {
   const testCases = [
@@ -179,210 +79,6 @@ describe('calculateTrigger', () => {
   testCases.forEach(({ name, input, expected }) => {
     it(name, () => {
       expect(calculateTrigger(input)).toEqual(expected);
-    });
-  });
-});
-
-describe('searchRecordId', () => {
-  const module = 'Leads';
-  const mockFields = { Email: 'test@example.com', Name: 'John Doe' };
-  const mockMetadata = { secret: { accessToken: 'mock-token' } };
-  const mockConfig = { region: 'US' };
-  const mockQuery = "SELECT id FROM Leads WHERE Email = 'test@example.com'";
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  const testCases = [
-    {
-      fields: mockFields,
-      module,
-      query: mockQuery,
-      name: 'should handle non-array response data',
-      identifierType: 'Email',
-      response: {
-        processedResponse: {
-          status: 200,
-          response: {
-            data: 'not-an-array',
-          },
-        },
-      },
-      expected: {
-        erroneous: true,
-        message: 'No Leads is found with record details',
-      },
-    },
-    {
-      fields: mockFields,
-      query: mockQuery,
-      module,
-      name: 'should handle missing response data property',
-      identifierType: 'Email',
-      response: {
-        processedResponse: {
-          status: 200,
-          response: {},
-        },
-      },
-      expected: {
-        erroneous: true,
-        message: 'No Leads is found with record details',
-      },
-    },
-    {
-      fields: mockFields,
-      query: mockQuery,
-      module,
-      name: 'should handle null response data',
-      identifierType: 'Email',
-      response: {
-        processedResponse: {
-          status: 200,
-          response: {
-            data: null,
-          },
-        },
-      },
-      expected: {
-        erroneous: true,
-        message: 'No Leads is found with record details',
-      },
-    },
-    {
-      fields: mockFields,
-      query: mockQuery,
-      module,
-      name: 'should handle empty array response data',
-      identifierType: 'Email',
-      response: {
-        processedResponse: {
-          status: 200,
-          response: {
-            data: [],
-          },
-        },
-      },
-      expected: {
-        erroneous: true,
-        message: 'No Leads is found with record details',
-      },
-    },
-    {
-      fields: mockFields,
-      query: mockQuery,
-      module,
-      name: 'should handle valid array response data with single record',
-      identifierType: 'Email',
-      response: {
-        processedResponse: {
-          status: 200,
-          response: {
-            data: [{ id: '123' }],
-          },
-        },
-      },
-      expected: {
-        erroneous: false,
-        message: ['123'],
-      },
-    },
-    {
-      fields: mockFields,
-      query: mockQuery,
-      module,
-      name: 'should handle non-success HTTP status code',
-      identifierType: 'Email',
-      response: {
-        processedResponse: {
-          status: 400,
-          response: 'Bad Request Error',
-        },
-      },
-      expected: {
-        erroneous: true,
-        message: 'Bad Request Error',
-      },
-    },
-    {
-      fields: mockFields,
-      query: mockQuery,
-      module,
-      name: 'should handle HTTP request error',
-      identifierType: 'Email',
-      error: new Error('Network Error'),
-      expected: {
-        erroneous: true,
-        message: 'Network Error',
-      },
-    },
-  ];
-
-  testCases.forEach(({ name, response, error, expected, query, fields, identifierType }) => {
-    it(name, async () => {
-      if (error) {
-        handleHttpRequest.mockRejectedValueOnce(error);
-      } else {
-        handleHttpRequest.mockResolvedValueOnce(response);
-      }
-
-      const result = await searchRecordId(fields, mockMetadata, mockConfig, module, identifierType);
-      expect(handleHttpRequest).toHaveBeenCalledWith(
-        'post',
-        'https://www.zohoapis.com/crm/v6/coql',
-        {
-          select_query: query,
-        },
-        {
-          headers: {
-            Authorization: `Zoho-oauthtoken ${mockMetadata.secret.accessToken}`,
-          },
-        },
-        {
-          destType: 'zoho',
-          feature: 'deleteRecords',
-          requestMethod: 'POST',
-          endpointPath: 'https://www.zohoapis.com/crm/v6/coql',
-          module: 'router',
-        },
-      );
-
-      expect(result).toEqual(expected);
-    });
-  });
-
-  const testCases2 = [
-    {
-      fields: {
-        Email: '',
-        phone: null,
-        jobs: [],
-      },
-      query: mockQuery,
-      module,
-      identifierType: 'Email',
-      name: 'should return intrumentation error when identifier value is empty',
-      response: {
-        processedResponse: {
-          status: 200,
-          response: {
-            data: [{ id: '123' }],
-          },
-        },
-      },
-      expected: {
-        erroneous: true,
-        code: 'INSTRUMENTATION_ERROR',
-        message: 'Identifier values are not provided for Leads',
-      },
-    },
-  ];
-
-  testCases2.forEach(({ name, expected, fields, identifierType }) => {
-    it(name, async () => {
-      const result = await searchRecordId(fields, mockMetadata, mockConfig, module, identifierType);
-      expect(result).toEqual(expected);
     });
   });
 });
@@ -580,12 +276,12 @@ describe('searchRecordIdV2', () => {
         handleHttpRequest.mockResolvedValueOnce(response);
       }
 
-      const result = await searchRecordIdV2(
-        fields,
-        mockMetadata,
-        mockConfig,
-        mockConConfig.destination,
-      );
+      const result = await searchRecordIdV2({
+        identifiers: fields,
+        metadata: mockMetadata,
+        destination: { Config: mockConfig },
+        destConfig: mockConConfig.destination,
+      });
       expect(handleHttpRequest).toHaveBeenCalledWith(
         'post',
         'https://www.zohoapis.com/crm/v6/coql',
@@ -638,148 +334,12 @@ describe('searchRecordIdV2', () => {
 
   testCases2.forEach(({ name, expected, fields }) => {
     it(name, async () => {
-      const result = await searchRecordIdV2(
-        fields,
-        mockMetadata,
-        mockConfig,
-        mockConConfig.destination,
-      );
-      expect(result).toEqual(expected);
-    });
-  });
-});
-
-describe('deduceModuleInfo', () => {
-  const testCases = [
-    {
-      name: 'should return empty object when mappedToDestination is not present',
-      input: {
-        inputs: [{}],
-        config: { region: 'US' },
-      },
-      expected: {},
-    },
-    {
-      name: 'should return operationModuleInfo when mappedToDestination is present',
-      input: {
-        inputs: [
-          {
-            message: {
-              context: {
-                externalId: [{ type: 'ZOHO-Leads', id: '12345', identifierType: 'Email' }],
-                mappedToDestination: true,
-              },
-            },
-          },
-        ],
-        config: { region: 'US' },
-      },
-      expected: {
-        operationModuleType: 'Leads',
-        upsertEndPoint: 'https://www.zohoapis.com/crm/v6/Leads',
-        identifierType: 'Email',
-      },
-    },
-    {
-      name: 'should handle different regions in config',
-      input: {
-        inputs: [
-          {
-            message: {
-              context: {
-                externalId: [{ type: 'ZOHO-Leads', id: '12345', identifierType: 'Email' }],
-                mappedToDestination: 'true',
-              },
-            },
-          },
-        ],
-        config: { region: 'EU' },
-      },
-      expected: {
-        operationModuleType: 'Leads',
-        upsertEndPoint: 'https://www.zohoapis.eu/crm/v6/Leads',
-        identifierType: 'Email',
-      },
-    },
-    {
-      name: 'should handle null input',
-      input: {
-        inputs: null,
-        config: {},
-      },
-      expected: {},
-    },
-    {
-      name: 'should handle undefined input',
-      input: {
-        inputs: undefined,
-        config: {},
-      },
-      expected: {},
-    },
-    {
-      name: 'should handle non-array input',
-      input: {
-        inputs: 'not an array',
-        config: {},
-      },
-      expected: {},
-    },
-    {
-      name: 'should handle empty array',
-      input: {
-        inputs: [],
-        config: {},
-      },
-      expected: {},
-    },
-    {
-      name: 'should use default US region when config.region is null',
-      input: {
-        inputs: [
-          {
-            message: {
-              context: {
-                externalId: [{ type: 'ZOHO-Leads', id: '12345', identifierType: 'Email' }],
-                mappedToDestination: true,
-              },
-            },
-          },
-        ],
-        config: { region: null },
-      },
-      expected: {
-        operationModuleType: 'Leads',
-        upsertEndPoint: 'https://www.zohoapis.com/crm/v6/Leads',
-        identifierType: 'Email',
-      },
-    },
-    {
-      name: 'should use default US region when config.region is undefined',
-      input: {
-        inputs: [
-          {
-            message: {
-              context: {
-                externalId: [{ type: 'ZOHO-Leads', id: '12345', identifierType: 'Email' }],
-                mappedToDestination: true,
-              },
-            },
-          },
-        ],
-        config: {}, // region is undefined
-      },
-      expected: {
-        operationModuleType: 'Leads',
-        upsertEndPoint: 'https://www.zohoapis.com/crm/v6/Leads',
-        identifierType: 'Email',
-      },
-    },
-  ];
-
-  testCases.forEach(({ name, input, expected }) => {
-    it(name, () => {
-      const result = deduceModuleInfo(input.inputs, input.config);
+      const result = await searchRecordIdV2({
+        identifiers: fields,
+        metadata: mockMetadata,
+        destination: { Config: mockConfig },
+        destConfig: mockConConfig.destination,
+      });
       expect(result).toEqual(expected);
     });
   });
@@ -790,8 +350,8 @@ describe('deduceModuleInfoV2', () => {
     {
       name: 'should return operationModuleInfo, upsertEndPoint and identifierType when conConfig is present',
       input: {
-        config: { region: 'US' },
-        destination: {
+        destination: { Config: { region: 'US' } },
+        destConfig: {
           object: 'Leads',
           identifierMappings: [{ to: 'Email', from: 'Email' }],
         },
@@ -805,8 +365,8 @@ describe('deduceModuleInfoV2', () => {
     {
       name: 'should handle different regions in config',
       input: {
-        config: { region: 'EU' },
-        destination: {
+        destination: { Config: { region: 'EU' } },
+        destConfig: {
           object: 'Leads',
           identifierMappings: [{ to: 'Email', from: 'Email' }],
         },
@@ -820,8 +380,8 @@ describe('deduceModuleInfoV2', () => {
     {
       name: 'should use default US region when config.region is null',
       input: {
-        config: {},
-        destination: {
+        destination: { Config: {} },
+        destConfig: {
           object: 'Leads',
           identifierMappings: [{ to: 'Email', from: 'Email' }],
         },
@@ -835,8 +395,8 @@ describe('deduceModuleInfoV2', () => {
     {
       name: 'should use default US region when config.region is undefined',
       input: {
-        config: {}, // region is undefined
-        destination: {
+        destination: { Config: {} }, // region is undefined
+        destConfig: {
           object: 'Leads',
           identifierMappings: [{ to: 'Email', from: 'Email' }],
         },
@@ -851,83 +411,8 @@ describe('deduceModuleInfoV2', () => {
 
   testCases.forEach(({ name, input, expected }) => {
     it(name, () => {
-      const result = deduceModuleInfoV2(input.config, input.destination);
+      const result = deduceModuleInfoV2(input.destination, input.destConfig);
       expect(result).toEqual(expected);
-    });
-  });
-});
-
-describe('validatePresenceOfMandatoryProperties', () => {
-  const testCases = [
-    {
-      name: 'should not throw an error if the object has all required fields',
-      input: {
-        objectName: 'Leads',
-        object: { Last_Name: 'Doe' },
-      },
-      expected: { missingField: [], status: false },
-      expectError: false,
-    },
-    {
-      name: 'should return missing field if mandatory field contains empty string',
-      input: {
-        objectName: 'Leads',
-        object: { Last_Name: '' },
-      },
-      expected: { missingField: ['Last_Name'], status: true },
-      expectError: false,
-    },
-    {
-      name: 'should return missing field if mandatory field contains empty null',
-      input: {
-        objectName: 'Leads',
-        object: { Last_Name: null },
-      },
-      expected: { missingField: ['Last_Name'], status: true },
-      expectError: false,
-    },
-    {
-      name: 'should not throw an error if the objectName is not in MODULE_MANDATORY_FIELD_CONFIG',
-      input: {
-        objectName: 'CustomObject',
-        object: { Some_Field: 'Some Value' },
-      },
-      expected: undefined,
-      expectError: false,
-    },
-    {
-      name: 'should return multiple missing fields for Deals',
-      input: {
-        objectName: 'Deals',
-        object: { Deal_Name: 'Big Deal' },
-      },
-      expected: {
-        missingField: ['Stage', 'Pipeline'],
-        status: true,
-      },
-      expectError: false,
-    },
-    {
-      name: 'should not throw an error if the object has all required fields for Deals',
-      input: {
-        objectName: 'Deals',
-        object: { Deal_Name: 'Big Deal', Stage: 'Negotiation', Pipeline: 'Sales' },
-      },
-      expected: { missingField: [], status: false },
-      expectError: false,
-    },
-  ];
-
-  testCases.forEach(({ name, input, expected, expectError }) => {
-    it(name, () => {
-      if (expectError) {
-        expect(() =>
-          validatePresenceOfMandatoryProperties(input.objectName, input.object),
-        ).toThrow();
-      } else {
-        const result = validatePresenceOfMandatoryProperties(input.objectName, input.object);
-        expect(result).toEqual(expected);
-      }
     });
   });
 });
@@ -1027,4 +512,160 @@ describe('validateConfigurationIssue', () => {
       }
     });
   });
+});
+
+describe('getRegion', () => {
+  const testCases = [
+    {
+      name: 'should return region from delivery account options when delivery account exists with account definition',
+      input: {
+        deliveryAccount: {
+          accountDefinition: {},
+          options: {
+            region: 'EU',
+          },
+        },
+        Config: {
+          region: 'US',
+        },
+      },
+      expected: 'EU',
+    },
+    {
+      name: 'should return region from delivery account options when delivery account exists with account definition and Config region is undefined',
+      input: {
+        deliveryAccount: {
+          accountDefinition: {},
+          options: {
+            region: 'AU',
+          },
+        },
+        Config: {},
+      },
+      expected: 'AU',
+    },
+    {
+      name: 'should throw PlatformError when delivery account exists with account definition but options.region is undefined',
+      input: {
+        deliveryAccount: {
+          accountDefinition: {},
+          options: {},
+        },
+        Config: {
+          region: 'US',
+        },
+      },
+      expectError: true,
+      errorType: PlatformError,
+      errorMessage: 'Region is not defined in delivery account options',
+      errorStatus: 500,
+    },
+    {
+      name: 'should throw PlatformError when delivery account exists with account definition but options.region is null',
+      input: {
+        deliveryAccount: {
+          accountDefinition: {},
+          options: {
+            region: null,
+          },
+        },
+        Config: {
+          region: 'US',
+        },
+      },
+      expectError: true,
+      errorType: PlatformError,
+      errorMessage: 'Region is not defined in delivery account options',
+      errorStatus: 500,
+    },
+    {
+      name: 'should throw PlatformError when delivery account exists with account definition but options is undefined',
+      input: {
+        deliveryAccount: {
+          accountDefinition: {},
+        },
+        Config: {
+          region: 'US',
+        },
+      },
+      expectError: true,
+      errorType: PlatformError,
+      errorMessage: 'Region is not defined in delivery account options',
+      errorStatus: 500,
+    },
+    {
+      name: 'should return region from Config when delivery account exists but no account definition',
+      input: {
+        deliveryAccount: {
+          options: {
+            region: 'EU',
+          },
+        },
+        Config: {
+          region: 'US',
+        },
+      },
+      expected: 'US',
+    },
+    {
+      name: 'should return region from Config when delivery account is undefined',
+      input: {
+        Config: {
+          region: 'US',
+        },
+      },
+      expected: 'US',
+    },
+    {
+      name: 'should return region from Config when delivery account is null',
+      input: {
+        deliveryAccount: null,
+        Config: {
+          region: 'EU',
+        },
+      },
+      expected: 'EU',
+    },
+    {
+      name: 'should return undefined when no delivery account and Config.region is undefined',
+      input: {
+        Config: {},
+      },
+      expected: undefined,
+    },
+    {
+      name: 'should return undefined when no delivery account and Config is undefined',
+      input: {},
+      expected: undefined,
+    },
+    {
+      name: 'should return null when no delivery account and Config.region is null',
+      input: {
+        Config: {
+          region: null,
+        },
+      },
+      expected: null,
+    },
+  ];
+
+  testCases.forEach(
+    ({ name, input, expected, expectError, errorType, errorMessage, errorStatus }) => {
+      it(name, () => {
+        if (expectError) {
+          expect(() => getRegion(input)).toThrow(errorType);
+          expect(() => getRegion(input)).toThrow(errorMessage);
+
+          // Test the error status code
+          try {
+            getRegion(input);
+          } catch (error) {
+            expect(error.status).toBe(errorStatus);
+          }
+        } else {
+          expect(getRegion(input)).toBe(expected);
+        }
+      });
+    },
+  );
 });

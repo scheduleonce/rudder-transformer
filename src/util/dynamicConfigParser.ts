@@ -1,6 +1,5 @@
 import cloneDeep from 'lodash/cloneDeep';
-import { ProcessorTransformationRequest, RouterTransformationRequestData } from '../types/index';
-import { FixMe } from './types';
+import { ProcessorTransformationRequest, RouterTransformationRequestData, FixMe } from '../types';
 
 /* eslint-disable no-param-reassign */
 const get = require('get-value');
@@ -62,8 +61,8 @@ export class DynamicConfigParser {
     event: ProcessorTransformationRequest | RouterTransformationRequestData,
   ) {
     const resultantEvent = cloneDeep(event);
-    const { Config } = event.destination;
-    resultantEvent.destination.Config = this.configureVal(Config, event);
+    const { Config } = resultantEvent.destination;
+    resultantEvent.destination.Config = this.configureVal(Config, resultantEvent);
     return resultantEvent;
   }
 

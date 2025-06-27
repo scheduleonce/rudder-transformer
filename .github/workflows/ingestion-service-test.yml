@@ -1,0 +1,43 @@
+name: Ingestion Service Test
+
+on:
+  workflow_call:
+    inputs:
+      build_tag:
+        required: true
+        type: string
+    secrets:
+      PAT:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
+jobs:
+  ingestion-service-test:
+    name: ingestion-service-test
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TRANSFORMER_IMAGE_NAME_FOR_TEST: ${{ inputs.build_tag }}
+      TRANSFORMER_DOCKER_USERNAME: rudderlabs
+      TRANSFORMER_DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: 'Clone ingestion service'
+        run: |
+          git clone https://${{secrets.PAT}}@github.com/rudderlabs/rudder-ingestion-svc.git
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'rudder-ingestion-svc/go.mod'
+      - name: 'Install dependencies'
+        run: |
+          go version
+          cd rudder-ingestion-svc
+          go mod download
+      - name: 'Run tests'
+        run: |
+          cd rudder-ingestion-svc
+          pwd
+          make test package=internal/gateway exclude='internal/gateway/.+'

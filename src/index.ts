@@ -1,15 +1,13 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import gracefulShutdown from 'http-graceful-shutdown';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
-import { addRequestSizeMiddleware, addStatMiddleware, initPyroscope } from './middleware';
+import { addRequestSizeMiddleware, addStatMiddleware, addProfilingMiddleware } from './middleware';
 import { addSwaggerRoutes, applicationRoutes } from './routes';
 import { metricsRouter } from './routes/metricsRouter';
 import cluster from './util/cluster';
 import { RedisDB } from './util/redis/redisConnector';
 import { logProcessInfo } from './util/utils';
-
-dotenv.config();
 
 // eslint-disable-next-line import/first
 import logger from './logger';
@@ -18,20 +16,15 @@ const clusterEnabled = process.env.CLUSTER_ENABLED !== 'false';
 const port = parseInt(process.env.PORT ?? '9090', 10);
 const metricsPort = parseInt(process.env.METRICS_PORT || '9091', 10);
 
-initPyroscope();
-
 const app = new Koa();
+addProfilingMiddleware(app);
 addStatMiddleware(app);
 
 const metricsApp = new Koa();
 addStatMiddleware(metricsApp);
 metricsApp.use(metricsRouter.routes()).use(metricsRouter.allowedMethods());
 
-app.use(
-  bodyParser({
-    jsonLimit: '200mb',
-  }),
-);
+app.use(bodyParser({ jsonLimit: '200mb' }));
 addRequestSizeMiddleware(app);
 addSwaggerRoutes(app);
 
