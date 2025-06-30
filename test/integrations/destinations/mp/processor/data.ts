@@ -1,5 +1,10 @@
 import { overrideDestination } from '../../../testUtils';
-import { sampleDestination, defaultMockFns, destinationWithSetOnceProperty } from '../common';
+import {
+  sampleDestination,
+  defaultMockFns,
+  destinationWithSetOnceProperty,
+  destinationWithUnionAndAppendProperty,
+} from '../common';
 import { authHeader2, secret2, secret3 } from '../maskedSecrets';
 
 export const data = [
@@ -112,6 +117,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'dd266c67-9199-4a52-ba32-f46ddde67312',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'hjikl',
                         time: 1579847342402,
@@ -247,6 +254,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'dd266c67-9199-4a52-ba32-f46ddde67312',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'hjikl',
                         time: 1579847342402,
@@ -351,6 +360,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'dd266c67-9199-4a52-ba32-f46ddde67312',
+                        $app_name: 'RudderLabs Android SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'hjikl',
                         time: 1579847342402,
@@ -463,6 +474,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'dd266c67-9199-4a52-ba32-f46ddde67312',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'hjiklmk',
                         time: 1579847342402,
@@ -563,6 +576,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'dd266c67-9199-4a52-ba32-f46ddde67312',
+                        $app_name: 'RudderLabs Android SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'hjikl',
                         time: 1579847342402,
@@ -666,7 +681,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -799,7 +816,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -828,7 +847,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -886,6 +907,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'a6a0ad5a-bd26-4f19-8f75-38484e580fc7',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
                         time: 1579847342403,
@@ -1130,7 +1153,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -1215,6 +1240,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'aa5f5e44-8756-40ad-ad1e-b0d3b9fa710a',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
                         time: 1579847342402,
@@ -1350,7 +1377,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -1444,6 +1473,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'aa5f5e44-8756-40ad-ad1e-b0d3b9fa710a',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
                         time: 1579847342402,
@@ -1638,6 +1669,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'aa5f5e44-8756-40ad-ad1e-b0d3b9fa710a',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
                         time: 1579847342402,
@@ -1833,6 +1866,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'aa5f5e44-8756-40ad-ad1e-b0d3b9fa710a',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
                         time: 1579847342402,
@@ -2002,7 +2037,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2105,7 +2142,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2133,7 +2172,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/groups/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2226,7 +2267,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2254,7 +2297,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/groups/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2282,7 +2327,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/groups/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2376,7 +2423,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2404,7 +2453,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/groups/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2538,7 +2589,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2624,6 +2677,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'aa5f5e44-8756-40ad-ad1e-b0d3b9fa710a',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
                         time: 1579847342402,
@@ -2713,7 +2768,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2734,7 +2791,7 @@ export const data = [
                         $android_os_version: '8.1.0',
                         $android_manufacturer: 'Google',
                         $android_app_version: '1.0',
-                        $android_app_version_code: '1.0',
+                        $android_app_version_code: '1',
                         $android_brand: 'Google',
                       },
                       $token: secret2,
@@ -2822,7 +2879,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -2996,6 +3055,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'dd266c67-9199-4a52-ba32-f46ddde67312',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
                         time: 1579847342402,
@@ -3197,7 +3258,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -3342,7 +3405,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -3452,7 +3517,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -3561,7 +3628,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -3678,7 +3747,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -3792,7 +3863,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -3905,7 +3978,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -4017,7 +4092,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -4128,7 +4205,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -4248,7 +4327,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -4418,6 +4499,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.1.18',
                         $insert_id: '0d5c1a4a-27e4-41da-a246-4d01f44e74bd',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
                         time: 1632986123523,
@@ -4642,6 +4725,8 @@ export const data = [
                         $app_build_number: '1',
                         $app_version_string: '1.0',
                         $insert_id: 'id2',
+                        $app_name: 'LeanPlumIntegrationAndroid',
+                        $app_namespace: 'com.android.SampleLeanPlum',
                         token: secret2,
                         distinct_id: 'test_user_id',
                         time: 1520845503421,
@@ -4912,7 +4997,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -5038,7 +5125,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -5262,7 +5351,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -5435,6 +5526,8 @@ export const data = [
                         $app_version_string: '1.0',
                         $insert_id: '168cf720-6227-4b56-a98e-c49bdc7279e9',
                         $session_id: '1662363980',
+                        $app_name: 'Sample Kotlin',
+                        $app_namespace: 'com.example.testapp1mg',
                         token: secret2,
                         distinct_id: '39da706ec83d0e90',
                         time: 1662363980290,
@@ -5553,6 +5646,8 @@ export const data = [
                         $app_version_string: '1.0',
                         $insert_id: '168cf720-6227-4b56-a98e-c49bdc7279e9',
                         $session_id: '1662363980',
+                        $app_name: 'Sample Kotlin',
+                        $app_namespace: 'com.example.testapp1mg',
                         token: secret2,
                         distinct_id: '39da706ec83d0e90',
                         time: 1662363980290,
@@ -5640,7 +5735,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -5668,7 +5765,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/groups/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -5794,6 +5893,8 @@ export const data = [
                         $app_build_number: '1',
                         $app_version_string: '1.0',
                         $insert_id: 'id2',
+                        $app_name: 'LeanPlumIntegrationAndroid',
+                        $app_namespace: 'com.android.SampleLeanPlum',
                         token: secret2,
                         distinct_id: 'userId01',
                         time: 1579847342402,
@@ -5904,7 +6005,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -6031,7 +6134,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -6237,7 +6342,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -6294,6 +6401,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'a6a0ad5a-bd26-4f19-8f75-38484e580fc7',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'userId01',
                         time: 1579847342403,
@@ -6421,6 +6530,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.0.5',
                         $insert_id: 'dd266c67-9199-4a52-ba32-f46ddde67312',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: '$device:anonId01',
                         time: 1579847342402,
@@ -6517,7 +6628,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -6545,7 +6658,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/groups/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -6722,7 +6837,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -6784,6 +6901,8 @@ export const data = [
                         $app_version_string: '1.0',
                         $insert_id: '168cf720-6227-4b56-a98e-c49bdc7279e9',
                         $session_id: '1662363980',
+                        $app_name: 'Sample Kotlin',
+                        $app_namespace: 'com.example.testapp1mg',
                         token: secret2,
                         distinct_id: '39da706ec83d0e90',
                         time: 1662363980290,
@@ -6873,7 +6992,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -6935,6 +7056,8 @@ export const data = [
                         $app_version_string: '1.0',
                         $insert_id: '168cf720-6227-4b56-a98e-c49bdc7279e9',
                         $session_id: '1662363980',
+                        $app_name: 'Sample Kotlin',
+                        $app_namespace: 'com.example.testapp1mg',
                         token: secret2,
                         distinct_id: '39da706ec83d0e90',
                         time: null,
@@ -7025,7 +7148,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -7275,7 +7400,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -7306,7 +7433,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -7435,7 +7564,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -7466,7 +7597,9 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
-              headers: {},
+              headers: {
+                'Content-Type': 'application/json',
+              },
               params: {},
               body: {
                 JSON: {},
@@ -7617,6 +7750,8 @@ export const data = [
                         $app_build_number: '1.0.0',
                         $app_version_string: '1.1.18',
                         $insert_id: '0d5c1a4a-27e4-41da-a246-4d01f44e74bd',
+                        $app_name: 'RudderLabs JavaScript SDK',
+                        $app_namespace: 'com.rudderlabs.javascript',
                         token: secret2,
                         distinct_id: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
                         time: 1632986123523,
@@ -7707,6 +7842,396 @@ export const data = [
               },
               files: {},
               userId: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
+            },
+            statusCode: 200,
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: 'mp',
+    description: 'Test Union and Append Property',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            destination: destinationWithUnionAndAppendProperty,
+            message: {
+              anonymousId: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
+              channel: 'web',
+              context: {
+                app: {
+                  build: '1.0.0',
+                  name: 'RudderLabs JavaScript SDK',
+                  namespace: 'com.rudderlabs.javascript',
+                  version: '1.0.5',
+                },
+                ip: '0.0.0.0',
+                library: {
+                  name: 'RudderLabs JavaScript SDK',
+                  version: '1.0.5',
+                },
+                locale: 'en-GB',
+                os: {
+                  name: '',
+                  version: '',
+                },
+                screen: {
+                  density: 2,
+                },
+                traits: {
+                  address: {
+                    city: 'Disney',
+                  },
+                  country: 'USA',
+                  email: 'TestSanity@disney.com',
+                  firstName: 'Mickey test',
+                  lastName: 'VarChange',
+                  createdAt: '2020-01-23T08:54:02.362Z',
+                  nationality: 'USA',
+                  random: 'superProp',
+                  unionProperty1: 'union-1',
+                  unionProperty2: [1, 2, 3],
+                  unionProperty3: [1, 'test', 3.14, true, false, null, ['1', 2]],
+                  unionProperty4: undefined,
+                  appendProperty1: ['append-1'],
+                  appendProperty2: 0,
+                  appendProperty3: null,
+                },
+                page: {
+                  path: '/destinations/mixpanel',
+                  referrer: '',
+                  search: '',
+                  title: '',
+                  url: 'https://docs.rudderstack.com/destinations/mixpanel',
+                  category: 'destination',
+                  initial_referrer: 'https://docs.rudderstack.com',
+                  initial_referring_domain: 'docs.rudderstack.com',
+                },
+                userAgent:
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36',
+              },
+              integrations: {
+                All: true,
+              },
+              page: {
+                path: '/destinations/mixpanel',
+                referrer: '',
+                search: '',
+                title: '',
+                url: 'https://docs.rudderstack.com/destinations/mixpanel',
+                category: 'destination',
+                initial_referrer: 'https://docs.rudderstack.com',
+                initial_referring_domain: 'docs.rudderstack.com',
+              },
+              request_ip: '[::1]:53709',
+              type: 'identify',
+              userId: 'Santiy',
+            },
+          },
+        ],
+        method: 'POST',
+      },
+      pathSuffix: '',
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: 'https://api.mixpanel.com/engage/',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              params: {},
+              body: {
+                JSON: {},
+                JSON_ARRAY: {
+                  batch: JSON.stringify([
+                    {
+                      $set_once: {
+                        $first_name: 'Mickey test',
+                        $city: 'Disney',
+                        nationality: 'USA',
+                      },
+                      $token: secret2,
+                      $distinct_id: 'Santiy',
+                    },
+                  ]),
+                },
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: 'Santiy',
+            },
+            statusCode: 200,
+          },
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: 'https://api.mixpanel.com/engage/',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              params: {},
+              body: {
+                JSON: {},
+                JSON_ARRAY: {
+                  batch: JSON.stringify([
+                    {
+                      /*
+                      This will perform a union operation on the existing property with the provided property in the list.
+                       If the property doesn't exist, a new property will be created.
+                       Before Operation => unionProperty1: does not exists, unionProperty2: ['abc', 1]
+                       After Operation => unionProperty1: ['union-1'], unionProperty2: ['abc', 1, 2, 3]
+                       */
+                      $union: {
+                        unionProperty1: ['union-1'],
+                        unionProperty2: [1, 2, 3],
+                        unionProperty3: [1, 'test', 3.14, true, false, null, ['1', 2]],
+                      },
+                      $token: secret2,
+                      $distinct_id: 'Santiy',
+                    },
+                  ]),
+                },
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: 'Santiy',
+            },
+            statusCode: 200,
+          },
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: 'https://api.mixpanel.com/engage/',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              params: {},
+              body: {
+                JSON: {},
+                JSON_ARRAY: {
+                  batch: JSON.stringify([
+                    {
+                      /*
+                      This will perform append operation on the existing property list.
+                       If the property doesn't exist, a new property will be created.
+                       Before Operation => appendProperty1: does not exist, appendProperty2: ['abc', 1]
+                       After Operation => appendProperty1: [['append-1']], appendProperty2: ['abc', 1, 0]
+                       */
+                      $append: {
+                        appendProperty1: ['append-1'],
+                        appendProperty2: 0,
+                      },
+                      $token: secret2,
+                      $distinct_id: 'Santiy',
+                    },
+                  ]),
+                },
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: 'Santiy',
+            },
+            statusCode: 200,
+          },
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: 'https://api.mixpanel.com/engage/',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              params: {},
+              body: {
+                JSON: {},
+                JSON_ARRAY: {
+                  batch: JSON.stringify([
+                    {
+                      $set: {
+                        $created: '2020-01-23T08:54:02.362Z',
+                        $email: 'TestSanity@disney.com',
+                        $country_code: 'USA',
+                        $initial_referrer: 'https://docs.rudderstack.com',
+                        $initial_referring_domain: 'docs.rudderstack.com',
+                        random: 'superProp',
+                        appendProperty3: null,
+                        $lastName: 'VarChange',
+                        $browser: 'Chrome',
+                        $browser_version: '79.0.3945.117',
+                      },
+                      $token: secret2,
+                      $distinct_id: 'Santiy',
+                      $ip: '0.0.0.0',
+                      $time: null,
+                    },
+                  ]),
+                },
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: 'Santiy',
+            },
+            statusCode: 200,
+          },
+        ],
+      },
+    },
+  },
+  {
+    name: 'mp',
+    description: 'Test Set Once Property with unavailable property in payload',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            destination: {
+              ...destinationWithSetOnceProperty,
+              Config: {
+                ...destinationWithSetOnceProperty.Config,
+                setOnceProperties: [{ property: 'dummySetOnceProperty' }],
+              },
+            },
+            message: {
+              anonymousId: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
+              channel: 'web',
+              context: {
+                app: {
+                  build: '1.0.0',
+                  name: 'RudderLabs JavaScript SDK',
+                  namespace: 'com.rudderlabs.javascript',
+                  version: '1.0.5',
+                },
+                ip: '0.0.0.0',
+                library: {
+                  name: 'RudderLabs JavaScript SDK',
+                  version: '1.0.5',
+                },
+                locale: 'en-GB',
+                os: {
+                  name: '',
+                  version: '',
+                },
+                screen: {
+                  density: 2,
+                },
+                traits: {
+                  address: {
+                    city: 'Disney',
+                  },
+                  country: 'USA',
+                  email: 'TestSanity@disney.com',
+                  firstName: 'Mickey test',
+                  lastName: 'VarChange',
+                  createdAt: '2020-01-23T08:54:02.362Z',
+                  nationality: 'USA',
+                  random: 'superProp',
+                },
+                page: {
+                  path: '/destinations/mixpanel',
+                  referrer: '',
+                  search: '',
+                  title: '',
+                  url: 'https://docs.rudderstack.com/destinations/mixpanel',
+                  category: 'destination',
+                  initial_referrer: 'https://docs.rudderstack.com',
+                  initial_referring_domain: 'docs.rudderstack.com',
+                },
+                userAgent:
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36',
+              },
+              integrations: {
+                All: true,
+              },
+              page: {
+                path: '/destinations/mixpanel',
+                referrer: '',
+                search: '',
+                title: '',
+                url: 'https://docs.rudderstack.com/destinations/mixpanel',
+                category: 'destination',
+                initial_referrer: 'https://docs.rudderstack.com',
+                initial_referring_domain: 'docs.rudderstack.com',
+              },
+              request_ip: '[::1]:53709',
+              type: 'identify',
+              userId: 'Santiy',
+            },
+          },
+        ],
+        method: 'POST',
+      },
+      pathSuffix: '',
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: 'https://api.mixpanel.com/engage/',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              params: {},
+              body: {
+                JSON: {},
+                JSON_ARRAY: {
+                  batch: JSON.stringify([
+                    {
+                      $set: {
+                        $created: '2020-01-23T08:54:02.362Z',
+                        $email: 'TestSanity@disney.com',
+                        $country_code: 'USA',
+                        $city: 'Disney',
+                        $initial_referrer: 'https://docs.rudderstack.com',
+                        $initial_referring_domain: 'docs.rudderstack.com',
+                        $name: 'Mickey test VarChange',
+                        nationality: 'USA',
+                        random: 'superProp',
+                        $firstName: 'Mickey test',
+                        $lastName: 'VarChange',
+                        $browser: 'Chrome',
+                        $browser_version: '79.0.3945.117',
+                      },
+                      $token: 'mp2',
+                      $distinct_id: 'Santiy',
+                      $ip: '0.0.0.0',
+                      $time: null,
+                    },
+                  ]),
+                },
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: 'Santiy',
             },
             statusCode: 200,
           },

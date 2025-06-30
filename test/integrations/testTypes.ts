@@ -66,7 +66,6 @@ export interface ExtendedTestCaseData {
   // use this to add any new properties for dynamic test cases
   // this will keep the base TestCaseData structure generic and intact
   tcData: TestCaseData;
-  sourceTransformV2Flag?: boolean;
   descriptionSuffix?: string;
 }
 
@@ -141,6 +140,7 @@ export type RouterTestData = {
       };
     };
   };
+  mockFns?: (mockAdapter: MockAdapter) => void;
 };
 
 export type ProxyV1TestData = BaseTestCase & {

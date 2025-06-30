@@ -19,6 +19,9 @@ const {
   isDefinedAndNotNull,
 } = require('../../util');
 
+// Register a custom Handlebars helper for newlines
+Handlebars.registerHelper('newline', () => '\n');
+
 // build the response to be sent to backend, url encoded header is required as slack accepts payload in this format
 // add the username and image for Rudder
 // image currently served from prod CDN
@@ -48,7 +51,6 @@ const buildResponse = (
   response.body.FORM = {
     payload,
   };
-  response.statusCode = 200;
   logger.debug(response);
   return response;
 };
@@ -281,12 +283,10 @@ const process = (event) => {
   switch (messageType) {
     case EventType.IDENTIFY:
       response = processIdentify(message, destination);
-      response.statusCode = 200;
       respList.push(response);
       break;
     case EventType.TRACK:
       response = processTrack(message, destination);
-      response.statusCode = 200;
       respList.push(response);
       break;
     default:

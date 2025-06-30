@@ -2,67 +2,43 @@ const {
   getHashFromArray,
   isDefinedAndNotNull,
   ConfigurationError,
+  PlatformError,
   isDefinedAndNotNullAndNotEmpty,
   removeUndefinedNullEmptyExclBoolInt,
   ZOHO_SDK,
 } = require('@rudderstack/integrations-lib');
 const { isEmpty } = require('lodash');
-const { getDestinationExternalIDInfoForRetl, isHttpStatusSuccess } = require('../../../../v0/util');
-const zohoConfig = require('./config');
+const { isHttpStatusSuccess } = require('../../../../v0/util');
 const { handleHttpRequest } = require('../../../../adapters/network');
 const { CommonUtils } = require('../../../../util/common');
 
-const deduceModuleInfo = (inputs, Config) => {
-  if (!Array.isArray(inputs) || inputs.length === 0) {
-    return {};
+const getRegion = (destination) => {
+  // Check if deliveryAccount or accountDefinition is missing; if so, return region from Config
+  if (!destination?.deliveryAccount?.accountDefinition) {
+    return destination?.Config?.region;
   }
-
-  const firstRecord = inputs[0].message;
-  const mappedToDestination = firstRecord?.context?.mappedToDestination;
-
-  if (!mappedToDestination) {
-    return {};
+  // Extract region from deliveryAccount options
+  const region = destination.deliveryAccount?.options?.region;
+  // Throw error if region is not defined in deliveryAccount options
+  if (!region) {
+    throw new PlatformError('Region is not defined in delivery account options', 500);
   }
-
-  const { objectType, identifierType } = getDestinationExternalIDInfoForRetl(firstRecord, 'ZOHO');
-  return {
-    operationModuleType: objectType,
-    upsertEndPoint: zohoConfig
-      .COMMON_RECORD_ENDPOINT(Config.region)
-      .replace('moduleType', objectType),
-    identifierType,
-  };
+  // Return the region from deliveryAccount options
+  return region;
 };
 
-const deduceModuleInfoV2 = (Config, destConfig) => {
+const deduceModuleInfoV2 = (destination, destConfig) => {
   const { object, identifierMappings } = destConfig;
   const identifierType = identifierMappings.map(({ to }) => to);
   return {
     operationModuleType: object,
     upsertEndPoint: ZOHO_SDK.ZOHO.getBaseRecordUrl({
-      dataCenter: Config.region,
+      dataCenter: getRegion(destination),
       moduleName: object,
     }),
     identifierType,
   };
 };
-
-// Keeping the original function name and return structure
-function validatePresenceOfMandatoryProperties(objectName, object) {
-  if (!zohoConfig.MODULE_MANDATORY_FIELD_CONFIG.hasOwnProperty(objectName)) {
-    return undefined; // Maintaining original undefined return for custom objects
-  }
-
-  const requiredFields = zohoConfig.MODULE_MANDATORY_FIELD_CONFIG[objectName];
-  const missingFields = requiredFields.filter(
-    (field) => !object.hasOwnProperty(field) || !isDefinedAndNotNullAndNotEmpty(object[field]),
-  );
-
-  return {
-    status: missingFields.length > 0,
-    missingField: missingFields,
-  };
-}
 
 function validatePresenceOfMandatoryPropertiesV2(objectName, object) {
   const { ZOHO } = ZOHO_SDK;
@@ -82,29 +58,6 @@ function validatePresenceOfMandatoryPropertiesV2(objectName, object) {
   };
 }
 
-const formatMultiSelectFields = (config, fields) => {
-  const multiSelectFields = getHashFromArray(
-    config.multiSelectFieldLevelDecision,
-    'from',
-    'to',
-    false,
-  );
-
-  // Creating a shallow copy to avoid mutations
-  const formattedFields = { ...fields };
-
-  Object.keys(formattedFields).forEach((eachFieldKey) => {
-    if (
-      multiSelectFields.hasOwnProperty(eachFieldKey) &&
-      isDefinedAndNotNull(formattedFields[eachFieldKey])
-    ) {
-      formattedFields[eachFieldKey] = [formattedFields[eachFieldKey]];
-    }
-  });
-
-  return formattedFields;
-};
-
 const formatMultiSelectFieldsV2 = (destConfig, fields) => {
   const multiSelectFields = getHashFromArray(
     destConfig.multiSelectFieldLevelDecision,
@@ -123,20 +76,6 @@ const formatMultiSelectFieldsV2 = (destConfig, fields) => {
     }
   });
   return formattedFields;
-};
-
-const handleDuplicateCheck = (addDefaultDuplicateCheck, identifierType, operationModuleType) => {
-  let additionalFields = [];
-
-  if (addDefaultDuplicateCheck) {
-    const moduleDuplicateCheckField =
-      zohoConfig.MODULE_WISE_DUPLICATE_CHECK_FIELD[operationModuleType];
-    additionalFields = isDefinedAndNotNull(moduleDuplicateCheckField)
-      ? moduleDuplicateCheckField
-      : ['Name'];
-  }
-
-  return Array.from(new Set([identifierType, ...additionalFields]));
 };
 
 const handleDuplicateCheckV2 = (addDefaultDuplicateCheck, identifierType, operationModuleType) => {
@@ -203,7 +142,10 @@ const sendCOQLRequest = async (region, accessToken, object, selectQuery) => {
       };
     }
 
-    const searchURL = `${zohoConfig.DATA_CENTRE_BASE_ENDPOINTS_MAP[region]}/crm/v6/coql`;
+    const searchURL = ZOHO_SDK.ZOHO.getBaseRecordUrl({
+      dataCenter: region,
+      moduleName: 'coql',
+    });
     const searchResult = await handleHttpRequest(
       'post',
       searchURL,
@@ -253,31 +195,9 @@ const sendCOQLRequest = async (region, accessToken, object, selectQuery) => {
   }
 };
 
-const searchRecordId = async (fields, metadata, Config, operationModuleType, identifierType) => {
+const searchRecordIdV2 = async ({ identifiers, metadata, destination, destConfig }) => {
   try {
-    const { region } = Config;
-
-    const selectQuery = generateSqlQuery(operationModuleType, {
-      [identifierType]: fields[identifierType],
-    });
-    const result = await sendCOQLRequest(
-      region,
-      metadata.secret.accessToken,
-      operationModuleType,
-      selectQuery,
-    );
-    return result;
-  } catch (error) {
-    return {
-      erroneous: true,
-      message: error.message,
-    };
-  }
-};
-
-const searchRecordIdV2 = async (identifiers, metadata, Config, destConfig) => {
-  try {
-    const { region } = Config;
+    const region = getRegion(destination);
     const { object } = destConfig;
 
     const selectQuery = generateSqlQuery(object, identifiers);
@@ -318,16 +238,12 @@ const validateConfigurationIssue = (Config, operationModuleType) => {
 };
 
 module.exports = {
-  deduceModuleInfo,
   deduceModuleInfoV2,
-  validatePresenceOfMandatoryProperties,
   validatePresenceOfMandatoryPropertiesV2,
-  formatMultiSelectFields,
   formatMultiSelectFieldsV2,
-  handleDuplicateCheck,
   handleDuplicateCheckV2,
-  searchRecordId,
   searchRecordIdV2,
   calculateTrigger,
   validateConfigurationIssue,
+  getRegion,
 };

@@ -22,8 +22,6 @@ const {
 const {
   ConfigCategory,
   mappingConfig,
-  BASE_ENDPOINT,
-  BASE_ENDPOINT_EU,
   IMPORT_MAX_BATCH_SIZE,
   ENGAGE_MAX_BATCH_SIZE,
   GROUPS_MAX_BATCH_SIZE,
@@ -37,6 +35,8 @@ const {
   trimTraits,
   generatePageOrScreenCustomEventName,
   recordBatchSizeMetrics,
+  getBaseEndpoint,
+  validateMixpanelPayloadLimits,
 } = require('./util');
 const { CommonUtils } = require('../../../util/common');
 
@@ -44,9 +44,10 @@ const { CommonUtils } = require('../../../util/common');
 const mPEventPropertiesConfigJson = mappingConfig[ConfigCategory.EVENT_PROPERTIES.name];
 
 const setImportCredentials = (destConfig) => {
-  const endpoint =
-    destConfig.dataResidency === 'eu' ? `${BASE_ENDPOINT_EU}/import/` : `${BASE_ENDPOINT}/import/`;
-  const params = { strict: destConfig.strictMode ? 1 : 0 };
+  const endpoint = `${getBaseEndpoint(destConfig)}/import/`;
+  const params = {
+    strict: destConfig.strictMode ? 1 : 0,
+  };
   const { serviceAccountUserName, serviceAccountSecret, projectId, token } = destConfig;
   let credentials;
   if (token) {
@@ -67,7 +68,6 @@ const responseBuilderSimple = (payload, message, eventType, destConfig) => {
   response.method = defaultPostRequestConfig.requestMethod;
   response.userId = message.userId || message.anonymousId;
   response.body.JSON_ARRAY = { batch: JSON.stringify([removeUndefinedValues(payload)]) };
-  const { dataResidency } = destConfig;
   const duration = getTimeDifference(message.timestamp);
 
   const setCredentials = () => {
@@ -96,9 +96,10 @@ const responseBuilderSimple = (payload, message, eventType, destConfig) => {
       break;
     }
     default:
-      response.endpoint =
-        dataResidency === 'eu' ? `${BASE_ENDPOINT_EU}/engage/` : `${BASE_ENDPOINT}/engage/`;
-      response.headers = {};
+      response.endpoint = `${getBaseEndpoint(destConfig)}/engage/`;
+      response.headers = {
+        'Content-Type': 'application/json',
+      };
   }
   return response;
 };
@@ -164,9 +165,7 @@ const getEventValueForTrackEvent = (message, destination) => {
 
   const unixTimestamp = toUnixTimestampInMS(message.timestamp || message.originalTimestamp);
 
-  const traits = destination.Config?.dropTraitsInTrackEvent
-    ? {}
-    : { ...message?.context?.traits };
+  const traits = destination.Config?.dropTraitsInTrackEvent ? {} : { ...message?.context?.traits };
 
   let properties = {
     ...message.properties,
@@ -192,7 +191,7 @@ const getEventValueForTrackEvent = (message, destination) => {
     properties.$browser = browser.name;
     properties.$browser_version = browser.version;
   }
-
+  validateMixpanelPayloadLimits(properties);
   const payload = {
     event: message.event,
     properties,
@@ -221,9 +220,10 @@ const processTrack = (message, destination) => {
   return returnValue;
 };
 
-const createSetOnceResponse = (message, type, destination, setOnce) => {
+const buildUserProfileResponse = (userProfileParams) => {
+  const { message, type, destination, properties, operation } = userProfileParams;
   const payload = {
-    $set_once: setOnce,
+    [operation]: properties,
     $token: destination.Config.token,
     $distinct_id: message.userId || message.anonymousId,
   };
@@ -235,28 +235,73 @@ const createSetOnceResponse = (message, type, destination, setOnce) => {
   return responseBuilderSimple(payload, message, type, destination.Config);
 };
 
+const handleUserProfileOperation = (userProfileParams) => {
+  const { message, type, destination, propertiesConfig, operation } = userProfileParams;
+
+  if (!propertiesConfig || propertiesConfig.length === 0) {
+    return null;
+  }
+  const operationProperties = parseConfigArray(propertiesConfig, 'property');
+  const segregatedTraits = trimTraits(message.traits, message.context.traits, operationProperties);
+
+  message.traits = segregatedTraits.traits;
+  message.context.traits = segregatedTraits.contextTraits;
+
+  const finalOperationProperties =
+    operation === '$union'
+      ? Object.fromEntries(
+          Object.entries(segregatedTraits.operationTransformedProperties).map(([key, value]) => [
+            key,
+            CommonUtils.toArray(value),
+          ]),
+        )
+      : segregatedTraits.operationTransformedProperties;
+
+  if (Object.keys(finalOperationProperties).length > 0) {
+    return buildUserProfileResponse({
+      message,
+      type,
+      destination,
+      properties: finalOperationProperties,
+      operation,
+    });
+  }
+  return null;
+};
+
 const processIdentifyEvents = async (message, type, destination) => {
   const messageClone = { ...message };
-  let seggregatedTraits = {};
   const returnValue = [];
-  let setOnceProperties = [];
 
-  // making payload for set_once properties
-  if (destination.Config.setOnceProperties && destination.Config.setOnceProperties.length > 0) {
-    setOnceProperties = parseConfigArray(destination.Config.setOnceProperties, 'property');
-    seggregatedTraits = trimTraits(
-      messageClone.traits,
-      messageClone.context.traits,
-      setOnceProperties,
-    );
-    messageClone.traits = seggregatedTraits.traits;
-    messageClone.context.traits = seggregatedTraits.contextTraits;
-    if (Object.keys(seggregatedTraits.setOnce).length > 0) {
-      returnValue.push(
-        createSetOnceResponse(messageClone, type, destination, seggregatedTraits.setOnce),
-      );
-    }
-  }
+  // Set Once Properties
+  const setOnceResponse = handleUserProfileOperation({
+    message: messageClone,
+    type,
+    destination,
+    propertiesConfig: destination.Config?.setOnceProperties,
+    operation: '$set_once',
+  });
+  if (setOnceResponse) returnValue.push(setOnceResponse);
+
+  // Union Properties
+  const unionResponse = handleUserProfileOperation({
+    message: messageClone,
+    type,
+    destination,
+    propertiesConfig: destination.Config?.unionProperties,
+    operation: '$union',
+  });
+  if (unionResponse) returnValue.push(unionResponse);
+
+  // Append Properties
+  const appendResponse = handleUserProfileOperation({
+    message: messageClone,
+    type,
+    destination,
+    propertiesConfig: destination.Config?.appendProperties,
+    operation: '$append',
+  });
+  if (appendResponse) returnValue.push(appendResponse);
 
   // Creating the user profile
   // https://developer.mixpanel.com/reference/profile-set
@@ -339,6 +384,7 @@ const processPageOrScreenEvents = (message, type, destination) => {
       : 'Loaded a Screen';
   }
 
+  validateMixpanelPayloadLimits(properties);
   const payload = {
     event: eventName,
     properties,
@@ -360,13 +406,15 @@ const processAliasEvents = (message, type, destination) => {
     );
   }
 
+  const properties = {
+    distinct_id: aliasId,
+    alias: message.userId,
+    token: destination.Config.token,
+  };
+
   const payload = {
     event: '$create_alias',
-    properties: {
-      distinct_id: aliasId,
-      alias: message.userId,
-      token: destination.Config.token,
-    },
+    properties,
   };
   return responseBuilderSimple(payload, message, type, destination.Config);
 };
@@ -385,12 +433,14 @@ const processGroupEvents = (message, type, destination) => {
         groupKeyVal = [groupKeyVal];
       }
       if (groupKeyVal) {
+        const setPayload = {
+          [groupKey]: groupKeyVal,
+        };
+
         const payload = {
           $token: destination.Config.token,
           $distinct_id: message.userId || message.anonymousId,
-          $set: {
-            [groupKey]: groupKeyVal,
-          },
+          $set: setPayload,
           $ip: get(message, 'context.ip') || message.request_ip,
         };
         if (destination?.Config.identityMergeApi === 'simplified') {
@@ -413,10 +463,7 @@ const processGroupEvents = (message, type, destination) => {
             type,
             destination.Config,
           );
-          groupResponse.endpoint =
-            destination.Config.dataResidency === 'eu'
-              ? `${BASE_ENDPOINT_EU}/groups/`
-              : `${BASE_ENDPOINT}/groups/`;
+          groupResponse.endpoint = `${getBaseEndpoint(destination?.Config)}/groups/`;
           returnValue.push(groupResponse);
         });
       }
