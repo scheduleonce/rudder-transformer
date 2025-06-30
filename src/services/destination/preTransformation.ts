@@ -21,10 +21,7 @@ export class DestinationPreTransformationService {
         return parsedEvent;
       },
     );
-    // Filter out any undefined or null events after processing
-    // This is important to ensure that we only return valid events to the next step in the pipeline
-    const filteredEvents = eventsProcessed.filter((event: any) => !!event);
 
-    return filteredEvents;
+    return eventsProcessed;
   }
 }

@@ -12,10 +12,6 @@ const doesEventContainContextTraits = (event) => {
   return event && event.message && event.message.context && event.message.context.traits;
 };
 
-const getPageEventBlockedDestinationsList = () => {
-  return (process.env.BLOCKED_PAGE_DESTINATIONS || '').trim().split(',');
-};
-
 const handleFirstLoginGA4Property = (destination, event, traits) => {
   // delete firstLoginGA4 property from traits when destination is not GA4
   if (destination !== 'ga4') {
@@ -57,13 +53,6 @@ const oncehubTransformer = (destination, event) => {
   const contextTraitsPresent = doesEventContainContextTraits(event);
   const eventTraitsPresent = doesEventContainsTraits(event);
   const checkDestinationList = getPIIDestinationList().includes(destination);
-  const checkPageEventBlockedDestination =
-    getPageEventBlockedDestinationsList().includes(destination);
-  if (event.message.type === EventType.PAGE && checkPageEventBlockedDestination) {
-    // eslint-disable-next-line no-param-reassign
-    return null;
-  }
-
   changeDateFormatForCustomerio(
     contextTraitsPresent,
     eventTraitsPresent,
@@ -100,7 +89,6 @@ const oncehubTransformer = (destination, event) => {
 
   // eslint-disable-next-line no-console
   // if(doesEventContainsTraits(event)) console.log("event log=>destination : ", JSON.stringify(destination), " , ==> event traits : ", JSON.stringify(event.message.traits), " , ==> event here : ",JSON.stringify(event));
- 
   return event;
 };
 
