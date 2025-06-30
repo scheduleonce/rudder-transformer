@@ -1,11 +1,11 @@
 /* eslint-disable no-restricted-syntax */
 /* eslint-disable no-undef */
-
+const { gzip } = require('node:zlib');
 const lodash = require('lodash');
 const http = require('http');
 const https = require('https');
 const axios = require('axios');
-const { isDefinedAndNotNull } = require('@rudderstack/integrations-lib');
+const { isDefinedAndNotNull, PlatformError } = require('@rudderstack/integrations-lib');
 const stats = require('../util/stats');
 const {
   removeUndefinedValues,
@@ -332,31 +332,63 @@ function getFormData(payload = {}) {
   return data;
 }
 
-function extractPayloadForFormat(payload, format) {
-  switch (format) {
-    case 'JSON_ARRAY':
-      return payload?.batch;
-    case 'JSON':
-      return payload;
-    case 'XML':
-      return payload?.payload;
-    case 'FORM':
-      return getFormData(payload);
-    default:
-      logger.debug(`Unknown payload format: ${format}`);
-      return undefined;
+const getZippedPayload = (payload) =>
+  new Promise((resolve, reject) => {
+    gzip(payload, (err, zippedPayload) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(zippedPayload);
+    });
+  })
+    .then((zippedPayload) => zippedPayload)
+    .catch((err) => {
+      throw new PlatformError(`Failed to do GZIP compression: ${err}`, 400);
+    });
+
+const extractPayloadForFormat = (payload, format) => {
+  if (!payload) {
+    return undefined;
   }
-}
+
+  const extractors = {
+    JSON_ARRAY: () => payload?.batch,
+    JSON: () => payload,
+    XML: () => payload?.payload,
+    FORM: () => getFormData(payload),
+    GZIP: () => getZippedPayload(payload?.payload),
+  };
+
+  const extractor = extractors[format];
+  if (!extractor) {
+    logger.debug(`Unknown payload format: ${format}`);
+    return undefined;
+  }
+
+  return extractor();
+};
 
 /**
  * Prepares the proxy request
  * @param {*} request
  * @returns
  */
-const prepareProxyRequest = (request) => {
-  const { body, method, params, endpoint, headers, destinationConfig: config } = request;
+const prepareProxyRequest = async (request) => {
+  const {
+    body,
+    method,
+    params,
+    endpoint,
+    headers: incomingHeaders = {},
+    destinationConfig: config,
+  } = request;
+  const headers = { ...incomingHeaders };
   const { payload, payloadFormat } = getPayloadData(body);
-  const data = extractPayloadForFormat(payload, payloadFormat);
+  if (payloadFormat && payloadFormat === 'GZIP') {
+    headers['Content-Encoding'] = 'gzip';
+  }
+  const data = await extractPayloadForFormat(payload, payloadFormat);
   // Ref: https://github.com/rudderlabs/rudder-server/blob/master/router/network.go#L164
   headers['User-Agent'] = 'RudderLabs';
   return removeUndefinedValues({ endpoint, data, params, headers, method, config });
@@ -418,7 +450,7 @@ const handleHttpRequest = async (requestType = 'post', ...httpArgs) => {
  */
 const proxyRequest = async (request, destType) => {
   const { metadata } = request;
-  const { endpoint, data, method, params, headers } = prepareProxyRequest(request);
+  const { endpoint, data, method, params, headers } = await prepareProxyRequest(request);
   const requestOptions = {
     url: endpoint,
     data,
@@ -448,4 +480,5 @@ module.exports = {
   handleHttpRequest,
   enhanceRequestOptions,
   fireHTTPStats,
+  getZippedPayload,
 };

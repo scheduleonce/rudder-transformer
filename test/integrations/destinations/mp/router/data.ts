@@ -464,6 +464,8 @@ export const data = [
                           $app_build_number: '1.0.0',
                           $app_version_string: '1.0.5',
                           $insert_id: 'dd266c67-9199-4a52-ba32-f46ddde67312',
+                          $app_name: 'RudderLabs JavaScript SDK',
+                          $app_namespace: 'com.rudderlabs.javascript',
                           token: secret2,
                           distinct_id: 'hjikl',
                           time: 1688624942402,
@@ -512,7 +514,9 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: 'https://api.mixpanel.com/engage/',
-                  headers: {},
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
                   params: {},
                   body: {
                     JSON: {},
@@ -569,6 +573,8 @@ export const data = [
                             $app_build_number: '1',
                             $app_version_string: '1.0',
                             $insert_id: 'id2',
+                            $app_name: 'LeanPlumIntegrationAndroid',
+                            $app_namespace: 'com.android.SampleLeanPlum',
                             token: secret2,
                             distinct_id: 'userId01',
                             time: 1688624942402,
@@ -616,7 +622,9 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: 'https://api.mixpanel.com/engage/',
-                  headers: {},
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
                   params: {},
                   body: {
                     JSON: {},
@@ -752,7 +760,9 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: 'https://api.mixpanel.com/engage/',
-                  headers: {},
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
                   params: {},
                   body: {
                     JSON: {},
@@ -776,7 +786,9 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: 'https://api.mixpanel.com/groups/',
-                  headers: {},
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
                   params: {},
                   body: {
                     JSON: {},
@@ -1322,6 +1334,8 @@ export const data = [
                           $app_build_number: '1.0.0',
                           $app_version_string: '1.0.5',
                           $insert_id: 'dd266c67-9199-4a52-ba32-f46ddde67312',
+                          $app_name: 'RudderLabs JavaScript SDK',
+                          $app_namespace: 'com.rudderlabs.javascript',
                           token: secret2,
                           distinct_id: 'hjikl',
                           time: 1688624942402,
@@ -1370,7 +1384,9 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: 'https://api.mixpanel.com/engage/',
-                  headers: {},
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
                   params: {},
                   body: {
                     JSON: {},
@@ -1426,6 +1442,8 @@ export const data = [
                             $app_build_number: '1',
                             $app_version_string: '1.0',
                             $insert_id: 'id2',
+                            $app_name: 'LeanPlumIntegrationAndroid',
+                            $app_namespace: 'com.android.SampleLeanPlum',
                             token: secret2,
                             distinct_id: 'userId01',
                             time: 1688624942402,
@@ -1473,7 +1491,9 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: 'https://api.mixpanel.com/engage/',
-                  headers: {},
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
                   params: {},
                   body: {
                     JSON: {},
@@ -1608,7 +1628,9 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: 'https://api.mixpanel.com/engage/',
-                  headers: {},
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
                   params: {},
                   body: {
                     JSON: {},
@@ -1632,7 +1654,9 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: 'https://api.mixpanel.com/groups/',
-                  headers: {},
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
                   params: {},
                   body: {
                     JSON: {},
