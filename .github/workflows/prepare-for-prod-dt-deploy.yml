@@ -10,6 +10,11 @@ on:
     branches:
       - master
 
+permissions:
+  id-token: write # allows the JWT to be requested from GitHub's OIDC provider
+  contents: write
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
@@ -32,7 +37,7 @@ jobs:
       tag_name_ut: ${{ steps.gen_tag_names.outputs.tag_name_ut }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -73,7 +78,7 @@ jobs:
       TF_IMAGE_REPOSITORY: rudderstack/rudder-transformer
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -91,6 +96,7 @@ jobs:
       - name: Clone Devops Repo
         run: |
           git clone https://${{secrets.PAT}}@github.com/rudderlabs/rudder-devops.git
+
 
       - name: Extract branch name
         id: extract_branch_name
@@ -146,38 +152,29 @@ jobs:
 
           gh pr create --fill
 
-      - name: Update helm charts and raise pull request for enterprise customers on dedicated transformers
+      - name: Clone Operator Repo
+        run: |
+          git clone https://${{secrets.PAT}}@github.com/rudderlabs/rudderstack-operator.git
+
+      - name: Update helm charts and raise pull request for dedicated transformer from operator
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
         run: |
-          cd rudder-devops
-          git checkout -b dedicated-transformer-$TAG_NAME
+          cd rudderstack-operator
+          git checkout -b dedicated-transformer-$TAG_NAME ${{steps.extract_branch_name.outputs.branch_name}}
 
-          cd customer-objects
+          cd operator-helm/valuefiles
+          yq eval -i ".transformer.image.version=\"$TAG_NAME\"" values.yaml
+          yq eval -i ".transformer.image.repository=\"$TF_IMAGE_REPOSITORY\"" values.yaml
+          git add values.yaml
 
-          declare -a enabled_dt_customers=()
-          declare -a sub_directories=('enterprise-us' 'enterprise-eu')
-
-          # identify the customers enabled in sub-directories
-          for directory in "${sub_directories[@]}"; do
-            for f in "./$directory"/*; do
-              [[ -f $f ]] || continue
-
-              enabled="$(yq e '.spec.transformer.enabled' $f)"
-              if [ $enabled == "true" ]; then
-                  enabled_dt_customers+=( $f )
-              fi
-            done
-          done
-
-          # bump up the customers version and repository information
-          for customer in "${enabled_dt_customers[@]}"; do
-            yq eval -i ".spec.transformer.image.version=\"$TAG_NAME\"" $customer
-            yq eval -i ".spec.transformer.image.repository=\"$TF_IMAGE_REPOSITORY\"" $customer
-            git add $customer
-          done
-
-          git commit -m "chore: upgrade dedicated dt transformers to $TAG_NAME"
+          git commit -m "chore: upgrade dedicated transformer default version to $TAG_NAME"
           git push -u origin dedicated-transformer-$TAG_NAME
 
           gh pr create --fill
+
+  update-ingestion-service:
+    name: Update Ingestion Service with Latest Transformer Version
+    uses: ./.github/workflows/update-ingestion-service.yml
+    secrets:
+      PAT: ${{ secrets.PAT }}

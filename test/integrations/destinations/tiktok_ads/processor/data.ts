@@ -1,68 +1,103 @@
-export const data = [
+/**
+ * Auto-migrated and optimized test cases
+ * Generated on: 2025-05-21T07:35:36.463Z
+ */
+
+import { ProcessorTestData } from '../../../testTypes';
+import { MessageType } from '../../../../../src/types';
+import { generateMetadata, overrideDestination } from '../../../testUtils';
+import { destinationConfig } from '../common';
+import {
+  TRACK_ENDPOINT,
+  TRACK_ENDPOINT_PATH,
+  trackEndpointV2,
+  trackEndpointV2Path,
+} from '../../../../../src/v0/destinations/tiktok_ads/config';
+
+const commonContents = [
   {
+    price: 8,
+    quantity: 2,
+    content_type: 'socks',
+    content_id: '1077218',
+  },
+  {
+    price: 30,
+    quantity: 1,
+    content_type: 'dress',
+    content_id: '1197218',
+  },
+];
+
+const commonProperties = {
+  contents: commonContents,
+  currency: 'USD',
+  value: 46,
+};
+
+const baseTrackMessage = {
+  anonymousId: '21e13f4bc7ceddad',
+  channel: 'web',
+  context: {
+    app: {
+      build: '1.0.0',
+      name: 'RudderLabs JavaScript SDK',
+      namespace: 'com.rudderlabs.javascript',
+      version: '1.0.0',
+    },
+    library: {
+      name: 'RudderLabs JavaScript SDK',
+      version: '1.0.0',
+    },
+    userAgent: 'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
+    ip: '13.57.97.131',
+    locale: 'en-US',
+    os: {
+      name: '',
+      version: '',
+    },
+    screen: {
+      density: 2,
+    },
+    externalId: [
+      {
+        type: 'tiktokExternalId',
+        id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
+      },
+    ],
+  },
+  messageId: '84e26acc-56a5-4835-8233-591137fca468',
+  session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
+  originalTimestamp: '2019-10-14T09:03:17.562Z',
+  timestamp: '2020-09-17T19:49:27Z',
+  type: 'track' as MessageType,
+  integrations: {
+    All: true,
+  },
+  sentAt: '2019-10-14T09:03:22.563Z',
+};
+
+export const data: ProcessorTestData[] = [
+  {
+    id: 'processor-1747812936460',
     name: 'tiktok_ads',
     description: 'Test 0',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'checkout step completed',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 clickId: 'dummyclickId',
                 currency: 'USD',
                 value: 46,
@@ -81,18 +116,13 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -106,7 +136,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -118,24 +149,7 @@ export const data = [
                   event: 'CompletePayment',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     ad: {
                       callback: 'dummyclickId',
@@ -164,6 +178,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -171,52 +186,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936460',
     name: 'tiktok_ads',
     description: 'Test 1',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'checkout started',
               properties: {
                 eventId: '1616318632825_357',
@@ -231,35 +215,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -273,7 +239,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -285,24 +252,7 @@ export const data = [
                   event: 'InitiateCheckout',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -328,6 +278,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -335,13 +286,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 2',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -393,20 +348,7 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
@@ -415,13 +357,12 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -435,7 +376,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -448,24 +390,7 @@ export const data = [
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
                   test_event_code: 'sample rudder test_event_code',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -488,6 +413,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -495,52 +421,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 3',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'Product Added to Wishlist1',
               properties: {
                 eventId: '1616318632825_357',
@@ -556,35 +451,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -594,6 +471,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error:
               'Event name (product added to wishlist1) is not valid, must be mapped to one of standard events',
@@ -604,6 +482,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -611,52 +491,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 4',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'Product Added to Wishlist',
               properties: {
                 eventId: '1616318632825_357',
@@ -672,35 +521,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -714,7 +545,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -727,24 +559,7 @@ export const data = [
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
                   test_event_code: 'sample rudder test_event_code',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -770,6 +585,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -777,52 +593,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 5',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'Product Added to Wishlist',
               properties: {
                 eventId: '1616318632825_357',
@@ -838,35 +623,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -880,7 +647,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -893,24 +661,7 @@ export const data = [
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
                   test_event_code: 'sample rudder test_event_code',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -936,6 +687,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -943,13 +695,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 6',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -1003,20 +759,7 @@ export const data = [
                     email: 'sample@sample.com',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
@@ -1025,13 +768,12 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: true,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: true,
+            }),
           },
         ],
       },
@@ -1045,7 +787,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -1057,24 +800,7 @@ export const data = [
                   event: 'Subscribe',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -1100,6 +826,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -1107,52 +834,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 7',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'payment info entered',
               properties: {
                 eventId: '1616318632825_357',
@@ -1167,35 +863,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -1209,7 +887,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -1221,24 +900,7 @@ export const data = [
                   event: 'AddPaymentInfo',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -1264,6 +926,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -1271,52 +934,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 8',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               properties: {
                 eventId: '1616318632825_357',
                 context: {
@@ -1330,35 +962,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -1368,6 +982,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error: 'Event is a required field and should be a string',
             statTags: {
@@ -1377,6 +992,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -1384,13 +1001,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 9',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -1442,20 +1063,7 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
@@ -1464,13 +1072,12 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -1480,6 +1087,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error: 'Event type is required',
             statTags: {
@@ -1489,6 +1097,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -1496,13 +1106,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 10',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -1555,20 +1169,7 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
@@ -1577,13 +1178,12 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -1597,7 +1197,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -1608,24 +1209,7 @@ export const data = [
                   pixel_code: '{{PIXEL-CODE}}',
                   event: 'AddPaymentInfo',
                   event_id: '1616318632825_357',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -1651,6 +1235,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -1658,52 +1243,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 11',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'submitform',
               properties: {
                 eventId: '16163186328257',
@@ -1718,35 +1272,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -1760,7 +1296,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -1772,24 +1309,7 @@ export const data = [
                   event: 'SubmitForm',
                   event_id: '16163186328257',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -1815,6 +1335,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -1822,52 +1343,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 12',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'submitform',
               properties: {
                 eventId: '16163186328257',
@@ -1886,18 +1376,13 @@ export const data = [
                   ip: '13.57.97.131',
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -1911,7 +1396,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -1948,6 +1434,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -1955,52 +1442,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 13',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'contact',
               properties: {
                 eventId: '16163186328257',
@@ -2015,35 +1471,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -2057,7 +1495,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -2069,24 +1508,7 @@ export const data = [
                   event: 'Contact',
                   event_id: '16163186328257',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -2112,6 +1534,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -2119,13 +1542,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 14',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -2179,20 +1606,7 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
@@ -2201,13 +1615,12 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -2217,6 +1630,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error: 'Event type identify is not supported',
             statTags: {
@@ -2226,6 +1640,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -2233,52 +1649,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 15',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'checkout step completed',
               properties: {
                 eventId: '1616318632825_357',
@@ -2293,35 +1678,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -2335,7 +1702,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -2347,24 +1715,7 @@ export const data = [
                   event: 'CompletePayment',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -2390,6 +1741,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -2397,52 +1749,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 16',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'order completed',
               properties: {
                 eventId: '1616318632825_357',
@@ -2457,35 +1778,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -2499,7 +1802,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -2511,24 +1815,7 @@ export const data = [
                   event: 'PlaceAnOrder',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -2554,6 +1841,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -2561,56 +1849,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 17',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                traits: {
-                  email: 'user@sample.com',
-                  phone: '+919912345678',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'SubscriBe',
               properties: {
                 eventId: '1616318632825_357',
@@ -2625,35 +1878,17 @@ export const data = [
                     email: 'sample@rudder.com',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: true,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: true,
+            }),
           },
         ],
       },
@@ -2667,7 +1902,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -2680,24 +1916,7 @@ export const data = [
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
                   test_event_code: 'TEST0000000011',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -2723,6 +1942,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -2730,13 +1950,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 18',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -2794,20 +2018,7 @@ export const data = [
                     email: '',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
@@ -2816,13 +2027,12 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: true,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: true,
+            }),
           },
         ],
       },
@@ -2836,7 +2046,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -2849,24 +2060,7 @@ export const data = [
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
                   test_event_code: 'TEST0000000011',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -2892,6 +2086,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -2899,13 +2094,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 19',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -2952,20 +2151,7 @@ export const data = [
               event: 'checkout step completed',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
                 context: {
@@ -2981,13 +2167,12 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -3001,7 +2186,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -3013,24 +2199,7 @@ export const data = [
                   event: 'CompletePayment',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://rudder.mywebsite.com/purchase',
@@ -3056,6 +2225,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -3063,13 +2233,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 20',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -3112,20 +2286,7 @@ export const data = [
               event: 'abc',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
                 context: {
@@ -3145,27 +2306,26 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                eventsToStandard: [
-                  {
-                    from: 'abc',
-                    to: 'download',
-                  },
-                  {
-                    from: 'abc',
-                    to: 'search',
-                  },
-                  {
-                    from: 'def',
-                    to: 'search',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              eventsToStandard: [
+                {
+                  from: 'abc',
+                  to: 'download',
+                },
+                {
+                  from: 'abc',
+                  to: 'search',
+                },
+                {
+                  from: 'def',
+                  to: 'search',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -3179,7 +2339,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -3191,24 +2352,7 @@ export const data = [
                   event: 'download',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -3234,6 +2378,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
           {
@@ -3241,7 +2386,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -3253,24 +2399,7 @@ export const data = [
                   event: 'search',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -3296,6 +2425,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -3303,69 +2433,25 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 21',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'abc',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
                 context: {
@@ -3380,24 +2466,19 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                eventsToStandard: [
-                  {
-                    from: 'def',
-                    to: 'download',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              eventsToStandard: [
+                {
+                  from: 'def',
+                  to: 'download',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -3407,6 +2488,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error: 'Event name (abc) is not valid, must be mapped to one of standard events',
             statTags: {
@@ -3416,6 +2498,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -3423,69 +2507,25 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 22',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'abc',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
                 context: {
@@ -3500,28 +2540,23 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                eventsToStandard: [
-                  {
-                    from: 'abc',
-                    to: 'download',
-                  },
-                  {
-                    from: 'def',
-                    to: 'download',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              eventsToStandard: [
+                {
+                  from: 'abc',
+                  to: 'download',
+                },
+                {
+                  from: 'def',
+                  to: 'download',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -3535,7 +2570,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -3547,24 +2583,7 @@ export const data = [
                   event: 'download',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -3590,6 +2609,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -3597,69 +2617,25 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 23',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'abc',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
                 context: {
@@ -3673,28 +2649,23 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: true,
-                eventsToStandard: [
-                  {
-                    from: 'abc',
-                    to: 'download',
-                  },
-                  {
-                    from: 'def',
-                    to: 'download',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: true,
+              eventsToStandard: [
+                {
+                  from: 'abc',
+                  to: 'download',
+                },
+                {
+                  from: 'def',
+                  to: 'download',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -3708,7 +2679,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -3720,24 +2692,7 @@ export const data = [
                   event: 'download',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -3763,6 +2718,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -3770,69 +2726,25 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 24',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'abc',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
                 context: {
@@ -3846,28 +2758,23 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: true,
-                eventsToStandard: [
-                  {
-                    from: 'abc',
-                    to: 'download',
-                  },
-                  {
-                    from: 'def',
-                    to: 'download',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: true,
+              eventsToStandard: [
+                {
+                  from: 'abc',
+                  to: 'download',
+                },
+                {
+                  from: 'def',
+                  to: 'download',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -3881,7 +2788,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -3893,24 +2801,7 @@ export const data = [
                   event: 'download',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -3936,6 +2827,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -3943,69 +2835,25 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 25',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'checkout step completed',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 products: [
                   {
                     product_id: 123,
@@ -4040,18 +2888,13 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -4065,7 +2908,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -4077,24 +2921,7 @@ export const data = [
                   event: 'CompletePayment',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -4120,6 +2947,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -4127,52 +2955,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 26',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'checkout step completed',
               properties: {
                 eventId: '1616318632825_357',
@@ -4211,18 +3008,13 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -4236,7 +3028,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -4294,6 +3087,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -4301,52 +3095,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 27',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'checkout step completed',
               properties: {
                 eventId: '1616318632825_357',
@@ -4386,18 +3149,13 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -4411,7 +3169,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -4470,6 +3229,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -4477,52 +3237,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 28',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'checkout step completed',
               properties: {
                 category: 'Urban',
@@ -4566,18 +3295,13 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -4591,7 +3315,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -4656,6 +3381,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -4663,69 +3389,25 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 29 -> custom_event Pass',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'custom_event',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 clickId: 'dummyclickId',
                 currency: 'USD',
                 value: 46,
@@ -4744,19 +3426,14 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                sendCustomEvents: true,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              sendCustomEvents: true,
+            }),
           },
         ],
       },
@@ -4770,7 +3447,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -4782,24 +3460,7 @@ export const data = [
                   event: 'custom_event',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     ad: {
                       callback: 'dummyclickId',
@@ -4828,6 +3489,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -4835,69 +3497,25 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 30 -> custom_event Failure case for flag set as false',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'custom_event',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 clickId: 'dummyclickId',
                 currency: 'USD',
                 value: 46,
@@ -4916,19 +3534,14 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                sendCustomEvents: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              sendCustomEvents: false,
+            }),
           },
         ],
       },
@@ -4938,6 +3551,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error:
               'Event name (custom_event) is not valid, must be mapped to one of standard events',
@@ -4948,6 +3562,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -4955,69 +3571,25 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 31 -> Camel Case Custom Event Pass',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'customEvent',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 clickId: 'dummyclickId',
                 currency: 'USD',
                 value: 46,
@@ -5036,19 +3608,14 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                sendCustomEvents: true,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              sendCustomEvents: true,
+            }),
           },
         ],
       },
@@ -5062,7 +3629,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -5074,24 +3642,7 @@ export const data = [
                   event: 'customEvent',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     ad: {
                       callback: 'dummyclickId',
@@ -5120,6 +3671,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -5127,13 +3679,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 32 -> V2 -> Camel Case Custom Event Pass',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -5162,20 +3718,7 @@ export const data = [
               event: 'customEvent',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 url: 'http://demo.mywebsite.com/purchase',
                 clickId: 'dummyclickId',
                 currency: 'USD',
@@ -5186,15 +3729,14 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                version: 'v2',
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                sendCustomEvents: true,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              version: 'v2',
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              sendCustomEvents: true,
+            }),
           },
         ],
       },
@@ -5208,7 +3750,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/event/track/',
+              endpoint: trackEndpointV2,
+              endpointPath: trackEndpointV2Path,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -5239,6 +3782,8 @@ export const data = [
                             content_id: '1197218',
                           },
                         ],
+                        contents_ids: ['1077218', '1197218'],
+                        num_items: 2,
                         currency: 'USD',
                         value: 46,
                       },
@@ -5264,6 +3809,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -5271,14 +3817,18 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description:
       'Test 33 -> V2 -> Event mapped to one standard event with contents present as it is in properties',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -5318,20 +3868,7 @@ export const data = [
               event: 'addToCart',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 clickId: 'dummyclickId',
                 currency: 'USD',
                 value: 46,
@@ -5341,21 +3878,20 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                version: 'v2',
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                sendCustomEvents: true,
-                eventsToStandard: [
-                  {
-                    from: 'addToCart',
-                    to: 'download',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              version: 'v2',
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              sendCustomEvents: true,
+              eventsToStandard: [
+                {
+                  from: 'addToCart',
+                  to: 'download',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -5369,7 +3905,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/event/track/',
+              endpoint: trackEndpointV2,
+              endpointPath: trackEndpointV2Path,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -5400,6 +3937,8 @@ export const data = [
                             content_id: '1197218',
                           },
                         ],
+                        contents_ids: ['1077218', '1197218'],
+                        num_items: 2,
                         currency: 'USD',
                         value: 46,
                       },
@@ -5426,6 +3965,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -5433,13 +3973,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 34 -> V2 -> Event mapped to multiple standard events and no phone',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -5478,20 +4022,7 @@ export const data = [
               event: 'addToCart',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 clickId: 'dummyclickId',
                 currency: 'USD',
                 value: 46,
@@ -5501,25 +4032,24 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                version: 'v2',
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                sendCustomEvents: true,
-                eventsToStandard: [
-                  {
-                    from: 'addToCart',
-                    to: 'download',
-                  },
-                  {
-                    from: 'AddToCart',
-                    to: 'AddToWishlist',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              version: 'v2',
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              sendCustomEvents: true,
+              eventsToStandard: [
+                {
+                  from: 'addToCart',
+                  to: 'download',
+                },
+                {
+                  from: 'AddToCart',
+                  to: 'AddToWishlist',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -5533,7 +4063,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/event/track/',
+              endpoint: trackEndpointV2,
+              endpointPath: trackEndpointV2Path,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -5564,6 +4095,8 @@ export const data = [
                             content_id: '1197218',
                           },
                         ],
+                        contents_ids: ['1077218', '1197218'],
+                        num_items: 2,
                         currency: 'USD',
                         value: 46,
                       },
@@ -5599,6 +4132,8 @@ export const data = [
                             content_id: '1197218',
                           },
                         ],
+                        contents_ids: ['1077218', '1197218'],
+                        num_items: 2,
                         currency: 'USD',
                         value: 46,
                       },
@@ -5624,6 +4159,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -5631,13 +4167,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 35 -> V2 -> array of external_id and phone number',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -5669,20 +4209,7 @@ export const data = [
               event: 'addToCart',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 clickId: 'dummyclickId',
                 currency: 'USD',
                 value: 46,
@@ -5694,25 +4221,24 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                version: 'v2',
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                sendCustomEvents: true,
-                eventsToStandard: [
-                  {
-                    from: 'addToCart',
-                    to: 'download',
-                  },
-                  {
-                    from: 'AddToCart',
-                    to: 'AddToWishlist',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              version: 'v2',
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              sendCustomEvents: true,
+              eventsToStandard: [
+                {
+                  from: 'addToCart',
+                  to: 'download',
+                },
+                {
+                  from: 'AddToCart',
+                  to: 'AddToWishlist',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -5726,7 +4252,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/event/track/',
+              endpoint: trackEndpointV2,
+              endpointPath: trackEndpointV2Path,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -5757,6 +4284,8 @@ export const data = [
                             content_id: '1197218',
                           },
                         ],
+                        contents_ids: ['1077218', '1197218'],
+                        num_items: 2,
                         currency: 'USD',
                         value: 46,
                       },
@@ -5795,6 +4324,8 @@ export const data = [
                             content_id: '1197218',
                           },
                         ],
+                        contents_ids: ['1077218', '1197218'],
+                        num_items: 2,
                         currency: 'USD',
                         value: 46,
                       },
@@ -5823,6 +4354,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -5830,59 +4362,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 36-> V2 -> Event not standard and no custom events allowed',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                traits: {
-                  email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
-                },
-                page: {
-                  url: 'http://demo.mywebsite.com/purchase',
-                  referrer: 'http://demo.mywebsite.com',
-                },
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'Product Added to Wishlist1',
               properties: {
                 eventId: '1616318632825_357',
@@ -5898,36 +4392,18 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                version: 'v2',
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              version: 'v2',
+            }),
           },
         ],
       },
@@ -5937,6 +4413,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error:
               'Event name (product added to wishlist1) is not valid, must be mapped to one of standard events',
@@ -5947,6 +4424,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -5954,19 +4433,22 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 37-> V2 -> No Message type',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
               anonymousId: '21e13f4bc7ceddad',
               channel: 'web',
-
               messageId: '84e26acc-56a5-4835-8233-591137fca468',
               session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
               originalTimestamp: '2019-10-14T09:03:17.562Z',
@@ -5977,14 +4459,13 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                version: 'v2',
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              version: 'v2',
+            }),
           },
         ],
       },
@@ -5994,6 +4475,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error: 'Event type is required',
             statTags: {
@@ -6003,6 +4485,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -6010,13 +4494,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 38-> V2 -> Event not found',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -6032,14 +4520,13 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                version: 'v2',
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              version: 'v2',
+            }),
           },
         ],
       },
@@ -6049,6 +4536,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error: 'Event is a required field and should be a string',
             statTags: {
@@ -6058,6 +4546,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -6065,13 +4555,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 39-> V2 -> Access Token not found',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -6087,13 +4581,12 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                pixelCode: 'configuration',
-                hashUserProperties: false,
-                version: 'v2',
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              pixelCode: 'configuration',
+              hashUserProperties: false,
+              version: 'v2',
+            }),
           },
         ],
       },
@@ -6103,6 +4596,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error: 'Access Token not found. Aborting',
             statTags: {
@@ -6112,6 +4606,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -6119,13 +4615,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 40-> V2 -> Pixel Code not found. Aborting',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -6141,13 +4641,12 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                hashUserProperties: false,
-                version: 'v2',
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              hashUserProperties: false,
+              version: 'v2',
+            }),
           },
         ],
       },
@@ -6157,6 +4656,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error: 'Pixel Code not found. Aborting',
             statTags: {
@@ -6166,6 +4666,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -6173,13 +4675,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 41 -> V2 -> One of standard event',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -6214,20 +4720,7 @@ export const data = [
               event: 'viewcontent',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 clickId: 'dummyclickId',
                 currency: 'USD',
                 value: 46,
@@ -6238,25 +4731,24 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                version: 'v2',
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: true,
-                sendCustomEvents: false,
-                eventsToStandard: [
-                  {
-                    from: 'addToCart',
-                    to: 'download',
-                  },
-                  {
-                    from: 'AddToCart',
-                    to: 'AddToWishlist',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              version: 'v2',
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: true,
+              sendCustomEvents: false,
+              eventsToStandard: [
+                {
+                  from: 'addToCart',
+                  to: 'download',
+                },
+                {
+                  from: 'AddToCart',
+                  to: 'AddToWishlist',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -6270,7 +4762,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/event/track/',
+              endpoint: trackEndpointV2,
+              endpointPath: trackEndpointV2Path,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -6302,6 +4795,8 @@ export const data = [
                             content_id: '1197218',
                           },
                         ],
+                        contents_ids: ['1077218', '1197218'],
+                        num_items: 2,
                         currency: 'USD',
                         value: 46,
                       },
@@ -6333,6 +4828,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -6340,13 +4836,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 42 -> V2 -> One of standard event and contents from products',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -6423,25 +4923,24 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                version: 'v2',
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: true,
-                sendCustomEvents: false,
-                eventsToStandard: [
-                  {
-                    from: 'addToCart',
-                    to: 'download',
-                  },
-                  {
-                    from: 'AddToCart',
-                    to: 'AddToWishlist',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              version: 'v2',
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: true,
+              sendCustomEvents: false,
+              eventsToStandard: [
+                {
+                  from: 'addToCart',
+                  to: 'download',
+                },
+                {
+                  from: 'AddToCart',
+                  to: 'AddToWishlist',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -6455,7 +4954,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/event/track/',
+              endpoint: trackEndpointV2,
+              endpointPath: trackEndpointV2Path,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -6493,6 +4993,9 @@ export const data = [
                             content_name: 'UNO',
                           },
                         ],
+                        contents_ids: ['123', '345'],
+                        num_items: 2,
+                        search_string: 'New age games',
                         currency: 'USD',
                         value: 46,
                       },
@@ -6533,6 +5036,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -6540,13 +5044,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 43 -> V2 -> Contents present as object in properties',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -6594,21 +5102,20 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                version: 'v2',
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                sendCustomEvents: true,
-                eventsToStandard: [
-                  {
-                    from: 'addToCart',
-                    to: 'download',
-                  },
-                ],
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              version: 'v2',
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              sendCustomEvents: true,
+              eventsToStandard: [
+                {
+                  from: 'addToCart',
+                  to: 'download',
+                },
+              ],
+            }),
           },
         ],
       },
@@ -6622,7 +5129,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/event/track/',
+              endpoint: trackEndpointV2,
+              endpointPath: trackEndpointV2Path,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -6647,6 +5155,8 @@ export const data = [
                             content_id: '1077218',
                           },
                         ],
+                        contents_ids: ['1077218'],
+                        num_items: 1,
                         currency: 'USD',
                         value: 46,
                       },
@@ -6673,6 +5183,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -6680,13 +5191,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 44 -> Events 2.0 Event type identify not suported',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -6709,14 +5224,13 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                version: 'v2',
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              version: 'v2',
+            }),
           },
         ],
       },
@@ -6726,6 +5240,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error: 'Event type identify is not supported',
             statTags: {
@@ -6735,6 +5250,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -6742,53 +5259,22 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description:
       'Test 45-> events 1.0 build contents from properties.product.$ where length of prodicts is 0',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'checkout step completed',
               properties: {
                 eventId: '1616318632825_357',
@@ -6807,18 +5293,13 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -6832,7 +5313,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -6874,6 +5356,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -6881,13 +5364,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
     description: 'Test 46 -> V2 -> Custom Event with no properties',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -6919,15 +5406,14 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                version: 'v2',
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                sendCustomEvents: true,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              version: 'v2',
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              sendCustomEvents: true,
+            }),
           },
         ],
       },
@@ -6941,7 +5427,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/event/track/',
+              endpoint: trackEndpointV2,
+              endpointPath: trackEndpointV2Path,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -6976,6 +5463,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -6983,13 +5471,17 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
-    description: 'Test 46 -> V2 -> Standard Event with no properties',
+    description: 'Test 47 -> V2 -> Standard Event with no properties',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
@@ -7021,15 +5513,14 @@ export const data = [
               },
               sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                version: 'v2',
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-                sendCustomEvents: true,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              version: 'v2',
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+              sendCustomEvents: true,
+            }),
           },
         ],
       },
@@ -7043,7 +5534,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/event/track/',
+              endpoint: trackEndpointV2,
+              endpointPath: trackEndpointV2Path,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -7078,6 +5570,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -7085,26 +5578,29 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
-    description: 'Testing if the event name provided as a string or not',
+    description: 'Test 48 -> Testing if the event name provided as a string or not',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
               type: 'track',
-              event: 123,
+              event: 123 as unknown as string,
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -7114,6 +5610,7 @@ export const data = [
         status: 200,
         body: [
           {
+            metadata: generateMetadata(1),
             statusCode: 400,
             error: 'Event is a required field and should be a string',
             statTags: {
@@ -7123,6 +5620,8 @@ export const data = [
               module: 'destination',
               implementation: 'native',
               feature: 'processor',
+              destinationId: 'default-destinationId',
+              workspaceId: 'default-workspaceId',
             },
           },
         ],
@@ -7130,69 +5629,25 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
-    description: 'Testing the purchase event',
+    description: 'Test 49 -> Testing the purchase event',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                ip: '13.57.97.131',
-                locale: 'en-US',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'purchase',
               properties: {
                 eventId: '1616318632825_357',
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 clickId: 'dummyclickId',
                 currency: 'USD',
                 value: 46,
@@ -7211,18 +5666,13 @@ export const data = [
                   },
                 },
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -7236,7 +5686,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -7248,24 +5699,7 @@ export const data = [
                   event: 'Purchase',
                   event_id: '1616318632825_357',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     ad: {
                       callback: 'dummyclickId',
@@ -7294,6 +5728,7 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],
@@ -7301,52 +5736,21 @@ export const data = [
     },
   },
   {
+    id: 'processor-1747812936461',
     name: 'tiktok_ads',
-    description: 'Testing the lead event',
+    description: 'Test 50 -> Testing the lead event',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
     feature: 'processor',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
+        method: 'POST',
         body: [
           {
             message: {
-              anonymousId: '21e13f4bc7ceddad',
-              channel: 'web',
-              context: {
-                app: {
-                  build: '1.0.0',
-                  name: 'RudderLabs JavaScript SDK',
-                  namespace: 'com.rudderlabs.javascript',
-                  version: '1.0.0',
-                },
-                library: {
-                  name: 'RudderLabs JavaScript SDK',
-                  version: '1.0.0',
-                },
-                userAgent:
-                  'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
-                locale: 'en-US',
-                ip: '13.57.97.131',
-                os: {
-                  name: '',
-                  version: '',
-                },
-                screen: {
-                  density: 2,
-                },
-                externalId: [
-                  {
-                    type: 'tiktokExternalId',
-                    id: 'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
-                  },
-                ],
-              },
-              messageId: '84e26acc-56a5-4835-8233-591137fca468',
-              session_id: '3049dc4c-5a95-4ccd-a3e7-d74a7e411f22',
-              originalTimestamp: '2019-10-14T09:03:17.562Z',
-              timestamp: '2020-09-17T19:49:27Z',
-              type: 'track',
+              ...baseTrackMessage,
               event: 'lead',
               properties: {
                 eventId: '16163186328257',
@@ -7361,35 +5765,17 @@ export const data = [
                     email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
                   },
                 },
-                contents: [
-                  {
-                    price: 8,
-                    quantity: 2,
-                    content_type: 'socks',
-                    content_id: '1077218',
-                  },
-                  {
-                    price: 30,
-                    quantity: 1,
-                    content_type: 'dress',
-                    content_id: '1197218',
-                  },
-                ],
+                contents: commonContents,
                 currency: 'USD',
                 value: 46,
               },
-              integrations: {
-                All: true,
-              },
-              sentAt: '2019-10-14T09:03:22.563Z',
             },
-            destination: {
-              Config: {
-                accessToken: 'dummyAccessToken',
-                pixelCode: '{{PIXEL-CODE}}',
-                hashUserProperties: false,
-              },
-            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
           },
         ],
       },
@@ -7403,7 +5789,8 @@ export const data = [
               version: '1',
               type: 'REST',
               method: 'POST',
-              endpoint: 'https://business-api.tiktok.com/open_api/v1.3/pixel/track/',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
               headers: {
                 'Access-Token': 'dummyAccessToken',
                 'Content-Type': 'application/json',
@@ -7415,24 +5802,7 @@ export const data = [
                   event: 'Lead',
                   event_id: '16163186328257',
                   timestamp: '2020-09-17T19:49:27Z',
-                  properties: {
-                    contents: [
-                      {
-                        price: 8,
-                        quantity: 2,
-                        content_type: 'socks',
-                        content_id: '1077218',
-                      },
-                      {
-                        price: 30,
-                        quantity: 1,
-                        content_type: 'dress',
-                        content_id: '1197218',
-                      },
-                    ],
-                    currency: 'USD',
-                    value: 46,
-                  },
+                  properties: commonProperties,
                   context: {
                     page: {
                       url: 'http://demo.mywebsite.com/purchase',
@@ -7458,6 +5828,107 @@ export const data = [
               files: {},
               userId: '',
             },
+            metadata: generateMetadata(1),
+            statusCode: 200,
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'processor-1747812936461',
+    name: 'tiktok_ads',
+    description: 'Test 51 -> Testing the application approval event',
+    scenario: 'Default processor scenario',
+    successCriteria: 'Processor test should pass successfully',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        method: 'POST',
+        body: [
+          {
+            message: {
+              ...baseTrackMessage,
+              event: 'application approval',
+              properties: {
+                eventId: '16163186328257',
+                context: {
+                  page: {
+                    url: 'http://demo.mywebsite.com/purchase',
+                    referrer: 'http://demo.mywebsite.com',
+                  },
+                  user: {
+                    phone_number:
+                      '2f9d2b4df907e5c9a7b3434351b55700167b998a83dc479b825096486ffcf4ea',
+                    email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
+                  },
+                },
+                contents: commonContents,
+                currency: 'USD',
+                value: 46,
+              },
+            },
+            metadata: generateMetadata(1),
+            destination: overrideDestination(destinationConfig, {
+              accessToken: 'dummyAccessToken',
+              pixelCode: '{{PIXEL-CODE}}',
+              hashUserProperties: false,
+            }),
+          },
+        ],
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            output: {
+              version: '1',
+              type: 'REST',
+              method: 'POST',
+              endpoint: TRACK_ENDPOINT,
+              endpointPath: TRACK_ENDPOINT_PATH,
+              headers: {
+                'Access-Token': 'dummyAccessToken',
+                'Content-Type': 'application/json',
+              },
+              params: {},
+              body: {
+                JSON: {
+                  pixel_code: '{{PIXEL-CODE}}',
+                  event: 'ApplicationApproval',
+                  event_id: '16163186328257',
+                  timestamp: '2020-09-17T19:49:27Z',
+                  properties: commonProperties,
+                  context: {
+                    page: {
+                      url: 'http://demo.mywebsite.com/purchase',
+                      referrer: 'http://demo.mywebsite.com',
+                    },
+                    user: {
+                      phone_number:
+                        '2f9d2b4df907e5c9a7b3434351b55700167b998a83dc479b825096486ffcf4ea',
+                      email: 'dd6ff77f54e2106661089bae4d40cdb600979bf7edc9eb65c0942ba55c7c2d7f',
+                      external_id:
+                        'f0e388f53921a51f0bb0fc8a2944109ec188b59172935d8f23020b1614cc44bc',
+                    },
+                    ip: '13.57.97.131',
+                    user_agent:
+                      'Mozilla/5.0 (platform; rv:geckoversion) Gecko/geckotrail Firefox/firefoxversion',
+                  },
+                  partner_name: 'RudderStack',
+                },
+                JSON_ARRAY: {},
+                XML: {},
+                FORM: {},
+              },
+              files: {},
+              userId: '',
+            },
+            metadata: generateMetadata(1),
             statusCode: 200,
           },
         ],

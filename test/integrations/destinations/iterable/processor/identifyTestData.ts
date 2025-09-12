@@ -94,6 +94,7 @@ export const identifyTestData: ProcessorTestData[] = [
             },
             metadata: baseMetadata,
             destination: {
+              hasDynamicConfig: false,
               ID: '123',
               Name: 'iterable',
               DestinationDefinition: {
@@ -134,6 +135,7 @@ export const identifyTestData: ProcessorTestData[] = [
               userId: '',
               method: 'POST',
               endpoint: 'https://api.iterable.com/api/users/update',
+              endpointPath: 'users/update',
               headers: {
                 api_key: 'testApiKey',
                 'Content-Type': 'application/json',
@@ -175,6 +177,7 @@ export const identifyTestData: ProcessorTestData[] = [
                 XML: {},
               },
               endpoint: 'https://api.iterable.com/api/users/registerDeviceToken',
+              endpointPath: 'users/registerDeviceToken',
               files: {},
               headers: {
                 'Content-Type': 'application/json',
@@ -251,6 +254,7 @@ export const identifyTestData: ProcessorTestData[] = [
             },
             metadata: baseMetadata,
             destination: {
+              hasDynamicConfig: false,
               ID: '123',
               Name: 'iterable',
               DestinationDefinition: {
@@ -334,6 +338,7 @@ export const identifyTestData: ProcessorTestData[] = [
                 XML: {},
               },
               endpoint: 'https://api.iterable.com/api/users/update',
+              endpointPath: 'users/update',
               files: {},
               headers: {
                 'Content-Type': 'application/json',
@@ -393,6 +398,7 @@ export const identifyTestData: ProcessorTestData[] = [
                 XML: {},
               },
               endpoint: 'https://api.iterable.com/api/users/registerBrowserToken',
+              endpointPath: 'users/registerBrowserToken',
               files: {},
               headers: {
                 'Content-Type': 'application/json',
@@ -447,6 +453,7 @@ export const identifyTestData: ProcessorTestData[] = [
             },
             metadata: baseMetadata,
             destination: {
+              hasDynamicConfig: false,
               ID: '123',
               Name: 'iterable',
               DestinationDefinition: {
@@ -486,6 +493,7 @@ export const identifyTestData: ProcessorTestData[] = [
               userId: '',
               method: 'POST',
               endpoint: 'https://api.iterable.com/api/users/update',
+              endpointPath: 'users/update',
               headers: {
                 api_key: 'testApiKey',
                 'Content-Type': 'application/json',
@@ -575,6 +583,7 @@ export const identifyTestData: ProcessorTestData[] = [
             },
             metadata: baseMetadata,
             destination: {
+              hasDynamicConfig: false,
               ID: '123',
               Name: 'iterable',
               DestinationDefinition: {
@@ -614,6 +623,7 @@ export const identifyTestData: ProcessorTestData[] = [
               userId: '',
               method: 'POST',
               endpoint: 'https://api.iterable.com/api/users/update',
+              endpointPath: 'users/update',
               headers: {
                 api_key: 'testApiKey',
                 'Content-Type': 'application/json',
@@ -700,6 +710,7 @@ export const identifyTestData: ProcessorTestData[] = [
             },
             metadata: baseMetadata,
             destination: {
+              hasDynamicConfig: false,
               ID: '123',
               Name: 'iterable',
               DestinationDefinition: {
@@ -739,6 +750,7 @@ export const identifyTestData: ProcessorTestData[] = [
               userId: '',
               method: 'POST',
               endpoint: 'https://api.iterable.com/api/users/update',
+              endpointPath: 'users/update',
               headers: {
                 api_key: 'testApiKey',
                 'Content-Type': 'application/json',
@@ -827,6 +839,7 @@ export const identifyTestData: ProcessorTestData[] = [
             },
             metadata: baseMetadata,
             destination: {
+              hasDynamicConfig: false,
               ID: '123',
               Name: 'iterable',
               DestinationDefinition: {
@@ -866,6 +879,7 @@ export const identifyTestData: ProcessorTestData[] = [
               userId: '',
               method: 'POST',
               endpoint: 'https://api.iterable.com/api/users/update',
+              endpointPath: 'users/update',
               headers: {
                 api_key: 'testApiKey',
                 'Content-Type': 'application/json',
@@ -936,6 +950,7 @@ export const identifyTestData: ProcessorTestData[] = [
             },
             metadata: baseMetadata,
             destination: {
+              hasDynamicConfig: false,
               ID: '123',
               Name: 'iterable',
               DestinationDefinition: {
@@ -975,6 +990,7 @@ export const identifyTestData: ProcessorTestData[] = [
               userId: '',
               method: 'POST',
               endpoint: 'https://api.iterable.com/api/users/update',
+              endpointPath: 'users/update',
               headers: {
                 api_key: 'testApiKey',
                 'Content-Type': 'application/json',
@@ -1051,6 +1067,7 @@ export const identifyTestData: ProcessorTestData[] = [
             },
             metadata: baseMetadata,
             destination: {
+              hasDynamicConfig: false,
               ID: '123',
               Name: 'iterable',
               DestinationDefinition: {
@@ -1090,6 +1107,7 @@ export const identifyTestData: ProcessorTestData[] = [
               userId: '',
               method: 'POST',
               endpoint: 'https://api.iterable.com/api/users/update',
+              endpointPath: 'users/update',
               headers: {
                 api_key: 'testApiKey',
                 'Content-Type': 'application/json',
@@ -1159,6 +1177,7 @@ export const identifyTestData: ProcessorTestData[] = [
             },
             metadata: baseMetadata,
             destination: {
+              hasDynamicConfig: false,
               ID: '123',
               Name: 'iterable',
               DestinationDefinition: {
@@ -1198,6 +1217,7 @@ export const identifyTestData: ProcessorTestData[] = [
               userId: '',
               method: 'POST',
               endpoint: 'https://api.eu.iterable.com/api/users/update',
+              endpointPath: 'users/update',
               headers: {
                 api_key: 'testApiKey',
                 'Content-Type': 'application/json',

@@ -1,11 +1,18 @@
 name: Publish New GitHub Release
 
+# This workflow creates GitHub releases with Angular conventional commit style release notes
+# using a modern GitHub CLI approach instead of the deprecated conventional-github-releaser package
+
 on:
   pull_request:
     types:
       - closed
     branches:
       - main
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   release:
@@ -25,12 +32,12 @@ jobs:
           echo "release_version=$version" >> $GITHUB_OUTPUT
 
       - name: Checkout
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v4.4.0
+        uses: actions/setup-node@v5.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -50,17 +57,86 @@ jobs:
 
       - name: Tag & Create GitHub Release
         id: create_release
-        continue-on-error: true
         env:
           HUSKY: 0
           GITHUB_TOKEN: ${{ secrets.PAT }}
-          CONVENTIONAL_GITHUB_RELEASER_TOKEN: ${{ secrets.PAT }}
+          GH_TOKEN: ${{ secrets.PAT }}
         run: |
+          echo "🏷️ Checking and creating tag v${{ steps.extract-version.outputs.release_version }}..."
           git fetch --tags origin
-          git tag -a v${{ steps.extract-version.outputs.release_version }} -m "chore: release v${{ steps.extract-version.outputs.release_version }}"
-          git push origin refs/tags/v${{ steps.extract-version.outputs.release_version }}
-          npm run release:github
+
+          # Check if tag already exists
+          if git rev-parse --verify "v${{ steps.extract-version.outputs.release_version }}" >/dev/null 2>&1; then
+            echo "✅ Tag v${{ steps.extract-version.outputs.release_version }} already exists, skipping tag creation"
+          else
+            echo "🏷️ Creating new tag v${{ steps.extract-version.outputs.release_version }}..."
+            git tag -a v${{ steps.extract-version.outputs.release_version }} -m "chore: release v${{ steps.extract-version.outputs.release_version }}"
+            git push origin refs/tags/v${{ steps.extract-version.outputs.release_version }}
+            echo "✅ Tag v${{ steps.extract-version.outputs.release_version }} created and pushed successfully"
+          fi
+
+          echo "🚀 Creating GitHub release with conventional commit notes..."
+          # Make the script executable
+          chmod +x scripts/create-github-release.js
+
+          # Create release using our modern script with Angular conventional commit style notes
+          node scripts/create-github-release.js
+
+          echo "✅ Release process completed successfully!"
           echo "DATE=$(date)" >> $GITHUB_ENV
+
+      - name: Verify Release Creation
+        id: verify_release
+        env:
+          GH_TOKEN: ${{ secrets.PAT }}
+        run: |
+          echo "🔍 Verifying that release v${{ steps.extract-version.outputs.release_version }} exists..."
+
+          # Retry configuration
+          MAX_RETRIES=${GITHUB_API_MAX_RETRIES:-10}
+          RETRY_DELAY=${GITHUB_API_RETRY_DELAY:-3}
+          RETRY_COUNT=0
+
+          # Function to check if release exists
+          check_release() {
+            gh release view v${{ steps.extract-version.outputs.release_version }} > /dev/null 2>&1
+          }
+
+          # Retry loop with exponential backoff
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "🔄 Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES: Checking for release..."
+
+            if check_release; then
+              echo "✅ Release v${{ steps.extract-version.outputs.release_version }} verified successfully!"
+              echo "🔗 Release URL: https://github.com/rudderlabs/rudder-transformer/releases/tag/v${{ steps.extract-version.outputs.release_version }}"
+
+              # Show release info
+              echo "📋 Release details:"
+              gh release view v${{ steps.extract-version.outputs.release_version }} --json tagName,name,publishedAt,isLatest | jq -r '"Tag: \(.tagName), Published: \(.publishedAt), Latest: \(.isLatest)"'
+              exit 0
+            fi
+
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              # Exponential backoff: delay increases with each retry
+              CURRENT_DELAY=$((RETRY_DELAY * RETRY_COUNT))
+              echo "⏳ Release not found yet, waiting ${CURRENT_DELAY}s before retry $((RETRY_COUNT + 1))..."
+              sleep $CURRENT_DELAY
+            fi
+          done
+
+          # All retries exhausted
+          echo "❌ Failed to verify release v${{ steps.extract-version.outputs.release_version }} after $MAX_RETRIES attempts"
+          echo "🔍 Final diagnostic check..."
+
+          if git rev-parse --verify "v${{ steps.extract-version.outputs.release_version }}" >/dev/null 2>&1; then
+            echo "✅ Tag exists but release not found - this indicates a GitHub API issue or release creation failure"
+            echo "💡 You may need to manually check the GitHub releases page or re-run the workflow"
+          else
+            echo "❌ Tag also missing - release creation completely failed"
+          fi
+          exit 1
 
       - name: Pull Changes Into develop Branch
         run: |
@@ -90,16 +166,17 @@ jobs:
 
       - name: Notify Slack Channel
         id: slack
-        uses: slackapi/slack-github-action@v2.1.0
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a  # v2.1.1
         continue-on-error: true
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           PROJECT_NAME: 'Rudder Transformer'
           RELEASES_URL: 'https://github.com/rudderlabs/rudder-transformer/releases/tag/'
         with:
-          channel-id: ${{ secrets.SLACK_RELEASE_CHANNEL_ID }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
           payload: |
             {
+              "channel": "${{ secrets.SLACK_RELEASE_CHANNEL_ID }}",
               "text": "*<${{env.RELEASES_URL}}v${{ steps.extract-version.outputs.release_version }}|v${{ steps.extract-version.outputs.release_version }}>*\nCC: <!subteam^S02AEQL26CT> <!subteam^S03SEKBFX0D> <@U021E50QAGY>",
               "blocks": [
                 {

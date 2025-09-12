@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import cloneDeep from 'lodash/cloneDeep';
 import groupBy from 'lodash/groupBy';
+import { mapInBatches } from '@rudderstack/integrations-lib';
 import networkHandlerFactory from '../../adapters/networkHandlerFactory';
 import { FetchHandler } from '../../helpers/fetchHandlers';
 import { DestinationService } from '../../interfaces/DestinationService';
@@ -27,7 +28,6 @@ import stats from '../../util/stats';
 import tags from '../../v0/util/tags';
 import { DestinationPostTransformationService } from './postTransformation';
 import { groupRouterTransformEvents } from '../../v0/util';
-import { DestHandleMapForCDKV2 } from '../../constants/destinationCanonicalNames';
 
 export class NativeIntegrationDestinationService implements DestinationService {
   public init() {}
@@ -63,8 +63,9 @@ export class NativeIntegrationDestinationService implements DestinationService {
     requestMetadata: NonNullable<unknown>,
   ): Promise<ProcessorTransformationResponse[]> {
     const destHandler = FetchHandler.getDestHandler(destinationType, version);
-    const respList: ProcessorTransformationResponse[][] = await Promise.all(
-      events.map(async (event) => {
+    const respList = await mapInBatches(
+      events,
+      async (event) => {
         const metaTO = this.getTags(
           destinationType,
           event.metadata?.destinationId,
@@ -89,7 +90,8 @@ export class NativeIntegrationDestinationService implements DestinationService {
             );
           return [erroredResp];
         }
-      }),
+      },
+      { sequentialProcessing: false }, // concurrent processing
     );
     return respList.flat();
   }
@@ -101,9 +103,11 @@ export class NativeIntegrationDestinationService implements DestinationService {
     requestMetadata: NonNullable<unknown>,
   ): Promise<RouterTransformationResponse[]> {
     const destHandler = FetchHandler.getDestHandler(destinationType, version);
-    const groupedEvents: RouterTransformationRequestData[][] = groupRouterTransformEvents(events);
-    const response: RouterTransformationResponse[][] = await Promise.all(
-      groupedEvents.map(async (destInputArray: RouterTransformationRequestData[]) => {
+    const groupedEvents: RouterTransformationRequestData[][] =
+      await groupRouterTransformEvents(events);
+    const response: RouterTransformationResponse[][] = await mapInBatches(
+      groupedEvents,
+      async (destInputArray: RouterTransformationRequestData[]) => {
         const metaTO = this.getTags(
           destinationType,
           destInputArray[0].metadata?.destinationId,
@@ -111,9 +115,9 @@ export class NativeIntegrationDestinationService implements DestinationService {
           tags.FEATURES.ROUTER,
         );
         try {
-          const doRouterTransformationResponse: RouterTransformationResponse[] =
-            await destHandler.processRouterDest(cloneDeep(destInputArray), requestMetadata);
           metaTO.metadata = destInputArray[0].metadata;
+          const doRouterTransformationResponse: RouterTransformationResponse[] =
+            await destHandler.processRouterDest(destInputArray, requestMetadata);
           return DestinationPostTransformationService.handleRouterTransformSuccessEvents(
             doRouterTransformationResponse,
             destHandler,
@@ -129,7 +133,8 @@ export class NativeIntegrationDestinationService implements DestinationService {
           );
           return [errorResp];
         }
-      }),
+      },
+      { sequentialProcessing: false }, // concurrent processing
     );
     return response.flat();
   }
@@ -181,7 +186,7 @@ export class NativeIntegrationDestinationService implements DestinationService {
     version: string,
   ): Promise<DeliveryV0Response | DeliveryV1Response> {
     try {
-      const originalDestName = DestHandleMapForCDKV2[destinationType] ?? destinationType;
+      const originalDestName = destinationType;
       const { networkHandler, handlerVersion } = networkHandlerFactory.getNetworkHandler(
         originalDestName,
         version,
@@ -250,8 +255,9 @@ export class NativeIntegrationDestinationService implements DestinationService {
     requests: UserDeletionRequest[],
     rudderDestInfo: string,
   ): Promise<UserDeletionResponse[]> {
-    const response = await Promise.all(
-      requests.map(async (request) => {
+    const response = await mapInBatches(
+      requests,
+      async (request) => {
         const startTime = new Date();
         const { destType } = request;
         const destUserDeletionHandler: any = FetchHandler.getDeletionHandler(
@@ -282,7 +288,8 @@ export class NativeIntegrationDestinationService implements DestinationService {
             metaTO,
           );
         }
-      }),
+      },
+      { sequentialProcessing: false }, // concurrent processing
     );
     return response;
   }

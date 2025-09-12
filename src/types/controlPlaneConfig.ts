@@ -6,6 +6,7 @@ export type DestinationDefinition = {
   Name: string;
   DisplayName: string;
   Config: Record<string, unknown>;
+  ResponseRules?: Record<string, unknown> | null;
 };
 
 export type AccountDefinitionConfig = { refreshOAuthToken?: string };
@@ -44,6 +45,7 @@ export type Destination<
   IsConnectionEnabled?: boolean;
   deliveryAccount?: DeliveryAccountT;
   deleteAccount?: DeleteAccountT;
+  hasDynamicConfig?: boolean; // Flag indicating whether the destination config contains dynamic config patterns
 };
 
 export type DestinationConnectionConfig<T> = {

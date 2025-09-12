@@ -15,12 +15,17 @@ export type ProcessorCompactedTransformationRequest<M = RudderMessage, MD = Meta
 /**
  * Processor transformation request/response structures
  */
-export type ProcessorTransformationRequest<M = RudderMessage, MD = Metadata> = {
+export type ProcessorTransformationRequest<
+  M = RudderMessage,
+  MD = Metadata,
+  D = Destination,
+  C = Connection,
+> = {
   request?: object;
   message: M;
   metadata: MD;
-  destination: Destination;
-  connection?: Connection;
+  destination: D;
+  connection?: C;
   libraries?: UserTransformationLibrary[];
   credentials?: Credential[];
 };
@@ -68,6 +73,7 @@ export type ProcessorTransformationOutput = {
   type: string;
   method: string;
   endpoint: string;
+  endpointPath?: string;
   userId?: string;
   headers?: Record<string, unknown>;
   params?: Record<string, unknown>;
@@ -148,6 +154,7 @@ export type ProxyV0Request = {
   type: string;
   method: string;
   endpoint: string;
+  endpointPath?: string;
   userId: string;
   headers?: Record<string, unknown>;
   params?: Record<string, unknown>;
@@ -263,14 +270,6 @@ export interface ResponseProxyObject
   response?: DeliveryJobState[];
   [key: string]: any;
 }
-
-export type ComparatorInput = {
-  events: ProcessorTransformationRequest[] | RouterTransformationRequestData[];
-  destination: string;
-  version: string;
-  requestMetadata: object;
-  feature: string;
-};
 
 // Add helper type for pre-processing functions
 export type PreProcessableRequest =

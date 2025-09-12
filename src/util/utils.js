@@ -218,6 +218,31 @@ const extractStackTraceUptoLastSubstringMatch = (trace, stringLiterals) => {
   return traceLines.slice(0, lastRelevantIndex + 1).join('\n');
 };
 
+/**
+ * Utility function to check if dynamic config processing should be skipped
+ * based on the hasDynamicConfig flag.
+ *
+ * @param destination - The destination object containing the hasDynamicConfig flag
+ * @returns true if processing should be skipped, false otherwise
+ */
+function shouldSkipDynamicConfigProcessing(destination) {
+  // Only skip processing if hasDynamicConfig is explicitly false
+  return destination?.hasDynamicConfig === false;
+}
+
+/**
+ * Utility function to check if events should be grouped by destination config
+ * based on the hasDynamicConfig flag.
+ *
+ * @param destination - The destination object containing the hasDynamicConfig flag
+ * @returns true if events should be grouped by destination config, false otherwise
+ */
+function shouldGroupByDestinationConfig(destination) {
+  // If undefined (older server versions), process all events as if they might have dynamic config
+  // Only skip grouping by config if the flag is explicitly false
+  return destination?.hasDynamicConfig !== false;
+}
+
 module.exports = {
   RespStatusError,
   RetryRequestError,
@@ -229,4 +254,6 @@ module.exports = {
   extractStackTraceUptoLastSubstringMatch,
   fetchWithDnsWrapper,
   staticLookup,
+  shouldSkipDynamicConfigProcessing,
+  shouldGroupByDestinationConfig,
 };
