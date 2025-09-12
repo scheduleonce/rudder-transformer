@@ -57,6 +57,7 @@ const BRAZE_NON_BILLABLE_ATTRIBUTES = [
 ];
 
 const BRAZE_PURCHASE_STANDARD_PROPERTIES = ['product_id', 'sku', 'price', 'quantity', 'currency'];
+
 module.exports = {
   ConfigCategory,
   mappingConfig,

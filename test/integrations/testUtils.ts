@@ -17,6 +17,8 @@ import {
   ProxyV0RequestSchema,
   ProxyV1RequestSchema,
   RouterTransformationResponseListSchema,
+  ProcessorStreamingResponseListSchema,
+  RouterStreamingResponseListSchema,
 } from '../../src/types/zodTypes';
 import { defaultAccessToken } from './common/secrets';
 import { randomBytes } from 'crypto';
@@ -527,6 +529,7 @@ export const generateProxyV0Payload = (
     userId: payloadParameters.userId || 'default-userId',
     method: payloadParameters.method || 'POST',
     endpoint: payloadParameters.endpoint || '',
+    endpointPath: payloadParameters.endpointPath || '',
     headers: payloadParameters.headers || {},
     params: payloadParameters.params || {},
     body: {
@@ -570,6 +573,7 @@ export const generateProxyV1Payload = (
     userId: payloadParameters.userId || 'default-userId',
     method: payloadParameters.method || 'POST',
     endpoint: payloadParameters.endpoint || '',
+    endpointPath: payloadParameters.endpointPath || '',
     headers: payloadParameters.headers || {},
     params: payloadParameters.params || {},
     body: {
@@ -620,6 +624,21 @@ export const validateTestWithZOD = (testPayload: TestCaseData, response: any) =>
           DeliveryV1ResponseSchema.parse(response.body.output);
         }
       }
+      break;
+    default:
+      break;
+  }
+  return true;
+};
+
+export const validateStreamTestWithZOD = (testPayload: TestCaseData, response: any) => {
+  // Validate the response payload
+  switch (testPayload.feature) {
+    case 'router':
+      RouterStreamingResponseListSchema.parse(response.body.output);
+      break;
+    case 'processor':
+      ProcessorStreamingResponseListSchema.parse(response.body);
       break;
     default:
       break;
