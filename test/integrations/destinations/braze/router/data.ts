@@ -1,5 +1,7 @@
 import { authHeader1, secret1 } from '../maskedSecrets';
-export const data = [
+import { identityResolution } from './identityResolution';
+
+const basicRouterTests = [
   {
     name: 'braze',
     description: 'simple router tests',
@@ -12,6 +14,7 @@ export const data = [
           input: [
             {
               destination: {
+                hasDynamicConfig: false,
                 Config: {
                   restApiKey: secret1,
                   prefixProperties: true,
@@ -68,6 +71,7 @@ export const data = [
             },
             {
               destination: {
+                hasDynamicConfig: false,
                 Config: {
                   restApiKey: secret1,
                   prefixProperties: true,
@@ -122,6 +126,7 @@ export const data = [
             },
             {
               destination: {
+                hasDynamicConfig: false,
                 Config: {
                   restApiKey: secret1,
                   prefixProperties: true,
@@ -150,6 +155,7 @@ export const data = [
             },
             {
               destination: {
+                hasDynamicConfig: false,
                 Config: {
                   restApiKey: secret1,
                   prefixProperties: true,
@@ -178,6 +184,7 @@ export const data = [
             },
             {
               destination: {
+                hasDynamicConfig: false,
                 Config: {
                   restApiKey: secret1,
                   prefixProperties: true,
@@ -200,6 +207,7 @@ export const data = [
             },
             {
               destination: {
+                hasDynamicConfig: false,
                 Config: {
                   restApiKey: secret1,
                   prefixProperties: true,
@@ -222,6 +230,7 @@ export const data = [
             },
             {
               destination: {
+                hasDynamicConfig: false,
                 Config: {
                   restApiKey: secret1,
                   prefixProperties: true,
@@ -390,6 +399,7 @@ export const data = [
               batched: true,
               statusCode: 200,
               destination: {
+                hasDynamicConfig: false,
                 Config: {
                   restApiKey: secret1,
                   prefixProperties: true,
@@ -411,6 +421,9 @@ export const data = [
         },
       },
     },
+    envOverrides: {
+      BRAZE_BATCH_IDENTIFY_RESOLUTION: 'false',
+    }
   },
   {
     name: 'braze',
@@ -424,6 +437,7 @@ export const data = [
           input: [
             {
               destination: {
+                hasDynamicConfig: false,
                 ID: '2N9UakqKF0D35wfzSeofIxPdL8X',
                 Name: 'Braze-Test',
                 Config: {
@@ -493,6 +507,7 @@ export const data = [
             },
             {
               destination: {
+                hasDynamicConfig: false,
                 ID: '2N9UakqKF0D35wfzSeofIxPdL8X',
                 Name: 'Braze-Test',
                 Config: {
@@ -562,6 +577,7 @@ export const data = [
             },
             {
               destination: {
+                hasDynamicConfig: false,
                 ID: '2N9UakqKF0D35wfzSeofIxPdL8X',
                 Name: 'Braze-Test',
                 Config: {
@@ -615,6 +631,7 @@ export const data = [
             },
             {
               destination: {
+                hasDynamicConfig: false,
                 ID: '2N9UakqKF0D35wfzSeofIxPdL8X',
                 Name: 'Braze-Test',
                 Config: {
@@ -668,6 +685,7 @@ export const data = [
             },
             {
               destination: {
+                hasDynamicConfig: false,
                 ID: '2N9UakqKF0D35wfzSeofIxPdL8X',
                 Name: 'Braze-Test',
                 Config: {
@@ -820,6 +838,7 @@ export const data = [
               batched: true,
               statusCode: 200,
               destination: {
+                hasDynamicConfig: false,
                 ID: '2N9UakqKF0D35wfzSeofIxPdL8X',
                 Name: 'Braze-Test',
                 Config: {
@@ -855,6 +874,7 @@ export const data = [
               batched: false,
               metadata: [{ jobId: 5, userId: 'u1' }],
               destination: {
+                hasDynamicConfig: false,
                 ID: '2N9UakqKF0D35wfzSeofIxPdL8X',
                 Name: 'Braze-Test',
                 Config: {
@@ -880,5 +900,23 @@ export const data = [
         },
       },
     },
+    envOverrides: {
+      BRAZE_BATCH_IDENTIFY_RESOLUTION: 'false',
+    }
   },
+];
+
+const basicRouterTestsWithBatchIdentityResolutionEnabled = basicRouterTests.map((test) => {
+  return {
+    ...test,
+    envOverrides: {
+      BRAZE_BATCH_IDENTIFY_RESOLUTION: 'true',
+    }
+  };
+});
+
+export const data = [
+  ...basicRouterTests,
+  ...basicRouterTestsWithBatchIdentityResolutionEnabled,
+  ...identityResolution,
 ];

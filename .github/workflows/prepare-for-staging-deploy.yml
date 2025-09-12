@@ -9,6 +9,11 @@ on:
     branches:
       - master
 
+permissions:
+  id-token: write # allows the JWT to be requested from GitHub's OIDC provider
+  contents: write
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
@@ -24,7 +29,7 @@ jobs:
       tag_name_ut: ${{ steps.gen_tag_names.outputs.tag_name_ut }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 
@@ -87,7 +92,7 @@ jobs:
       UT_TAG_NAME: ${{ needs.generate-tag-names.outputs.tag_name_ut }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v5
         with:
           fetch-depth: 1
 

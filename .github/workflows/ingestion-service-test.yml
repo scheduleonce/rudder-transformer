@@ -12,6 +12,9 @@ on:
       DOCKERHUB_TOKEN:
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   ingestion-service-test:
     name: ingestion-service-test
@@ -23,7 +26,7 @@ jobs:
       TRANSFORMER_DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: 'Clone ingestion service'
         run: |
           git clone https://${{secrets.PAT}}@github.com/rudderlabs/rudder-ingestion-svc.git
@@ -31,6 +34,13 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: 'rudder-ingestion-svc/go.mod'
+      - name: 'Update Go module to use current branch'
+        run: |
+          cd rudder-ingestion-svc
+          # Add replace directive to use local rudder-transformer code
+          go mod edit -replace github.com/rudderlabs/rudder-transformer/go=../go
+          # Update go.sum and download dependencies
+          go mod tidy
       - name: 'Install dependencies'
         run: |
           go version

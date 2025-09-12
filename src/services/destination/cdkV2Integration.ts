@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable class-methods-use-this */
-import { TransformationError } from '@rudderstack/integrations-lib';
+import { mapInBatches, TransformationError } from '@rudderstack/integrations-lib';
 import { processCdkV2Workflow } from '../../cdk/v2/handler';
 import { DestinationService } from '../../interfaces/DestinationService';
 import {
@@ -57,8 +57,9 @@ export class CDKV2DestinationService implements DestinationService {
     requestMetadata: NonNullable<unknown>,
   ): Promise<ProcessorTransformationResponse[]> {
     // TODO: Change the promise type
-    const respList: ProcessorTransformationResponse[][] = await Promise.all(
-      events.map(async (event) => {
+    const respList: ProcessorTransformationResponse[][] = await mapInBatches(
+      events,
+      async (event) => {
         const metaTo = this.getTags(
           destinationType,
           event.metadata?.destinationId,
@@ -97,11 +98,21 @@ export class CDKV2DestinationService implements DestinationService {
               metaTo,
             );
 
-          stats.increment('event_transform_failure', metaTo.errorDetails);
+          stats.increment('event_transform_failure', {
+            destType: metaTo.errorDetails.destType,
+            module: metaTo.errorDetails.module,
+            destinationId: metaTo.errorDetails.destinationId,
+            workspaceId: metaTo.errorDetails.workspaceId,
+            feature: metaTo.errorDetails.feature,
+            implementation: metaTo.errorDetails.implementation,
+            errorCategory: metaTo.errorDetails.errorCategory,
+            errorType: metaTo.errorDetails.errorType,
+          });
 
           return [erroredResp];
         }
-      }),
+      },
+      { sequentialProcessing: false }, // concurrent processing
     );
     return respList.flat();
   }
@@ -112,9 +123,11 @@ export class CDKV2DestinationService implements DestinationService {
     _version: string,
     requestMetadata: NonNullable<unknown>,
   ): Promise<RouterTransformationResponse[]> {
-    const groupedEvents: RouterTransformationRequestData[][] = groupRouterTransformEvents(events);
-    const response: RouterTransformationResponse[][] = await Promise.all(
-      groupedEvents.map(async (destInputArray: RouterTransformationRequestData[]) => {
+    const groupedEvents: RouterTransformationRequestData[][] =
+      await groupRouterTransformEvents(events);
+    const response: RouterTransformationResponse[][] = await mapInBatches(
+      groupedEvents,
+      async (destInputArray: RouterTransformationRequestData[]) => {
         const metaTo = this.getTags(
           destinationType,
           destInputArray[0].metadata.destinationId,
@@ -143,7 +156,8 @@ export class CDKV2DestinationService implements DestinationService {
             DestinationPostTransformationService.handleRouterTransformFailureEvents(error, metaTo);
           return [erroredResp];
         }
-      }),
+      },
+      { sequentialProcessing: false }, // concurrent processing
     );
     return response.flat();
   }
