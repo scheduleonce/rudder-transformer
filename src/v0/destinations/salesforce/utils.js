@@ -13,6 +13,8 @@ const {
 } = require('../../util');
 const Cache = require('../../util/cache');
 const {
+  CLIENT_ID,
+  CLIENT_SECRET,
   ACCESS_TOKEN_CACHE_TTL,
   SF_TOKEN_REQUEST_URL_SANDBOX,
   SF_TOKEN_REQUEST_URL,
@@ -140,15 +142,21 @@ const salesforceResponseHandler = (destResponse, sourceMessage, authKey, authori
  */
 const getAccessTokenOauth = (metadata) => {
   if (!isDefinedAndNotNull(metadata?.secret)) {
-    throw new OAuthSecretError('secret is undefined/null');
+    throw new OAuthSecretError(
+      'Secret is undefined/null. This might be a platform issue. Please contact RudderStack support for assistance.',
+    );
   }
 
   if (!isDefinedAndNotNullAndNotEmpty(metadata.secret?.access_token)) {
-    throw new OAuthSecretError('access_token is undefined/null');
+    throw new OAuthSecretError(
+      'access_token is undefined/null. This might be a platform issue. Please contact RudderStack support for assistance.',
+    );
   }
 
   if (!isDefinedAndNotNullAndNotEmpty(metadata.secret?.instance_url)) {
-    throw new OAuthSecretError('instance_url is undefined/null');
+    throw new OAuthSecretError(
+      'instance_url is undefined/null. This might be a platform issue. Please contact RudderStack support for assistance.',
+    );
   }
 
   return {
@@ -171,9 +179,7 @@ const getAccessToken = async ({ destination, metadata }) => {
       destination.Config.userName
     }&password=${encodeURIComponent(destination.Config.password)}${encodeURIComponent(
       destination.Config.initialAccessToken,
-    )}&client_id=${destination.Config.consumerKey}&client_secret=${
-      destination.Config.consumerSecret
-    }&grant_type=password`;
+    )}&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=password`;
     const { httpResponse, processedResponse } = await handleHttpRequest(
       'post',
       authUrl,

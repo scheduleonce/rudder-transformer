@@ -1,15 +1,18 @@
 import { AxiosResponse } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { BaseTestCase } from '@rudderstack/integrations-lib';
+import { EnvOverride } from './envUtils';
 
 import {
   DeliveryV1Response,
   Metadata,
   ProcessorTransformationRequest,
   ProcessorTransformationResponse,
+  ProcessorCompactedTransformationRequest,
   ProxyV1Request,
   RouterTransformationRequest,
   RouterTransformationResponse,
+  RouterCompactedTransformationRequest,
   RudderMessage,
 } from '../../src/types';
 
@@ -60,6 +63,7 @@ export interface TestCaseData extends BaseTestCase {
   overrideReceivedAt?: string;
   overrideRequestIP?: string;
   mockFns?: (mockAdapter: MockAdapter) => {};
+  envOverrides?: EnvOverride;
 }
 
 export interface ExtendedTestCaseData {
@@ -102,10 +106,14 @@ export type ProcessorTestData = {
   feature: string;
   module: string;
   version: string;
+  skip?: boolean;
   input: {
     request: {
       method: string;
-      body: ProcessorTransformationRequest<Partial<RudderMessage>, Partial<Metadata>>[];
+      headers?: Record<string, string>;
+      body:
+        | ProcessorTransformationRequest<Partial<RudderMessage>, Partial<Metadata>>[]
+        | ProcessorCompactedTransformationRequest<Partial<RudderMessage>, Partial<Metadata>>;
     };
   };
   output: {
@@ -115,6 +123,7 @@ export type ProcessorTestData = {
     };
   };
   mockFns?: (mockAdapter: MockAdapter) => void;
+  envOverrides?: EnvOverride;
 };
 export type RouterTestData = {
   id: string;
@@ -126,10 +135,14 @@ export type RouterTestData = {
   feature: string;
   module: string;
   version: string;
+  skip?: boolean;
   input: {
     request: {
-      body: RouterTransformationRequest<Partial<RudderMessage>, Partial<Metadata>>;
       method: string;
+      headers?: Record<string, string>;
+      body:
+        | RouterTransformationRequest<Partial<RudderMessage>, Partial<Metadata>>
+        | RouterCompactedTransformationRequest<Partial<RudderMessage>, Partial<Metadata>>;
     };
   };
   output: {
@@ -141,6 +154,7 @@ export type RouterTestData = {
     };
   };
   mockFns?: (mockAdapter: MockAdapter) => void;
+  envOverrides?: EnvOverride;
 };
 
 export type ProxyV1TestData = BaseTestCase & {
@@ -165,6 +179,40 @@ export type ProxyV1TestData = BaseTestCase & {
       body: {
         output: DeliveryV1Response;
       };
+    };
+  };
+};
+
+export type ProcessorStreamTestData = Omit<ProcessorTestData, 'output'> & {
+  output: {
+    response: {
+      status: number;
+      body: Array<
+        Omit<ProcessorTransformationResponse, 'output'> & {
+          output?: Record<string, unknown>;
+        }
+      >;
+    };
+  };
+};
+
+export type RouterStreamTestData = Omit<RouterTestData, 'output'> & {
+  output: {
+    response: {
+      status: number;
+      // The union type below allows for two possible response body shapes:
+      // 1. An object with an 'output' property containing an array of RouterTransformationResponse objects (with optional 'batchedRequest'),
+      //    which is used for standard router transformation responses.
+      // 2. An array of generic records, which is required for Kafka stream output tests where the output may not conform to the standard structure.
+      body:
+        | {
+            output?: Array<
+              Omit<RouterTransformationResponse, 'batchedRequest'> & {
+                batchedRequest?: Record<string, unknown>;
+              }
+            >;
+          }
+        | Array<Record<string, unknown>>;
     };
   };
 };
