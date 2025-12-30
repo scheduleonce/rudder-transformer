@@ -41,6 +41,7 @@ Config keys are sourced from `rudder-integrations-config` `db-config.json` under
 - Metadata handling for Track: preserves reserved structures (monetary amounts, rich links), flattens the rest
 
 Event-specific:
+
 - Identify (v2)
   - Search contact by lookup field: `POST /contacts/search`
   - Create or update contact:
@@ -56,20 +57,24 @@ Event-specific:
   - Metadata merged with reserved handling described above
 - Group (Company)
   - v2 path:
-    1) Create/update company: `POST /companies` (returns `id`)
-    2) If a matching contact exists (from search), attach contact to company: `POST /contacts/{id}/companies`
-    3) Add tags to company, if `context.traits.tags` present: `POST /tags` with `companies: [{ id }]`
+    1. Create/update company: `POST /companies` (returns `id`)
+    2. If a matching contact exists (from search), attach contact to company: `POST /contacts/{id}/companies`
+    3. Add tags to company, if `context.traits.tags` present: `POST /tags` with `companies: [{ id }]`
   - v1 path:
     - `POST /companies`, then legacy attach flow using `POST /users` payload (see utils `attachUserAndCompany`)
   - Group requests are marked with suppress status in router (`SUPPRESS_EVENTS`) after side-effect calls.
 
 ### Proxy Delivery
 
-- Not applicable. This destination uses CDK v2 Router; no custom proxy `networkHandler.js` is present.
+- Supported (proxy implementation present)
+- Source Code Paths:
+  - `src/v0/destinations/intercom/networkHandler.js`
 
 ### User Deletion
 
-- Not implemented in transformer code for Intercom. NEEDS REVIEW if supported elsewhere.
+- Supported
+- Source Code Path: `src/v0/destinations/intercom/deleteUsers.js`
+- Endpoint used: `POST /user_delete_requests` (permanently delete a user)
 
 ### Validations and Requirements
 
@@ -89,7 +94,6 @@ Event-specific:
   https://developers.intercom.com/docs/references/rest-api/errors/rate-limiting#what-is-the-default-amount-of-requests
 - Private apps have a default rate limit of 10,000 API calls per minute per app and 25,000 API calls per minute per workspace. This means that if a workspace has multiple private apps installed, every one contributes towards total number of requests.
 - Public apps have a default rate limit of 10,000 API calls per minute for each app and 25,000 API calls per minute per workspace. This means that if a workspace has multiple public apps installed, each one has its own separate request limit without contributing to the others.
-
 
 ### Multiplexing
 
@@ -133,4 +137,4 @@ Authoritative docs live under Intercom Developer Hub. Use the version switcher t
 
 ### RETL and Business Logic
 
-- See `docs/retl.md` and `docs/businesslogic.md` 
+- See `docs/retl.md` and `docs/businesslogic.md`

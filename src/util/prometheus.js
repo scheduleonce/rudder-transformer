@@ -118,62 +118,66 @@ class Prometheus {
   }
 
   summary(name, value, tags = {}) {
+    const fullName = appendPrefix(name);
     try {
-      let metric = this.prometheusRegistry.getSingleMetric(appendPrefix(name));
+      let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
         logger.warn(
-          `Prometheus: Summary metric ${name} not found in the registry. Creating a new one`,
+          `Prometheus: Summary metric ${fullName} not found in the registry. Creating a new one`,
         );
-        metric = this.newSummaryStat(name, name, Object.keys(tags));
+        metric = this.newSummaryStat(fullName, name, Object.keys(tags));
       }
       metric.observe(tags, value);
     } catch (e) {
-      logger.error(`Prometheus: Summary metric ${name} failed with error ${e}`);
+      logger.error(`Prometheus: Summary metric ${fullName} failed with error ${e}`);
     }
   }
 
   timing(name, start, tags = {}) {
+    const fullName = appendPrefix(name);
     try {
-      let metric = this.prometheusRegistry.getSingleMetric(appendPrefix(name));
+      let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
         logger.warn(
-          `Prometheus: Timing metric ${name} not found in the registry. Creating a new one`,
+          `Prometheus: Timing metric ${fullName} not found in the registry. Creating a new one`,
         );
-        metric = this.newHistogramStat(name, name, Object.keys(tags));
+        metric = this.newHistogramStat(fullName, name, Object.keys(tags));
       }
-      metric.observe(tags, (new Date() - start) / 1000);
+      metric.observe(tags, (Date.now() - start) / 1000);
     } catch (e) {
-      logger.error(`Prometheus: Timing metric ${name} failed with error ${e}`);
+      logger.error(`Prometheus: Timing metric ${fullName} failed with error ${e}`);
     }
   }
 
   timingSummary(name, start, tags = {}) {
+    const fullName = appendPrefix(name);
     try {
-      let metric = this.prometheusRegistry.getSingleMetric(appendPrefix(name));
+      let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
         logger.warn(
-          `Prometheus: summary metric ${name} not found in the registry. Creating a new one`,
+          `Prometheus: summary metric ${fullName} not found in the registry. Creating a new one`,
         );
-        metric = this.newSummaryStat(name, name, Object.keys(tags));
+        metric = this.newSummaryStat(fullName, name, Object.keys(tags));
       }
-      metric.observe(tags, (new Date() - start) / 1000);
+      metric.observe(tags, (Date.now() - start) / 1000);
     } catch (e) {
-      logger.error(`Prometheus: Summary metric ${name} failed with error ${e}`);
+      logger.error(`Prometheus: Summary metric ${fullName} failed with error ${e}`);
     }
   }
 
   histogram(name, value, tags = {}) {
+    const fullName = appendPrefix(name);
     try {
-      let metric = this.prometheusRegistry.getSingleMetric(appendPrefix(name));
+      let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
         logger.warn(
-          `Prometheus: Histogram metric ${name} not found in the registry. Creating a new one`,
+          `Prometheus: Histogram metric ${fullName} not found in the registry. Creating a new one`,
         );
-        metric = this.newHistogramStat(name, name, Object.keys(tags));
+        metric = this.newHistogramStat(fullName, name, Object.keys(tags));
       }
       metric.observe(tags, value);
     } catch (e) {
-      logger.error(`Prometheus: Histogram metric ${name} failed with error ${e}`);
+      logger.error(`Prometheus: Histogram metric ${fullName} failed with error ${e}`);
     }
   }
 
@@ -182,32 +186,36 @@ class Prometheus {
   }
 
   counter(name, delta, tags = {}) {
+    const fullName = appendPrefix(name);
     try {
-      let metric = this.prometheusRegistry.getSingleMetric(appendPrefix(name));
+      let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
         logger.warn(
-          `Prometheus: Counter metric ${name} not found in the registry. Creating a new one`,
+          `Prometheus: Counter metric ${fullName} not found in the registry. Creating a new one`,
         );
-        metric = this.newCounterStat(name, name, Object.keys(tags));
+        metric = this.newCounterStat(fullName, name, Object.keys(tags));
       }
       metric.inc(tags, delta);
     } catch (e) {
-      logger.error(`Prometheus: Counter metric ${name} failed with error ${e}. Value: ${delta}`);
+      logger.error(
+        `Prometheus: Counter metric ${fullName} failed with error ${e}. Value: ${delta}`,
+      );
     }
   }
 
   gauge(name, value, tags = {}) {
+    const fullName = appendPrefix(name);
     try {
-      let metric = this.prometheusRegistry.getSingleMetric(appendPrefix(name));
+      let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
         logger.warn(
-          `Prometheus: Gauge metric ${name} not found in the registry. Creating a new one`,
+          `Prometheus: Gauge metric ${fullName} not found in the registry. Creating a new one`,
         );
-        metric = this.newGaugeStat(name, name, Object.keys(tags));
+        metric = this.newGaugeStat(fullName, name, Object.keys(tags));
       }
       metric.set(tags, value);
     } catch (e) {
-      logger.error(`Prometheus: Gauge metric ${name} failed with error ${e}. Value: ${value}`);
+      logger.error(`Prometheus: Gauge metric ${fullName} failed with error ${e}. Value: ${value}`);
     }
   }
 
@@ -628,13 +636,6 @@ class Prometheus {
         labelNames: ['identifier_type', 'destination_id'],
       },
       {
-        name: 'braze_lookup_failure_count',
-        help: 'braze look-up failure count',
-        type: 'counter',
-        labelNames: ['http_status', 'destination_id'],
-      },
-
-      {
         name: 'braze_lookup_time',
         help: 'braze look-up time',
         type: 'histogram',
@@ -656,6 +657,20 @@ class Prometheus {
           0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400,
           500, 600, 700, 800, 900, 1000,
         ],
+      },
+      {
+        name: 'braze_lookup_failure_identifiers',
+        help: 'Count of identifiers that failed to lookup due to API failure',
+        type: 'histogram',
+        labelNames: ['destination_id', 'http_status'],
+        buckets: [0, 10, 20, 30, 40, 50],
+      },
+      {
+        name: 'braze_lookup_success_identifiers',
+        help: 'Count of identifiers that successfully looked up due to API failure',
+        type: 'histogram',
+        labelNames: ['destination_id'],
+        buckets: [0, 10, 20, 30, 40, 50],
       },
       {
         name: 'fb_custom_audience_event_having_all_null_field_values_for_a_user',
@@ -865,6 +880,60 @@ class Prometheus {
         labelNames: ['identifier', 'transformationId', 'workspaceId'],
       },
       {
+        name: 'cached_ivm_create_duration',
+        help: 'cached_ivm_create_duration',
+        type: 'histogram',
+        labelNames: ['result', 'transformationId'],
+      },
+      {
+        name: 'ivm_cache_get_duration',
+        help: 'ivm_cache_get_duration',
+        type: 'histogram',
+        labelNames: ['strategy', 'result'],
+      },
+      {
+        name: 'ivm_cache_destroyed_total',
+        help: 'ivm_cache_destroyed_total',
+        type: 'counter',
+        labelNames: ['strategy'],
+      },
+      {
+        name: 'ivm_cache_set_duration',
+        help: 'ivm_cache_set_duration',
+        type: 'histogram',
+        labelNames: ['strategy', 'result'],
+      },
+      {
+        name: 'ivm_cache_hits_total',
+        help: 'ivm_cache_hits_total',
+        type: 'counter',
+        labelNames: ['cache', 'operation'],
+      },
+      {
+        name: 'ivm_cache_misses_total',
+        help: 'ivm_cache_misses_total',
+        type: 'counter',
+        labelNames: ['cache', 'operation'],
+      },
+      {
+        name: 'ivm_cache_sets_total',
+        help: 'ivm_cache_sets_total',
+        type: 'counter',
+        labelNames: ['cache', 'operation'],
+      },
+      {
+        name: 'ivm_cache_disposals_total',
+        help: 'ivm_cache_disposals_total',
+        type: 'counter',
+        labelNames: ['cache', 'operation'],
+      },
+      {
+        name: 'ivm_cache_size',
+        help: 'ivm_cache_size',
+        type: 'gauge',
+        labelNames: ['cache', 'operation'],
+      },
+      {
         name: 'fetchV2_call_duration',
         help: 'fetchV2_call_duration',
         type: 'histogram',
@@ -969,25 +1038,34 @@ class Prometheus {
         type: 'gauge',
         labelNames: [],
       },
+      {
+        name: 'am_batch_size_based_on_user_id',
+        help: 'am_batch_size_based_on_user_id',
+        type: 'histogram',
+        labelNames: ['destination_id', 'source_id'],
+        buckets: [10, 50, 100, 200, 500, 800, 1000],
+      },
+      {
+        name: 'salesforce_soql_lookup_count',
+        help: 'Count of SOQL-based lookups executed using Salesforce SDK',
+        type: 'counter',
+        labelNames: ['method', 'objectType', 'workspaceId'],
+      },
     ];
 
-    metrics.forEach((metric) => {
+    for (const metric of metrics) {
+      const fullName = appendPrefix(metric.name);
       try {
         if (metric.type === 'counter') {
-          this.newCounterStat(appendPrefix(metric.name), metric.help, metric.labelNames);
+          this.newCounterStat(fullName, metric.help, metric.labelNames);
         } else if (metric.type === 'gauge') {
-          this.newGaugeStat(appendPrefix(metric.name), metric.help, metric.labelNames);
+          this.newGaugeStat(fullName, metric.help, metric.labelNames);
         } else if (metric.type === 'histogram') {
-          this.newHistogramStat(
-            appendPrefix(metric.name),
-            metric.help,
-            metric.labelNames,
-            metric.buckets,
-          );
+          this.newHistogramStat(fullName, metric.help, metric.labelNames, metric.buckets);
         } else if (metric.type === 'summary') {
           if (enableSummaryMetrics) {
             this.newSummaryStat(
-              appendPrefix(metric.name),
+              fullName,
               metric.help,
               metric.labelNames,
               metric.percentiles,
@@ -1003,7 +1081,7 @@ class Prometheus {
       } catch (e) {
         logger.error(`Prometheus: Metric creation failed. Name: ${metric.name}. Error ${e}`);
       }
-    });
+    }
   }
 }
 

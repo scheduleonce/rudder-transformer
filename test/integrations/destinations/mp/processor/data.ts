@@ -94,6 +94,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -232,6 +233,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -340,6 +342,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -450,6 +453,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -557,6 +561,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -681,6 +686,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -816,6 +822,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -847,6 +854,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -876,6 +884,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -1012,6 +1021,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -1153,6 +1163,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -1184,6 +1195,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -1377,6 +1389,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -1408,6 +1421,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -1607,6 +1621,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -1803,6 +1818,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -2037,6 +2053,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2142,6 +2159,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2172,6 +2190,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/groups/',
+              endpointPath: 'groups',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2267,6 +2286,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2297,6 +2317,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/groups/',
+              endpointPath: 'groups',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2327,6 +2348,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/groups/',
+              endpointPath: 'groups',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2423,6 +2445,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2453,6 +2476,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/groups/',
+              endpointPath: 'groups',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2589,6 +2613,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2620,6 +2645,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -2768,6 +2794,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2879,6 +2906,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -2924,6 +2952,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -3028,6 +3057,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -3154,6 +3184,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -3258,6 +3289,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -3302,6 +3334,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -3405,6 +3438,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -3517,6 +3551,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -3628,6 +3663,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -3747,6 +3783,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -3863,6 +3900,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -3978,6 +4016,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -4092,6 +4131,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -4205,6 +4245,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -4327,6 +4368,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -4455,6 +4497,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -4692,6 +4735,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -4997,6 +5041,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -5125,6 +5170,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -5273,8 +5319,6 @@ export const data = [
         body: [
           {
             destination: overrideDestination(sampleDestination, {
-              serviceAccountUserName: 'rudder.d2a3f1.mp-service-account',
-              serviceAccountSecret: 'jatpQxcjMh8eetk1xrH3KjQIbzy4iX8b',
               projectId: '123456',
               useNewMapping: true,
             }),
@@ -5351,6 +5395,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -5394,6 +5439,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 'Content-Type': 'application/json',
                 Authorization: authHeader2,
@@ -5494,6 +5540,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -5614,6 +5661,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -5735,6 +5783,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -5765,6 +5814,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/groups/',
+              endpointPath: 'groups',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -5863,6 +5913,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -6005,6 +6056,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -6134,6 +6186,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -6342,6 +6395,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -6373,6 +6427,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -6509,6 +6564,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -6628,6 +6684,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -6658,6 +6715,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/groups/',
+              endpointPath: 'groups',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -6837,6 +6895,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -6868,6 +6927,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -6992,6 +7052,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -7023,6 +7084,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -7148,6 +7210,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -7193,6 +7256,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api-eu.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -7400,6 +7464,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -7433,6 +7498,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -7564,6 +7630,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -7597,6 +7664,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -7724,6 +7792,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -7814,6 +7883,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/import/',
+              endpointPath: 'import',
               headers: {
                 Authorization: authHeader2,
                 'Content-Type': 'application/json',
@@ -7948,6 +8018,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -7981,6 +8052,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -8020,6 +8092,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -8058,6 +8131,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -8196,6 +8270,7 @@ export const data = [
               type: 'REST',
               method: 'POST',
               endpoint: 'https://api.mixpanel.com/engage/',
+              endpointPath: 'engage',
               headers: {
                 'Content-Type': 'application/json',
               },
@@ -8234,6 +8309,80 @@ export const data = [
               userId: 'Santiy',
             },
             statusCode: 200,
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'mp-track-non-string-messageid-number',
+    name: 'mp',
+    description: 'Track event with numeric messageId should fail validation',
+    feature: 'processor',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: [
+          {
+            destination: sampleDestination,
+            message: {
+              anonymousId: 'e6ab2c5e-2cda-44a9-a962-e2f67df78bca',
+              channel: 'web',
+              context: {
+                app: {
+                  build: '1.0.0',
+                  name: 'RudderLabs JavaScript SDK',
+                  namespace: 'com.rudderlabs.javascript',
+                  version: '1.0.5',
+                },
+                ip: '0.0.0.0',
+                library: { name: 'RudderLabs JavaScript SDK', version: '1.0.5' },
+                locale: 'en-GB',
+                os: { name: '', version: '' },
+                screen: { density: 2 },
+                traits: {
+                  email: 'test@example.com',
+                },
+                userAgent:
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.117 Safari/537.36',
+              },
+              event: 'Product Viewed',
+              properties: {
+                product_id: '123',
+                revenue: 50,
+              },
+              integrations: { All: true },
+              type: 'track',
+              messageId: 1234567890, // numeric messageId
+              userId: 'test-user-123',
+              originalTimestamp: '2020-01-24T06:29:02.358Z',
+              receivedAt: '2020-01-24T11:59:02.403+05:30',
+              request_ip: '[::1]:53708',
+              sentAt: '2020-01-24T06:29:02.359Z',
+              timestamp: '2020-01-24T11:59:02.402+05:30',
+            },
+          },
+        ],
+        method: 'POST',
+      },
+      pathSuffix: '',
+    },
+    output: {
+      response: {
+        status: 200,
+        body: [
+          {
+            error: 'messageId should be of type string',
+            statTags: {
+              destType: 'MP',
+              errorCategory: 'dataValidation',
+              errorType: 'instrumentation',
+              feature: 'processor',
+              implementation: 'native',
+              module: 'destination',
+            },
+            statusCode: 400,
           },
         ],
       },
