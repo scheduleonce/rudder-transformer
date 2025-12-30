@@ -51,9 +51,10 @@ const { getDynamicErrorType } = require('../../../adapters/utils/networkUtils');
 const { processBatchedIdentify } = require('./identityResolutionUtils');
 const { JSON_MIME_TYPE } = require('../../util/constant');
 
-function buildResponse(message, destination, properties, endpoint) {
+function buildResponse(message, destination, properties, endpointDetails) {
   const response = defaultRequestConfig();
-  response.endpoint = endpoint;
+  response.endpoint = endpointDetails.endpoint;
+  response.endpointPath = endpointDetails.path;
   response.userId = message.userId || message.anonymousId;
   response.body.JSON = removeUndefinedValues(properties);
   return {
@@ -198,10 +199,10 @@ async function processIdentify({ message, destination, metadata, identifyCallsAr
     });
     return;
   }
-  const identifyEndpoint = getIdentifyEndpoint(getEndpointFromConfig(destination));
+  const { endpoint } = getIdentifyEndpoint(getEndpointFromConfig(destination));
   const { processedResponse: brazeIdentifyResp } = await handleHttpRequest(
     'post',
-    identifyEndpoint,
+    endpoint,
     identifyPayload,
     {
       headers: {
@@ -250,6 +251,7 @@ function processTrackWithUserAttributes(
         processParams.userStore,
         payload,
         destination.ID,
+        processParams.failedLookupIdentifiers,
       );
       if (dedupedAttributePayload) {
         requestJson.attributes = [dedupedAttributePayload];
@@ -299,6 +301,7 @@ function processTrackEvent(messageType, message, destination, mappingJson, proce
         processParams.userStore,
         attributePayload,
         destination.ID,
+        processParams.failedLookupIdentifiers,
       );
       if (dedupedAttributePayload) {
         requestJson.attributes = [dedupedAttributePayload];
@@ -314,14 +317,14 @@ function processTrackEvent(messageType, message, destination, mappingJson, proce
     eventName.toLowerCase() === 'order completed'
   ) {
     const purchaseObjs = getPurchaseObjs(message, destination.Config);
+    const orderCompletedPayload = {
+      ...requestJson,
+      purchases: purchaseObjs,
+    };
     return buildResponse(
       message,
       destination,
-      {
-        attributes: [attributePayload],
-        purchases: purchaseObjs,
-        partner: BRAZE_PARTNER_NAME,
-      },
+      orderCompletedPayload,
       getTrackEndPoint(getEndpointFromConfig(destination)),
     );
   }
@@ -374,7 +377,9 @@ function processGroup(message, destination) {
       );
     }
     subscriptionGroup.subscription_state = message.traits.subscriptionState;
-    subscriptionGroup.external_ids = [message.userId];
+    if (message.userId) {
+      subscriptionGroup.external_ids = [message.userId];
+    }
     const phone = getFieldValueFromMessage(message, 'phone');
     const email = getFieldValueFromMessage(message, 'email');
     if (phone) {
@@ -385,7 +390,9 @@ function processGroup(message, destination) {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const subscription_groups = [subscriptionGroup];
     const response = defaultRequestConfig();
-    response.endpoint = getSubscriptionGroupEndPoint(getEndpointFromConfig(destination));
+    const { endpoint, path } = getSubscriptionGroupEndPoint(getEndpointFromConfig(destination));
+    response.endpoint = endpoint;
+    response.endpointPath = path;
     response.body.JSON = removeUndefinedValues({
       subscription_groups,
     });
@@ -529,16 +536,20 @@ async function process(event, processParams = { userStore: new Map() }, reqMetad
 
 const processRouterDest = async (inputs, reqMetadata) => {
   const userStore = new Map();
+  let failedLookupIdentifiers = new Set();
   const { destination } = inputs[0];
   if (destination.Config.supportDedup) {
-    let lookedUpUsers;
+    let lookupResult;
     try {
-      lookedUpUsers = await BrazeDedupUtility.doLookup(inputs);
+      lookupResult = await BrazeDedupUtility.doLookup(inputs);
     } catch (error) {
       logger.error('Error while fetching user store', error);
     }
 
-    BrazeDedupUtility.updateUserStore(userStore, lookedUpUsers, destination.ID);
+    if (lookupResult) {
+      BrazeDedupUtility.updateUserStore(userStore, lookupResult.users, destination.ID);
+      failedLookupIdentifiers = lookupResult.failedIdentifiers || new Set();
+    }
   }
   // group events by userId or anonymousId and then call process
   const groupedInputs = lodash.groupBy(
@@ -558,6 +569,7 @@ const processRouterDest = async (inputs, reqMetadata) => {
     const respList = await simpleProcessRouterDestFunc(groupedInputs[id], process, reqMetadata, {
       userStore,
       identifyCallsArray,
+      failedLookupIdentifiers,
     });
     return respList;
   });

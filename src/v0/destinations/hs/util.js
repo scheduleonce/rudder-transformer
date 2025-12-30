@@ -8,6 +8,7 @@ const {
   InstrumentationError,
   ConfigurationError,
   NetworkError,
+  isDefinedNotNullNotEmpty,
 } = require('@rudderstack/integrations-lib');
 const { httpGET, httpPOST } = require('../../../adapters/network');
 const {
@@ -479,7 +480,7 @@ const getEventAndPropertiesFromConfig = (message, destination, payload) => {
 
   Object.keys(eventProperties).forEach((key) => {
     const value = get(message, `properties.${key}`);
-    if (value) {
+    if (isDefinedNotNullNotEmpty(value)) {
       properties[eventProperties[key]] = value;
     }
   });
@@ -684,7 +685,6 @@ const getExistingContactsData = async (inputs, destination, metadata) => {
       Authorization: `Bearer ${Config.accessToken}`,
     },
   };
-  // eslint-disable-next-line no-restricted-syntax
   for (const chunkValue of chunkValues) {
     const requestData = getRequestData(identifierType, chunkValue);
     const searchResults = await performHubSpotSearch(

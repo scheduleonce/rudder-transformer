@@ -36,6 +36,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -155,6 +156,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -274,6 +276,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -369,6 +372,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -464,6 +468,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -514,6 +519,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -631,6 +637,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -728,6 +735,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -855,6 +863,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -1003,6 +1012,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -1119,6 +1129,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader3,
                     'Content-Type': 'application/json',
@@ -1220,6 +1231,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: 'Bearer commonAccessToken',
                     'Content-Type': 'application/json',
@@ -1317,6 +1329,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: 'Bearer commonAccessToken',
                     'Content-Type': 'application/json',
@@ -1444,6 +1457,7 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: 'Bearer commonAccessToken',
                     'Content-Type': 'application/json',
@@ -1533,6 +1547,35 @@ export const data = [
                 IsConnectionEnabled: true,
                 IsProcessorEnabled: true,
               },
+            },
+            {
+              batched: false,
+              error: 'Event has no valid identifiers',
+              metadata: [
+                {
+                  attemptNum: 1,
+                  destinationId: 'default-destinationId',
+                  dontBatch: false,
+                  jobId: 6,
+                  secret: {
+                    access_token: 'commonAccessToken',
+                  },
+                  sourceId: 'default-sourceId',
+                  userId: 'default-userId',
+                  workspaceId: 'default-workspaceId',
+                },
+              ],
+              statTags: {
+                destType: 'GOOGLE_ADWORDS_REMARKETING_LISTS',
+                destinationId: 'default-destinationId',
+                errorCategory: 'dataValidation',
+                errorType: 'instrumentation',
+                feature: 'router',
+                implementation: 'native',
+                module: 'destination',
+                workspaceId: 'default-workspaceId',
+              },
+              statusCode: 400,
             },
             {
               metadata: [

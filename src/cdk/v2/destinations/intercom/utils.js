@@ -4,6 +4,7 @@ const {
   NetworkError,
   ConfigurationError,
   InstrumentationError,
+  warn,
 } = require('@rudderstack/integrations-lib');
 const tags = require('../../../../v0/util/tags');
 const { httpPOST, handleHttpRequest } = require('../../../../adapters/network');
@@ -275,10 +276,31 @@ const filterCustomAttributes = (payload, type, destination, message) => {
  * @returns
  */
 const searchContact = async (message, destination, metadata) => {
-  const lookupField = getLookUpField(message);
+  let lookupField = getLookUpField(message);
   let lookupFieldValue = getFieldValueFromMessage(message, lookupField);
   if (!lookupFieldValue) {
     lookupFieldValue = message?.context?.traits?.[lookupField];
+  }
+  // we are mapping user_id to external_id in the message for rEtl flow when email is not present in traits
+  if (
+    message.context?.mappedToDestination &&
+    message.traits?.external_id &&
+    !message.traits?.email
+  ) {
+    lookupField = 'external_id';
+    lookupFieldValue = message.traits.external_id;
+  }
+  // if lookup field value is not present, we are returning null
+  if (
+    !isDefinedAndNotNull(lookupFieldValue) ||
+    (typeof lookupFieldValue !== 'string' &&
+      typeof lookupFieldValue !== 'number' &&
+      typeof lookupFieldValue !== 'boolean')
+  ) {
+    warn('[INTERCOM] Lookup field value is not defined or not a string, number, or boolean', {
+      lookupField,
+    });
+    return null;
   }
   const data = JSON.stringify({
     query: {
