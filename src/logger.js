@@ -1,10 +1,14 @@
 /* istanbul ignore file */
-const { LOGLEVELS, structuredLogger } = require('@rudderstack/integrations-lib');
+const {
+  LOGLEVELS,
+  structuredLogger,
+  isDefinedAndNotNull,
+} = require('@rudderstack/integrations-lib');
 const { getMatchedMetadata } = require('./util/logger');
 // LOGGER_IMPL can be `console` or `winston`
 const loggerImpl = process.env.LOGGER_IMPL ?? 'winston';
 
-let logLevel = (process.env.LOG_LEVEL ?? 'error').toLowerCase();
+let logLevel = (process.env.LOG_LEVEL ?? 'warn').toLowerCase();
 
 const logger = structuredLogger({
   level: logLevel,
@@ -44,7 +48,7 @@ const setLogLevel = (level) => {
 const getLogMetadata = (metadata) => {
   let reqMeta = metadata;
   if (Array.isArray(metadata)) {
-    [reqMeta] = metadata;
+    [reqMeta] = metadata.filter(isDefinedAndNotNull);
   }
   const destType = reqMeta?.destType || reqMeta?.destinationType;
   return {

@@ -44,7 +44,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -59,6 +59,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api.eu.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 1,
@@ -153,7 +154,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -169,6 +170,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api.eu.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 1,
@@ -208,7 +210,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -224,6 +226,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 2,
@@ -263,7 +266,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -279,6 +282,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 3,
@@ -321,7 +325,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -337,6 +341,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 4,
@@ -379,7 +384,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -395,6 +400,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 5,
@@ -414,7 +420,7 @@ export const data = [
                   XML: {},
                   JSON_ARRAY: {},
                   FORM: {
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     identification: [
                       JSON.stringify({
                         group_type: 'Company',
@@ -438,6 +444,7 @@ export const data = [
                 headers: {},
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/groupidentify',
+                endpointPath: 'groupidentify',
               },
               metadata: {
                 jobId: 6,
@@ -457,7 +464,7 @@ export const data = [
                   XML: {},
                   JSON_ARRAY: {},
                   FORM: {
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     mapping: [
                       JSON.stringify({
                         global_user_id: 'newUserIdAlias',
@@ -475,6 +482,7 @@ export const data = [
                 headers: {},
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/usermap',
+                endpointPath: 'usermap',
               },
               metadata: {
                 jobId: 7,
@@ -532,7 +540,7 @@ export const data = [
                       },
                     },
                   ],
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   options: {
                     min_id_length: 1,
                   },
@@ -548,6 +556,7 @@ export const data = [
               },
               version: '1',
               endpoint: 'https://api.eu.amplitude.com/2/httpapi',
+              endpointPath: '2/httpapi',
             },
             metadata: [
               {
@@ -569,7 +578,7 @@ export const data = [
                 XML: {},
                 JSON_ARRAY: {},
                 FORM: {
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   identification: [
                     JSON.stringify({
                       group_type: 'Company',
@@ -593,6 +602,7 @@ export const data = [
               headers: {},
               version: '1',
               endpoint: 'https://api2.amplitude.com/groupidentify',
+              endpointPath: 'groupidentify',
             },
             metadata: [
               {
@@ -614,7 +624,7 @@ export const data = [
                 XML: {},
                 JSON_ARRAY: {},
                 FORM: {
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   mapping: [
                     JSON.stringify({
                       global_user_id: 'newUserIdAlias',
@@ -632,6 +642,7 @@ export const data = [
               headers: {},
               version: '1',
               endpoint: 'https://api2.amplitude.com/usermap',
+              endpointPath: 'usermap',
             },
             metadata: [
               {
@@ -730,7 +741,7 @@ export const data = [
                       },
                     },
                   ],
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                 },
               },
               type: 'REST',
@@ -743,6 +754,7 @@ export const data = [
               },
               version: '1',
               endpoint: 'https://api2.amplitude.com/batch',
+              endpointPath: 'batch',
             },
             metadata: [
               {
@@ -819,7 +831,7 @@ export const data = [
                         createdAt: 1599264000,
                       },
                     },
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -835,6 +847,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 1,
@@ -872,7 +885,7 @@ export const data = [
                         key: 'val',
                       },
                     },
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -888,6 +901,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 2,
@@ -925,7 +939,7 @@ export const data = [
                         key: 'val',
                       },
                     },
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -941,6 +955,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 3,
@@ -981,7 +996,7 @@ export const data = [
                         Company: 'Comapny-ABC',
                       },
                     },
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -997,6 +1012,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 4,
@@ -1037,7 +1053,7 @@ export const data = [
                         Company: 'Comapny-ABC',
                       },
                     },
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -1053,6 +1069,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 5,
@@ -1072,7 +1089,7 @@ export const data = [
                   XML: {},
                   JSON_ARRAY: {},
                   FORM: {
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     identification: [
                       JSON.stringify({
                         group_type: 'Company',
@@ -1096,6 +1113,7 @@ export const data = [
                 headers: {},
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/groupidentify',
+                endpointPath: 'groupidentify',
               },
               metadata: {
                 jobId: 6,
@@ -1115,7 +1133,7 @@ export const data = [
                   XML: {},
                   JSON_ARRAY: {},
                   FORM: {
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     mapping: [
                       JSON.stringify({
                         global_user_id: 'newUserIdAlias',
@@ -1133,6 +1151,7 @@ export const data = [
                 headers: {},
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/usermap',
+                endpointPath: 'usermap',
               },
               metadata: {
                 jobId: 7,
@@ -1188,7 +1207,7 @@ export const data = [
                       createdAt: 1599264000,
                     },
                   },
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   options: {
                     min_id_length: 1,
                   },
@@ -1204,6 +1223,7 @@ export const data = [
               },
               version: '1',
               endpoint: 'https://api2.amplitude.com/2/httpapi',
+              endpointPath: '2/httpapi',
             },
             metadata: [
               {
@@ -1225,7 +1245,7 @@ export const data = [
                 XML: {},
                 JSON_ARRAY: {},
                 FORM: {
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   identification: [
                     JSON.stringify({
                       group_type: 'Company',
@@ -1249,6 +1269,7 @@ export const data = [
               headers: {},
               version: '1',
               endpoint: 'https://api2.amplitude.com/groupidentify',
+              endpointPath: 'groupidentify',
             },
             metadata: [
               {
@@ -1270,7 +1291,7 @@ export const data = [
                 XML: {},
                 JSON_ARRAY: {},
                 FORM: {
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   mapping: [
                     JSON.stringify({
                       global_user_id: 'newUserIdAlias',
@@ -1288,6 +1309,7 @@ export const data = [
               headers: {},
               version: '1',
               endpoint: 'https://api2.amplitude.com/usermap',
+              endpointPath: 'usermap',
             },
             metadata: [
               {
@@ -1386,7 +1408,7 @@ export const data = [
                       },
                     },
                   ],
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                 },
               },
               type: 'REST',
@@ -1399,6 +1421,7 @@ export const data = [
               },
               version: '1',
               endpoint: 'https://api2.amplitude.com/batch',
+              endpointPath: 'batch',
             },
             metadata: [
               {
@@ -1484,6 +1507,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 userId: '90ca6da0-292e-4e79-9880-f8009e0ae4a3',
@@ -1575,6 +1599,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 userId: '90ca6da0-292e-4e79-9880-f8009e0ae4a3',
@@ -1666,6 +1691,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 userId: '90ca6da0-292e-4e79-9880-f8009e0ae4a3',
@@ -1757,6 +1783,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 userId: '90ca6da0-292e-4e79-9880-f8009e0ae4a3',
@@ -1848,6 +1875,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 userId: '90ca6da0-292e-4e79-9880-f8009e0ae4a3',
@@ -2026,6 +2054,7 @@ export const data = [
               },
               version: '1',
               endpoint: 'https://api2.amplitude.com/batch',
+              endpointPath: 'batch',
             },
             metadata: [
               {
@@ -2163,7 +2192,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -2179,6 +2208,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 1,
@@ -2218,7 +2248,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -2234,6 +2264,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 2,
@@ -2273,7 +2304,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -2289,6 +2320,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 3,
@@ -2331,7 +2363,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -2347,6 +2379,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 4,
@@ -2389,7 +2422,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -2405,6 +2438,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 5,
@@ -2424,7 +2458,7 @@ export const data = [
                   XML: {},
                   JSON_ARRAY: {},
                   FORM: {
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     identification: [
                       JSON.stringify({
                         group_type: 'Company',
@@ -2448,6 +2482,7 @@ export const data = [
                 headers: {},
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/groupidentify',
+                endpointPath: 'groupidentify',
               },
               metadata: {
                 jobId: 6,
@@ -2467,7 +2502,7 @@ export const data = [
                   XML: {},
                   JSON_ARRAY: {},
                   FORM: {
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     mapping: [
                       JSON.stringify({
                         global_user_id: 'newUserIdAlias',
@@ -2485,6 +2520,7 @@ export const data = [
                 headers: {},
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/usermap',
+                endpointPath: 'usermap',
               },
               metadata: {
                 jobId: 7,
@@ -2542,7 +2578,7 @@ export const data = [
                       },
                     },
                   ],
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   options: {
                     min_id_length: 1,
                   },
@@ -2558,6 +2594,7 @@ export const data = [
               },
               version: '1',
               endpoint: 'https://api2.amplitude.com/2/httpapi',
+              endpointPath: '2/httpapi',
             },
             metadata: [
               {
@@ -2579,7 +2616,7 @@ export const data = [
                 XML: {},
                 JSON_ARRAY: {},
                 FORM: {
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   identification: [
                     JSON.stringify({
                       group_type: 'Company',
@@ -2603,6 +2640,7 @@ export const data = [
               headers: {},
               version: '1',
               endpoint: 'https://api2.amplitude.com/groupidentify',
+              endpointPath: 'groupidentify',
             },
             metadata: [
               {
@@ -2624,7 +2662,7 @@ export const data = [
                 XML: {},
                 JSON_ARRAY: {},
                 FORM: {
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   mapping: [
                     JSON.stringify({
                       global_user_id: 'newUserIdAlias',
@@ -2642,6 +2680,7 @@ export const data = [
               headers: {},
               version: '1',
               endpoint: 'https://api2.amplitude.com/usermap',
+              endpointPath: 'usermap',
             },
             metadata: [
               {
@@ -2740,7 +2779,7 @@ export const data = [
                       },
                     },
                   ],
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                 },
               },
               type: 'REST',
@@ -2753,6 +2792,7 @@ export const data = [
               },
               version: '1',
               endpoint: 'https://api2.amplitude.com/batch',
+              endpointPath: 'batch',
             },
             metadata: [
               {
@@ -2830,7 +2870,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -2846,6 +2886,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 1,
@@ -2885,7 +2926,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -2901,6 +2942,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 2,
@@ -2940,7 +2982,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -2956,6 +2998,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 3,
@@ -2998,7 +3041,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -3014,6 +3057,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 4,
@@ -3056,7 +3100,7 @@ export const data = [
                         },
                       },
                     ],
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     options: {
                       min_id_length: 1,
                     },
@@ -3072,6 +3116,7 @@ export const data = [
                 },
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/2/httpapi',
+                endpointPath: '2/httpapi',
               },
               metadata: {
                 jobId: 5,
@@ -3091,7 +3136,7 @@ export const data = [
                   XML: {},
                   JSON_ARRAY: {},
                   FORM: {
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     identification: [
                       JSON.stringify({
                         group_type: 'Company',
@@ -3115,6 +3160,7 @@ export const data = [
                 headers: {},
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/groupidentify',
+                endpointPath: 'groupidentify',
               },
               metadata: {
                 jobId: 6,
@@ -3134,7 +3180,7 @@ export const data = [
                   XML: {},
                   JSON_ARRAY: {},
                   FORM: {
-                    api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                    api_key: 'dummyApiKey',
                     mapping: [
                       JSON.stringify({
                         global_user_id: 'newUserIdAlias',
@@ -3152,6 +3198,7 @@ export const data = [
                 headers: {},
                 version: '1',
                 endpoint: 'https://api2.amplitude.com/usermap',
+                endpointPath: 'usermap',
               },
               metadata: {
                 jobId: 7,
@@ -3208,7 +3255,7 @@ export const data = [
                       },
                     },
                   ],
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   options: {
                     min_id_length: 1,
                   },
@@ -3224,6 +3271,7 @@ export const data = [
               },
               version: '1',
               endpoint: 'https://api2.amplitude.com/2/httpapi',
+              endpointPath: '2/httpapi',
             },
             metadata: [
               {
@@ -3245,7 +3293,7 @@ export const data = [
                 XML: {},
                 JSON_ARRAY: {},
                 FORM: {
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   identification: [
                     JSON.stringify({
                       group_type: 'Company',
@@ -3269,6 +3317,7 @@ export const data = [
               headers: {},
               version: '1',
               endpoint: 'https://api2.amplitude.com/groupidentify',
+              endpointPath: 'groupidentify',
             },
             metadata: [
               {
@@ -3290,7 +3339,7 @@ export const data = [
                 XML: {},
                 JSON_ARRAY: {},
                 FORM: {
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                   mapping: [
                     JSON.stringify({
                       global_user_id: 'newUserIdAlias',
@@ -3308,6 +3357,7 @@ export const data = [
               headers: {},
               version: '1',
               endpoint: 'https://api2.amplitude.com/usermap',
+              endpointPath: 'usermap',
             },
             metadata: [
               {
@@ -3406,7 +3456,7 @@ export const data = [
                       },
                     },
                   ],
-                  api_key: '4c7ed7573eb73517ee4c26ed4bde9a85',
+                  api_key: 'dummyApiKey',
                 },
               },
               type: 'REST',
@@ -3419,6 +3469,7 @@ export const data = [
               },
               version: '1',
               endpoint: 'https://api2.amplitude.com/batch',
+              endpointPath: 'batch',
             },
             metadata: [
               {
