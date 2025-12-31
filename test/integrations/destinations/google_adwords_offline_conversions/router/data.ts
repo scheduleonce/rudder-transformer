@@ -1,9 +1,19 @@
+/**
+ * GAOC (Google Ads Offline Conversions) - Router Tests (Standard Behavior)
+ *
+ * These tests validate the router transformation with batch fetching DISABLED (default).
+ * For tests with batch fetching enabled (GAOC_ENABLE_BATCH_FETCHING=true),
+ * see batch-fetching-data.ts in the same directory.
+ */
+
 import { authHeader1, secret1, secret3 } from '../maskedSecrets';
 import { timestampMock } from '../mocks';
+import { newData as batchFetchingData } from './batch-fetching-data';
 
 const API_VERSION = 'v19';
 
 export const data = [
+  ...batchFetchingData,
   {
     name: 'google_adwords_offline_conversions',
     description: 'Test 0',
@@ -491,10 +501,10 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/9625812972:uploadClickConversions`,
+                endpointPath: 'uploadClickConversions',
                 headers: {
                   Authorization: authHeader1,
                   'Content-Type': 'application/json',
-                  'developer-token': secret3,
                 },
                 params: {
                   event: 'Sign-up - click',
@@ -626,10 +636,10 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/9625812972:uploadCallConversions`,
+                endpointPath: 'uploadCallConversions',
                 headers: {
                   Authorization: authHeader1,
                   'Content-Type': 'application/json',
-                  'developer-token': secret3,
                 },
                 params: {
                   event: 'search',
@@ -742,10 +752,10 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833/offlineUserDataJobs`,
+                  endpointPath: 'offlineUserDataJobs',
                   headers: {
                     Authorization: authHeader1,
                     'Content-Type': 'application/json',
-                    'developer-token': secret3,
                   },
                   params: { event: 'Store sales', customerId: '7693729833' },
                   body: {
@@ -823,10 +833,10 @@ export const data = [
                   type: 'REST',
                   method: 'POST',
                   endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/7693729833:uploadCallConversions`,
+                  endpointPath: 'uploadCallConversions',
                   headers: {
                     Authorization: authHeader1,
                     'Content-Type': 'application/json',
-                    'developer-token': secret3,
                   },
                   params: {
                     event: 'Order Completed',
@@ -1178,10 +1188,10 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/1234556775/offlineUserDataJobs`,
+                endpointPath: 'offlineUserDataJobs',
                 headers: {
                   Authorization: authHeader1,
                   'Content-Type': 'application/json',
-                  'developer-token': secret3,
                 },
                 params: { event: 'Store sales', customerId: '1234556775' },
                 body: {

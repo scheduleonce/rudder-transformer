@@ -1,4 +1,3 @@
-import { getEndPoint } from '../../../../../src/v0/destinations/fb_custom_audience/config';
 import { testScenariosForV1API } from './business';
 import { otherScenariosV1 } from './other';
 
@@ -15,7 +14,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'successResponse',
           },
@@ -98,7 +97,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'POST',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'permissionMissingError',
           },
@@ -151,7 +150,7 @@ export const existingTestData = [
               status: 400,
             },
             message:
-              'Missing permission. Please make sure you have ads_management permission and the application is included in the allowlist',
+              'Missing permission. Please make sure you have ads_management permission and the application is included in the allowlist. Facebook responded with error code: 294',
             statTags: {
               destType: 'FB_CUSTOM_AUDIENCE',
               destinationId: 'Non-determininable',
@@ -180,7 +179,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'audienceUnavailableError',
           },
@@ -220,7 +219,7 @@ export const existingTestData = [
               status: 400,
             },
             message:
-              'Custom Audience Unavailable: The custom audience you are trying to use has not been shared with your ad account',
+              'Custom Audience Unavailable: The custom audience you are trying to use has not been shared with your ad account. Facebook responded with error code: 1487301',
             statTags: {
               destType: 'FB_CUSTOM_AUDIENCE',
               destinationId: 'Non-determininable',
@@ -249,7 +248,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'audienceDeletedError',
           },
@@ -287,7 +286,8 @@ export const existingTestData = [
               },
               status: 400,
             },
-            message: 'Custom Audience Has Been Deleted',
+            message:
+              'Custom Audience Has Been Deleted. Facebook responded with error code: 1487366',
             statTags: {
               destType: 'FB_CUSTOM_AUDIENCE',
               destinationId: 'Non-determininable',
@@ -316,7 +316,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'failedToUpdateAudienceError',
           },
@@ -354,7 +354,8 @@ export const existingTestData = [
               },
               status: 400,
             },
-            message: 'Failed to update the custom audience',
+            message:
+              'Failed to update the custom audience. Facebook responded with error code: 2650',
             statTags: {
               destType: 'FB_CUSTOM_AUDIENCE',
               destinationId: 'Non-determininable',
@@ -384,7 +385,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'parameterExceededError',
           },
@@ -422,7 +423,8 @@ export const existingTestData = [
               },
               status: 400,
             },
-            message: 'The number of parameters exceeded the maximum for this operation',
+            message:
+              'The number of parameters exceeded the maximum for this operation. Facebook responded with error code: 105',
             statTags: {
               destType: 'FB_CUSTOM_AUDIENCE',
               destinationId: 'Non-determininable',
@@ -451,7 +453,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'tooManyCallsError',
           },
@@ -489,7 +491,8 @@ export const existingTestData = [
               },
               status: 429,
             },
-            message: 'There have been too many calls to this ad-account.',
+            message:
+              'There have been too many calls to this ad-account.. Facebook responded with error code: 80003',
             statTags: {
               destType: 'FB_CUSTOM_AUDIENCE',
               destinationId: 'Non-determininable',
@@ -518,7 +521,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'code200PermissionError',
           },
@@ -557,7 +560,8 @@ export const existingTestData = [
               },
               status: 403,
             },
-            message: '(#200) The current user can not update audience 23861283180290489',
+            message:
+              '(#200) The current user can not update audience 23861283180290489. Facebook responded with error code: 200',
             statTags: {
               destType: 'FB_CUSTOM_AUDIENCE',
               destinationId: 'Non-determininable',
@@ -586,7 +590,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'accessTokenInvalidError',
           },
@@ -630,7 +634,7 @@ export const existingTestData = [
               status: 400,
             },
             message:
-              'Error validating access token: Session has expired on Tuesday, 01-Aug-23 10:12:14 PDT. The current time is Sunday, 28-Jan-24 16:01:17 PST.',
+              'Error validating access token: Session has expired on Tuesday, 01-Aug-23 10:12:14 PDT. The current time is Sunday, 28-Jan-24 16:01:17 PST.. Facebook responded with error code: 190 and sub-code: 463',
             statTags: {
               destType: 'FB_CUSTOM_AUDIENCE',
               destinationId: 'Non-determininable',
@@ -660,7 +664,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'messagingTOSNotAccepted',
           },
@@ -699,7 +703,8 @@ export const existingTestData = [
               },
               status: 400,
             },
-            message: 'Marketing Messaging TOS not accepted.',
+            message:
+              'Marketing Messaging TOS not accepted.. Facebook responded with error code: 2655',
             statTags: {
               destType: 'FB_CUSTOM_AUDIENCE',
               destinationId: 'Non-determininable',
@@ -728,7 +733,7 @@ export const existingTestData = [
           version: '1',
           type: 'REST',
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'accessTokenInvalidError-2',
           },
@@ -769,7 +774,7 @@ export const existingTestData = [
               status: 400,
             },
             message:
-              'The token has expired on Saturday, 23-Sep-23 23:29:14 PDT. The current time is Monday, 07-Apr-25 03:48:44 PDT.',
+              'The token has expired on Saturday, 23-Sep-23 23:29:14 PDT. The current time is Monday, 07-Apr-25 03:48:44 PDT.. Facebook responded with error code: 190',
             statTags: {
               destType: 'FB_CUSTOM_AUDIENCE',
               destinationId: 'Non-determininable',

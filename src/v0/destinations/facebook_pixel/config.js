@@ -1,6 +1,13 @@
 const { getMappingConfig } = require('../../util');
 
-const VERSION = 'v22.0';
+const VERSION = 'v24.0';
+
+const ENDPOINT_PATH = 'events';
+
+const getEndpointDetails = (pixelId, accessToken) => ({
+  endpoint: `https://graph.facebook.com/${VERSION}/${pixelId}/${ENDPOINT_PATH}?access_token=${accessToken}`,
+  path: ENDPOINT_PATH,
+});
 
 const CONFIG_CATEGORIES = {
   USERDATA: {
@@ -109,6 +116,7 @@ const STANDARD_ECOMM_EVENTS_TYPE = [
 
 module.exports = {
   VERSION,
+  getEndpointDetails,
   CONFIG_CATEGORIES,
   MAPPING_CONFIG,
   ACTION_SOURCES_VALUES,

@@ -48,7 +48,11 @@ const { CommonUtils } = require('../../../util/common');
 const mPEventPropertiesConfigJson = mappingConfig[ConfigCategory.EVENT_PROPERTIES.name];
 
 const setImportCredentials = (destConfig) => {
-  const endpoint = `${getBaseEndpoint(destConfig)}/import/`;
+  const endpointPath = 'import';
+  const endpointDetails = {
+    endpoint: `${getBaseEndpoint(destConfig)}/${endpointPath}/`,
+    path: endpointPath,
+  };
   const params = {
     strict: destConfig.strictMode ? 1 : 0,
   };
@@ -64,7 +68,7 @@ const setImportCredentials = (destConfig) => {
     'Content-Type': 'application/json',
     Authorization: `Basic ${base64Convertor(credentials)}`,
   };
-  return { endpoint, headers, params };
+  return { endpointDetails, headers, params };
 };
 
 const responseBuilderSimple = (payload, message, eventType, destConfig) => {
@@ -75,12 +79,13 @@ const responseBuilderSimple = (payload, message, eventType, destConfig) => {
   const duration = getTimeDifference(message.timestamp);
 
   const setCredentials = () => {
-    const credentials = setImportCredentials(destConfig);
-    response.endpoint = credentials.endpoint;
-    response.headers = credentials.headers;
+    const { endpointDetails, headers, params } = setImportCredentials(destConfig);
+    response.endpoint = endpointDetails.endpoint;
+    response.endpointPath = endpointDetails.path;
+    response.headers = headers;
     response.params = {
-      project_id: credentials.params?.projectId,
-      strict: credentials.params.strict,
+      project_id: params?.projectId,
+      strict: params.strict,
     };
   };
 
@@ -100,7 +105,8 @@ const responseBuilderSimple = (payload, message, eventType, destConfig) => {
       break;
     }
     default:
-      response.endpoint = `${getBaseEndpoint(destConfig)}/engage/`;
+      response.endpointPath = 'engage';
+      response.endpoint = `${getBaseEndpoint(destConfig)}/${response.endpointPath}/`;
       response.headers = {
         'Content-Type': 'application/json',
       };
@@ -160,9 +166,15 @@ const processIncrementalProperties = (message, destination, propIncrements) => {
 };
 
 const getEventValueForTrackEvent = (message, destination) => {
+  // messageId is there, it should be of type string
+  if (message.messageId && typeof message.messageId !== 'string') {
+    throw new InstrumentationError('messageId should be of type string');
+  }
+
   const mappedProperties = constructPayload(message, mPEventPropertiesConfigJson);
-  // This is to conform with SDKs sending timestamp component with messageId
+  // SDKs send timestamp in messageId
   // example: "1662363980287-168cf720-6227-4b56-a98e-c49bdc7279e9"
+  // https://developer.mixpanel.com/reference/track-event#body-params
   if (mappedProperties.$insert_id) {
     mappedProperties.$insert_id = mappedProperties.$insert_id.slice(-36);
   }
@@ -467,7 +479,8 @@ const processGroupEvents = (message, type, destination) => {
             type,
             destination.Config,
           );
-          groupResponse.endpoint = `${getBaseEndpoint(destination?.Config)}/groups/`;
+          groupResponse.endpointPath = 'groups';
+          groupResponse.endpoint = `${getBaseEndpoint(destination?.Config)}/${groupResponse.endpointPath}/`;
           returnValue.push(groupResponse);
         });
       }

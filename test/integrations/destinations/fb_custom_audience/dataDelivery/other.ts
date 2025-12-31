@@ -1,4 +1,3 @@
-import { getEndPoint } from '../../../../../src/v0/destinations/fb_custom_audience/config';
 import { ProxyV1TestData } from '../../../testTypes';
 import { generateMetadata, generateProxyV1Payload } from '../../../testUtils';
 import { statTags, testParams2 as testParams } from './business';
@@ -18,7 +17,7 @@ export const otherScenariosV1: ProxyV1TestData[] = [
       request: {
         body: generateProxyV1Payload({
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'tooManyCallsError',
           },
@@ -32,7 +31,8 @@ export const otherScenariosV1: ProxyV1TestData[] = [
         status: 200,
         body: {
           output: {
-            message: 'There have been too many calls to this ad-account.',
+            message:
+              'There have been too many calls to this ad-account.. Facebook responded with error code: 80003',
             statTags: {
               ...statTags,
               errorType: 'throttled',
@@ -40,7 +40,8 @@ export const otherScenariosV1: ProxyV1TestData[] = [
             status: 429,
             response: [
               {
-                error: 'There have been too many calls to this ad-account.',
+                error:
+                  'There have been too many calls to this ad-account.. Facebook responded with error code: 80003',
                 statusCode: 429,
                 metadata: generateMetadata(1),
               },
@@ -63,7 +64,7 @@ export const otherScenariosV1: ProxyV1TestData[] = [
       request: {
         body: generateProxyV1Payload({
           method: 'DELETE',
-          endpoint: getEndPoint('aud1'),
+          endpoint: 'https://graph.facebook.com/v23.0/aud1/users',
           headers: {
             'test-dest-response-key': 'htmlResponse',
           },
