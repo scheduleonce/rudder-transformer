@@ -15,29 +15,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  report-coverage:
-    name: Report Code Coverage
-    if: github.event_name == 'push'
-    uses: ./.github/workflows/dt-test-and-report-code-coverage.yml
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
   generate-tag-names:
     runs-on: ubuntu-latest
     name: Generate Tag Names
-    # Only merged pull requests must trigger
-    if: github.event.pull_request.merged == true
+    permissions:
+      contents: read # to checkout repository code (actions/checkout)
     outputs:
       tag_name: ${{ steps.gen_tag_names.outputs.tag_name }}
       tag_name_ut: ${{ steps.gen_tag_names.outputs.tag_name_ut }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 1
 
@@ -54,8 +47,9 @@ jobs:
 
   build-transformer-image:
     name: Build Transformer Docker Image - Dev
-    # Only merged pull requests must trigger
-    if: github.event.pull_request.merged == true
+    permissions:
+      id-token: write # to pass OIDC token to reusable workflow (build-push-docker-image.yml)
+      contents: read # to checkout repository code and call reusable workflow (actions/checkout)
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
     with:
@@ -66,6 +60,7 @@ jobs:
       load_target: development
       push_target: production
       use_merge_sha: true
+      create_latest_tag: false
     secrets:
       DOCKERHUB_PROD_TOKEN: ${{ secrets.DOCKERHUB_PROD_TOKEN }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -73,8 +68,9 @@ jobs:
 
   build-user-transformer-image:
     name: Build User Transformer Docker Image - Dev
-    # Only merged pull requests must trigger
-    if: github.event.pull_request.merged == true
+    permissions:
+      id-token: write # to pass OIDC token to reusable workflow (build-push-docker-image.yml)
+      contents: read # to checkout repository code and call reusable workflow (actions/checkout)
     needs: [generate-tag-names]
     uses: ./.github/workflows/build-push-docker-image.yml
     with:
@@ -84,6 +80,7 @@ jobs:
       dockerfile: Dockerfile-ut-func
       load_target: development
       push_target: production
+      create_latest_tag: false
     secrets:
       DOCKERHUB_PROD_TOKEN: ${{ secrets.DOCKERHUB_PROD_TOKEN }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -92,15 +89,18 @@ jobs:
   restart-k8s-deployment:
     name: Restart K8s Deployment
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # for AWS OIDC authentication (restart-deployment action uses aws-actions/configure-aws-credentials)
+      contents: read # to checkout repository code and local action (actions/checkout)
     needs: [generate-tag-names, build-transformer-image]
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Restart Deployment
         # # This action restarts the deployment in the specified namespaces
@@ -115,15 +115,18 @@ jobs:
   restart-k8s-deployment-dedicated:
     name: Restart K8s Deployment
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # for AWS OIDC authentication (restart-deployment action uses aws-actions/configure-aws-credentials)
+      contents: read # to checkout repository code and local action (actions/checkout)
     needs: [generate-tag-names, build-transformer-image]
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Restart Deployment
         # # This action restarts the deployment in the specified namespaces
