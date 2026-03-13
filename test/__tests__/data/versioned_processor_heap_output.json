@@ -135,9 +135,7 @@
         "DisplayName": "Heap.io",
         "ID": "1WTbl0l5GjOQKOvfmcGwk0T49kV",
         "Name": "HEAP",
-        "Config": {
-          "cdkV2Enabled": true
-        }
+        "Config": {}
       },
       "Enabled": true,
       "ID": "1WTcDSEOE437e4ePH10BJNELXmE",
@@ -167,9 +165,7 @@
         "DisplayName": "Heap.io",
         "ID": "1WTbl0l5GjOQKOvfmcGwk0T49kV",
         "Name": "HEAP",
-        "Config": {
-          "cdkV2Enabled": true
-        }
+        "Config": {}
       },
       "Enabled": true,
       "ID": "1WTcDSEOE437e4ePH10BJNELXmE",
