@@ -20,13 +20,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  report-coverage:
-    name: Report Code Coverage
-    if: github.event_name == 'push'
-    uses: ./.github/workflows/dt-test-and-report-code-coverage.yml
-    secrets:
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
   generate-tag-names:
     runs-on: ubuntu-latest
     name: Generate Tag Names
@@ -37,12 +30,12 @@ jobs:
       tag_name_ut: ${{ steps.gen_tag_names.outputs.tag_name_ut }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 1
 
@@ -68,7 +61,8 @@ jobs:
       push_target: production
       build_type: dt
       use_merge_sha: true
-      skip_tests: ${{startsWith(github.event.pull_request.head.ref, 'hotfix-release/')}}
+      skip_tests: true
+      create_latest_tag: true
     secrets:
       DOCKERHUB_PROD_TOKEN: ${{ secrets.DOCKERHUB_PROD_TOKEN }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -78,17 +72,31 @@ jobs:
     name: Update Helm Charts For Production and Create Pull Request
     runs-on: ubuntu-latest
     needs: [generate-tag-names, build-transformer-image]
+
+    permissions:
+      contents: read # to checkout repository code; cross-repo writes use app token (create-github-app-token)
+
     env:
       TAG_NAME: ${{ needs.generate-tag-names.outputs.tag_name }}
-      TF_IMAGE_REPOSITORY: rudderstack/rudder-transformer
+      TF_IMAGE_REPOSITORY: ${{ vars.AWS_ECR_REGISTRY }}/rudderstack/rudder-transformer
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
+      - name: Generate GitHub App Token
+        id: generate-token
+        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PRIVATE_KEY }}
+          permission-contents: write # to create commits and push branches
+          permission-pull-requests: write # to create and update PRs
+          repositories: rudder-devops,rudderstack-operator # to access cross-repo
+
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 1
 
@@ -104,8 +112,10 @@ jobs:
           echo "Transformer: $TAG_NAME"
 
       - name: Clone Devops Repo
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
-          git clone https://${{secrets.PAT}}@github.com/rudderlabs/rudder-devops.git
+          gh repo clone rudderlabs/rudder-devops
 
       - name: Extract branch name
         id: extract_branch_name
@@ -117,67 +127,127 @@ jobs:
 
       - name: Update Helm Charts and Raise Pull Request
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           cd rudder-devops
           git checkout -b shared-transformer-$TAG_NAME
 
           cd helm-charts/shared-services/per-az/environment/production
           yq eval -i ".rudder-transformer.image.tag=\"$TAG_NAME\"" production.yaml
-          yq eval -i ".rudder-transformer.image.repository=\"$TF_IMAGE_REPOSITORY\"" production.yaml
           git add production.yaml
 
           yq eval -i ".rudder-transformer.image.tag=\"$TAG_NAME\"" enterprise/enterprise.yaml
-          yq eval -i ".rudder-transformer.image.repository=\"$TF_IMAGE_REPOSITORY\"" enterprise/enterprise.yaml
           git add enterprise/enterprise.yaml
 
           yq eval -i ".rudder-transformer.image.tag=\"$TAG_NAME\"" multi-tenant/multi-tenant.yaml
-          yq eval -i ".rudder-transformer.image.repository=\"$TF_IMAGE_REPOSITORY\"" multi-tenant/multi-tenant.yaml
           git add multi-tenant/multi-tenant.yaml
 
           cd ../../../../config-be-rudder-transformer/environment/prod
           yq eval -i ".config-be-rudder-transformer.image.tag=\"$TAG_NAME\"" base.yaml
           git add base.yaml
 
-          git commit -m "chore: upgrade shared transformers to $TAG_NAME"
+      - name: Push shared transformers branch to remote
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          cd rudder-devops
           git push -u origin shared-transformer-$TAG_NAME
 
+      - name: Create verified commit for shared transformers
+        uses: ryancyq/github-signed-commit@e9f3b28c80da7be66d24b8f501a5abe82a6b855f # v1.2.0
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        with:
+          working-directory: rudder-devops
+          branch-name: shared-transformer-${{ env.TAG_NAME }}
+          commit-message: 'chore: upgrade shared transformers to ${{ env.TAG_NAME }}'
+          files: |
+            helm-charts/shared-services/per-az/environment/production/production.yaml
+            helm-charts/shared-services/per-az/environment/production/enterprise/enterprise.yaml
+            helm-charts/shared-services/per-az/environment/production/multi-tenant/multi-tenant.yaml
+            helm-charts/config-be-rudder-transformer/environment/prod/base.yaml
+
+      - name: Create PR for shared transformers
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          cd rudder-devops
           gh pr create --fill
 
       - name: Update Helm Chart and Raise Pull Request For Hosted Transformer
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           cd rudder-devops
           git checkout -b hosted-transformer-$TAG_NAME ${{steps.extract_branch_name.outputs.branch_name}}
 
           cd customer-objects/multi-tenant-us
           yq eval -i ".spec.transformer.image.version=\"$TAG_NAME\"" hostedmtedmt.yaml
-          yq eval -i ".spec.transformer.image.repository=\"$TF_IMAGE_REPOSITORY\"" hostedmtedmt.yaml
           git add hostedmtedmt.yaml
 
-          git commit -m "chore: upgrade hosted transformer to $TAG_NAME"
+      - name: Push hosted transformer branch to remote
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          cd rudder-devops
           git push -u origin hosted-transformer-$TAG_NAME
 
+      - name: Create verified commit for hosted transformer
+        uses: ryancyq/github-signed-commit@e9f3b28c80da7be66d24b8f501a5abe82a6b855f # v1.2.0
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        with:
+          working-directory: rudder-devops
+          branch-name: hosted-transformer-${{ env.TAG_NAME }}
+          commit-message: 'chore: upgrade hosted transformer to ${{ env.TAG_NAME }}'
+          files: |
+            customer-objects/multi-tenant-us/hostedmtedmt.yaml
+
+      - name: Create PR for hosted transformer
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          cd rudder-devops
           gh pr create --fill
 
       - name: Clone Operator Repo
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
-          git clone https://${{secrets.PAT}}@github.com/rudderlabs/rudderstack-operator.git
+          gh repo clone rudderlabs/rudderstack-operator
 
       - name: Update helm charts and raise pull request for dedicated transformer from operator
         env:
-          GITHUB_TOKEN: ${{ secrets.PAT }}
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           cd rudderstack-operator
           git checkout -b dedicated-transformer-$TAG_NAME ${{steps.extract_branch_name.outputs.branch_name}}
 
           cd operator-helm/valuefiles
           yq eval -i ".transformer.image.version=\"$TAG_NAME\"" values.yaml
-          yq eval -i ".transformer.image.repository=\"$TF_IMAGE_REPOSITORY\"" values.yaml
           git add values.yaml
 
-          git commit -m "chore: upgrade dedicated transformer default version to $TAG_NAME"
+      - name: Push dedicated transformer branch to remote
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          cd rudderstack-operator
           git push -u origin dedicated-transformer-$TAG_NAME
 
+      - name: Create verified commit for dedicated transformer
+        uses: ryancyq/github-signed-commit@e9f3b28c80da7be66d24b8f501a5abe82a6b855f # v1.2.0
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        with:
+          working-directory: rudderstack-operator
+          branch-name: dedicated-transformer-${{ env.TAG_NAME }}
+          commit-message: 'chore: upgrade dedicated transformer default version to ${{ env.TAG_NAME }}'
+          files: |
+            operator-helm/valuefiles/values.yaml
+
+      - name: Create PR for dedicated transformer
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          cd rudderstack-operator
           gh pr create --fill

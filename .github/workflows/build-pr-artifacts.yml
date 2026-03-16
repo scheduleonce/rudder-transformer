@@ -7,10 +7,6 @@ on:
       - reopened
       - synchronize
 
-permissions:
-  contents: read
-  id-token: write # allows the JWT to be requested from GitHub's OIDC provider
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
   cancel-in-progress: true
@@ -19,6 +15,8 @@ jobs:
   generate-tag-names:
     runs-on: ubuntu-latest
     name: Generate Tag Names
+    permissions:
+      contents: read # to checkout repository code (actions/checkout)
     # Skip for the release pull requests as staging artifacts will be generated
     if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'master'
     outputs:
@@ -26,12 +24,12 @@ jobs:
       tag_name_ut: ${{ steps.gen_tag_names.outputs.tag_name_ut }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        uses: step-security/harden-runner@58077d3c7e43986b6b15fba718e8ea69e387dfcc # v2.15.1
         with:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 1
 
@@ -40,15 +38,18 @@ jobs:
         id: gen_tag_names
         run: |
           tag_name=$(echo ${{ github.head_ref }} | tr "/" .)
-          echo "Tag Name: $tag_name"
-          echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
+          echo "Tag Name: branch-$tag_name"
+          echo "tag_name=branch-$tag_name" >> $GITHUB_OUTPUT
 
           tag_name_ut="ut-$tag_name"
-          echo "UT Tag Name: $tag_name_ut"
-          echo "tag_name_ut=$tag_name_ut" >> $GITHUB_OUTPUT
+          echo "UT Tag Name: branch-$tag_name_ut"
+          echo "tag_name_ut=branch-$tag_name_ut" >> $GITHUB_OUTPUT
 
   build-transformer-image:
     name: Build Transformer Docker Image - PR
+    permissions:
+      id-token: write # to pass OIDC token to reusable workflow (build-push-docker-image.yml)
+      contents: read # to checkout repository code and call reusable workflow (actions/checkout)
     # Skip for the release pull requests as staging artifacts will be generated
     # Skip main to develop sync pull requests
     if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'master'
@@ -61,6 +62,7 @@ jobs:
       dockerfile: Dockerfile
       load_target: development
       push_target: production
+      create_latest_tag: false
     secrets:
       DOCKERHUB_PROD_TOKEN: ${{ secrets.DOCKERHUB_PROD_TOKEN }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -68,6 +70,9 @@ jobs:
 
   build-user-transformer-image:
     name: Build User Transformer Docker Image - PR
+    permissions:
+      id-token: write # to pass OIDC token to reusable workflow (build-push-docker-image.yml)
+      contents: read # to checkout repository code and call reusable workflow (actions/checkout)
     # Skip for the release pull requests as staging artifacts will be generated
     if: startsWith(github.event.pull_request.head.ref, 'release/') != true && startsWith(github.event.pull_request.head.ref, 'hotfix-release/') != true && github.event.pull_request.head.ref != 'master'
     needs: [generate-tag-names]
@@ -79,6 +84,7 @@ jobs:
       dockerfile: Dockerfile-ut-func
       load_target: development
       push_target: production
+      create_latest_tag: false
     secrets:
       DOCKERHUB_PROD_TOKEN: ${{ secrets.DOCKERHUB_PROD_TOKEN }}
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -86,10 +92,12 @@ jobs:
 
   run-ingestion-service-test:
     name: Run Ingestion Service Test
+    permissions:
+      contents: read # to call reusable workflow (ingestion-service-test.yml)
     needs: [build-transformer-image, generate-tag-names]
     uses: ./.github/workflows/ingestion-service-test.yml
     with:
       build_tag: rudderstack/develop-rudder-transformer:${{ needs.generate-tag-names.outputs.tag_name }}
     secrets:
-      PAT: ${{ secrets.PAT }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      RELEASE_PRIVATE_KEY: ${{ secrets.RELEASE_PRIVATE_KEY }}
