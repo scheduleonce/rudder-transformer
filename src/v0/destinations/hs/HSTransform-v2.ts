@@ -288,10 +288,14 @@ const processTrack = async ({
     ...constructPayload(message, mappingConfig[ConfigCategory.TRACK_PROPERTIES.name]),
   };
 
-  // either of email or utk or objectId (Could be a 'contact id' or a 'visitor id') should be present
-  if (!payload.email && !payload.utk && !payload.objectId) {
+  // either of email or utk or objectId (Could be a 'contact id' or a 'visitor id') or oncehub_user_id should be present
+  // https://github.com/rudderlabs/rudder-transformer/issues/5058
+  const hasDefaultIdentifier = Boolean(payload.email || payload.utk || payload.objectId);
+  const hasCustomIdentifier = Boolean(payload.properties?.oncehub_user_id);
+
+  if (!hasDefaultIdentifier && !hasCustomIdentifier) {
     throw new InstrumentationError(
-      'Either of email, utk or objectId is required for custom behavioral events',
+      'Either of email, utk, objectId, or oncehub_user_id is required for custom behavioral events',
     );
   }
 
