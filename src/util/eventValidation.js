@@ -8,12 +8,16 @@ const addFormats = require('ajv-formats');
 const NodeCache = require('node-cache');
 const hash = require('object-hash');
 const logger = require('../logger');
+const stats = require('./stats');
 const trackingPlan = require('./trackingPlan');
 
 const SECONDS_IN_DAY = 60 * 60 * 24 * 1;
-const eventSchemaCache = new NodeCache();
+const eventSchemaCacheTTL =
+  parseInt(process.env.EVENT_SCHEMA_CACHE_TTL_SECS, 10) || 2 * SECONDS_IN_DAY;
+const eventSchemaCache = new NodeCache({ stdTTL: eventSchemaCacheTTL });
 const ajv19Cache = new NodeCache({ useClones: false, stdTTL: SECONDS_IN_DAY });
 const ajv4Cache = new NodeCache({ useClones: false, stdTTL: SECONDS_IN_DAY });
+const useEphemeralAjv = process.env.AJV_EPHEMERAL_INSTANCE === 'true';
 const { isEmptyObject } = require('../v0/util');
 
 const defaultOptions = {
@@ -184,7 +188,20 @@ async function validate(event) {
 
     let validateEvent = eventSchemaCache.get(schemaHash);
     if (!validateEvent) {
-      validateEvent = ajv.compile(eventSchema);
+      const compileStartTime = new Date();
+      if (useEphemeralAjv) {
+        // Use a throwaway ajv instance per compilation to prevent unbounded memory growth.
+        // ajv.compile() accumulates scope entries (scope._values, scope._scope) that
+        // removeSchema() never cleans. A throwaway instance lets GC reclaim everything
+        // except the small _scope object kept alive by the compiled validator's closure.
+        const ephemeralAjv = getAjv(merged, isDraft4);
+        stats.timing('get_ajv_duration', compileStartTime, { isDraft4 });
+        validateEvent = ephemeralAjv.compile(eventSchema);
+      } else {
+        validateEvent = ajv.compile(eventSchema);
+        ajv.removeSchema(eventSchema);
+      }
+      stats.timing('ajv_compile_duration', compileStartTime, { isDraft4, useEphemeralAjv });
       eventSchemaCache.set(schemaHash, validateEvent);
     }
 

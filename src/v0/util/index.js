@@ -1055,6 +1055,10 @@ const handleMetadataForValue = (value, metadata, destKey, integrationsObj = null
 // Given a destinationName according to the destination definition names,
 // It'll look for the canonical names for that integration and return the
 // `integrations` object for that destination, else null
+/**
+ * @param {object} message
+ * @param {string} [destinationName]
+ */
 const getIntegrationsObj = (message, destinationName = null) => {
   if (destinationName) {
     const canonicalNames = DestCanonicalNames[destinationName];
@@ -1175,19 +1179,25 @@ const getDestinationExternalIDInfoForRetl = (message, destination) => {
   let destinationExternalId = null;
   let identifierType = null;
   let objectType = null;
-  if (message.context && message.context.externalId) {
-    externalIdArray = message.context.externalId;
+  const { externalId } = message.context || {};
+  if (externalId) {
+    if (Array.isArray(externalId)) {
+      externalIdArray = externalId;
+    } else if (isObject(externalId) && !isEmptyObject(externalId)) {
+      externalIdArray = [externalId];
+    }
   }
-  if (externalIdArray) {
-    externalIdArray.forEach((extIdObj) => {
-      const { type, id } = extIdObj;
-      if (type?.includes(`${destination}-`)) {
-        destinationExternalId = id;
-        objectType = type.replace(`${destination}-`, '');
-        identifierType = extIdObj.identifierType;
-      }
-    });
-  }
+  externalIdArray.forEach((extIdObj) => {
+    if (!isObject(extIdObj)) {
+      return;
+    }
+    const { type, id } = extIdObj;
+    if (typeof type === 'string' && type.includes(`${destination}-`)) {
+      destinationExternalId = id;
+      objectType = type.replace(`${destination}-`, '');
+      identifierType = extIdObj.identifierType;
+    }
+  });
   return { destinationExternalId, objectType, identifierType };
 };
 
@@ -1795,11 +1805,14 @@ const handleRtTfSingleEventError = (input, error, reqMetadata) => {
     resp.authErrorCategory = error.authErrorCategory;
   }
 
-  errNotificationClient.notify(error, 'Router Transformation (event level)', {
+  // Sensitive `metadata` (containing `secret`) is stripped centrally in client.notify
+  const notifyMetadata = {
     ...resp,
     ...reqMetadata,
     ...getEventReqMetadata(input),
-  });
+  };
+
+  errNotificationClient.notify(error, 'Router Transformation (event level)', notifyMetadata);
 
   return { ...resp, destination: input?.destination };
 };

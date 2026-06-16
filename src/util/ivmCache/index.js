@@ -10,14 +10,20 @@ class DisposableCache {
   constructor(options = {}) {
     this.maxSize = Number.parseInt(options.maxSize ?? process.env.IVM_CACHE_MAX_SIZE ?? '10', 10);
     this.ttlMs = Number.parseInt(options.ttlMs ?? process.env.IVM_CACHE_TTL_MS ?? '300000', 10);
+    this.cacheName = options.name ?? 'ivm';
+    this.onChange = options.onChange ?? null;
 
     this.cache = new LRUCache({
       max: this.maxSize,
       ttl: this.ttlMs,
+      ttlAutopurge: options.ttlAutopurge ?? false,
       allowStale: false,
       updateAgeOnGet: true,
       updateAgeOnHas: false,
+      // dispose: cleanup (fires before removal)
+      // disposeAfter: notification (fires after removal, so values() reflects new state)
       dispose: this.handleDispose.bind(this),
+      disposeAfter: this.notifyChange.bind(this),
     });
 
     // Stats tracking
@@ -112,6 +118,7 @@ class DisposableCache {
     });
 
     this.emitStats('set');
+    this.notifyChange();
   }
 
   /**
@@ -196,12 +203,25 @@ class DisposableCache {
   }
 
   /**
+   * Notify external listener of cache state change.
+   */
+  notifyChange() {
+    if (this.onChange) {
+      try {
+        this.onChange();
+      } catch (err) {
+        logger.error('Error in onChange callback', { error: err.message });
+      }
+    }
+  }
+
+  /**
    * Emit cache statistics
    * @param {string} operation Operation type
    */
   emitStats(operation) {
     const tags = {
-      cache: 'ivm',
+      cache: this.cacheName,
       operation,
     };
 
