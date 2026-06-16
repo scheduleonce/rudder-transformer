@@ -1,6 +1,18 @@
-import { Connection, Destination, RouterTransformationRequest } from '../../../../../src/types';
+import {
+  Account,
+  Connection,
+  Destination,
+  RouterTransformationRequest,
+} from '../../../../../src/types';
 import { VDM_V2_SCHEMA_VERSION } from '../../../../../src/v0/util/constant';
 import { generateGoogleOAuthMetadata } from '../../../testUtils';
+
+const deliveryAccount: Account = {
+  id: '',
+  options: null,
+  secret: null,
+  accountDefinitionName: 'DESTINATION_GOOGLE_ADWORDS_REMARKETING_LISTS_OAUTH',
+};
 
 const destination: Destination = {
   Config: {
@@ -13,6 +25,7 @@ const destination: Destination = {
     isHashRequired: true,
     typeOfList: 'General',
   },
+  deliveryAccount,
   ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
   Name: 'GOOGLE_ADWORDS_REMARKETING_LISTS',
   Enabled: true,
@@ -36,6 +49,7 @@ const destination2: Destination = {
     loginCustomerId: '',
     subAccount: false,
   },
+  deliveryAccount,
   ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
   Name: 'GOOGLE_ADWORDS_REMARKETING_LISTS',
   Enabled: true,
@@ -97,7 +111,7 @@ export const rETLRecordRouterRequest: RouterTransformationRequest = {
         rudderId: '2',
         fields: {
           email: 'test@abc.com',
-          phone: '@09876543210',
+          phone: '09876543210',
           firstName: 'test',
           lastName: 'rudderlabs',
           country: 'US',
@@ -122,7 +136,7 @@ export const rETLRecordRouterRequest: RouterTransformationRequest = {
         rudderId: '2',
         fields: {
           email: 'test@abc.com',
-          phone: '@09876543210',
+          phone: '09876543210',
           firstName: 'test',
           lastName: 'rudderlabs',
           country: 'US',
@@ -146,7 +160,7 @@ export const rETLRecordRouterRequest: RouterTransformationRequest = {
         rudderId: '2',
         fields: {
           email: 'test@abc.com',
-          phone: '@09876543210',
+          phone: '09876543210',
           firstName: 'test',
           lastName: 'rudderlabs',
           country: 'US',
@@ -170,7 +184,7 @@ export const rETLRecordRouterRequest: RouterTransformationRequest = {
         rudderId: '2',
         fields: {
           email: 'test@abc.com',
-          phone: '@09876543210',
+          phone: '09876543210',
           firstName: 'test',
           lastName: 'rudderlabs',
           country: 'US',
@@ -194,7 +208,7 @@ export const rETLRecordRouterRequest: RouterTransformationRequest = {
         rudderId: '2',
         fields: {
           email: 'test@abc.com',
-          phone: '@09876543210',
+          phone: '09876543210',
           firstName: 'test',
           lastName: 'rudderlabs',
           country: 'US',
@@ -225,7 +239,7 @@ export const rETLRecordRouterRequestVDMv2General: RouterTransformationRequest = 
         rudderId: '2',
         identifiers: {
           email: 'test@abc.com',
-          phone: '@09876543210',
+          phone: '09876543210',
           firstName: 'test',
           lastName: 'rudderlabs',
           country: 'US',
@@ -256,12 +270,68 @@ export const rETLRecordRouterRequestVDMv2UserId: RouterTransformationRequest = {
         rudderId: '2',
         identifiers: {
           email: 'test@abc.com',
-          phone: '@09876543210',
+          phone: '09876543210',
           firstName: 'test',
           lastName: 'rudderlabs',
           country: 'US',
           postalCode: '1245',
           thirdPartyUserId: 'useri1234',
+        },
+        type: 'record',
+      },
+      metadata: generateGoogleOAuthMetadata(2),
+    },
+  ],
+  destType: 'google_adwords_remarketing_lists',
+};
+
+export const eventStreamRecordPreHashedRequest: RouterTransformationRequest = {
+  input: [
+    {
+      destination: destination,
+      message: {
+        action: 'insert',
+        context: { ip: '14.5.67.21', library: { name: 'http' } },
+        recordId: '2',
+        rudderId: '2',
+        fields: {
+          // pre-hashed values: sha256('test@abc.com') and sha256('+09876543210')
+          email: 'd3142c8f9c9129484daf28df80cc5c955791efed5e69afabb603bc8cb9ffd419',
+          phone: '5a335f50a6bbaffd39b35513350adb4be1e598ab75b9740c2ba82a160862e82f',
+          country: 'US',
+          postalCode: '1245',
+        },
+        type: 'record',
+      },
+      metadata: generateGoogleOAuthMetadata(2),
+    },
+  ],
+  destType: 'google_adwords_remarketing_lists',
+};
+
+const destinationHashOff: Destination = {
+  ...destination,
+  Config: {
+    ...destination.Config,
+    isHashRequired: false,
+  },
+};
+
+// Plaintext email/phone with isHashRequired: false → triggers hashing validation
+export const eventStreamRecordHashOffRequest: RouterTransformationRequest = {
+  input: [
+    {
+      destination: destinationHashOff,
+      message: {
+        action: 'insert',
+        context: { ip: '14.5.67.21', library: { name: 'http' } },
+        recordId: '2',
+        rudderId: '2',
+        fields: {
+          email: 'test@abc.com',
+          phone: '09876543210',
+          country: 'US',
+          postalCode: '1245',
         },
         type: 'record',
       },
@@ -287,7 +357,7 @@ export const eventStreamRecordRouterRequest: RouterTransformationRequest = {
         rudderId: '2',
         fields: {
           email: 'test@abc.com',
-          phone: '@09876543210',
+          phone: '09876543210',
           firstName: 'test',
           lastName: 'rudderlabs',
           country: 'US',
@@ -321,7 +391,7 @@ export const rETLRecordRouterRequestVDMv1: RouterTransformationRequest = {
         rudderId: '2',
         fields: {
           email: 'test@abc.com',
-          phone: '@09876543210',
+          phone: '09876543210',
           firstName: 'test',
           lastName: 'rudderlabs',
           country: 'US',
@@ -330,6 +400,54 @@ export const rETLRecordRouterRequestVDMv1: RouterTransformationRequest = {
         type: 'record',
       },
       metadata: generateGoogleOAuthMetadata(3),
+    },
+  ],
+  destType: 'google_adwords_remarketing_lists',
+};
+
+// invalid email stripped, valid phone + addressInfo sent
+export const fieldStrippingRequest: RouterTransformationRequest = {
+  input: [
+    {
+      destination: destination,
+      message: {
+        action: 'insert',
+        context: { ip: '14.5.67.21', library: { name: 'http' } },
+        recordId: '10',
+        rudderId: '10',
+        fields: {
+          email: 'invalid-email', // invalid — stripped
+          phone: '09876543210', // valid
+          firstName: 'test',
+          lastName: 'rudderlabs',
+          country: 'US',
+          postalCode: '1245',
+        },
+        type: 'record',
+      },
+      metadata: generateGoogleOAuthMetadata(10),
+    },
+  ],
+  destType: 'google_adwords_remarketing_lists',
+};
+
+// all fields invalid → InstrumentationError
+export const allFieldsInvalidRequest: RouterTransformationRequest = {
+  input: [
+    {
+      destination: destination,
+      message: {
+        action: 'insert',
+        context: { ip: '14.5.67.21', library: { name: 'http' } },
+        recordId: '11',
+        rudderId: '11',
+        fields: {
+          email: 'invalid-email', // invalid
+          phone: 'abc-def-123', // invalid — contains letters/dashes
+        },
+        type: 'record',
+      },
+      metadata: generateGoogleOAuthMetadata(11),
     },
   ],
   destType: 'google_adwords_remarketing_lists',

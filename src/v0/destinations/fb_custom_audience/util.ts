@@ -1,13 +1,8 @@
-import lodash from 'lodash';
-import sha256 from 'sha256';
 import crypto from 'crypto';
-import jsonSize from 'json-size';
 import validator from 'validator';
 import {
   InstrumentationError,
   ConfigurationError,
-  isDefinedAndNotNull,
-  convertToString,
   TransformationError,
 } from '@rudderstack/integrations-lib';
 import type {
@@ -16,21 +11,19 @@ import type {
   FbRecordMessage,
   WrappedResponse,
 } from './types';
-import {
-  typeFields,
-  subTypeFields,
-  getEndPoint,
-  isRejectInvalidFieldsEnabled,
-  DESTINATION,
-} from './config';
+import { typeFields, subTypeFields, getEndPoint, ENDPOINT_PATH, DESTINATION } from './config';
 import {
   defaultRequestConfig,
   defaultPostRequestConfig,
   defaultDeleteRequestConfig,
 } from '../../util';
 import stats from '../../../util/stats';
-import * as config from './config';
-import { validateHashingConsistency } from '../../util/audienceUtils';
+import {
+  processAudienceRecord,
+  isValidPhoneNumber,
+  type AudienceField,
+  HashingType,
+} from '../../util/audienceUtils';
 
 // ISO 3166-1 alpha-2: exactly two lowercase letters
 const COUNTRY_CODE_REGEX = /^[a-z]{2}$/;
@@ -52,25 +45,9 @@ const COUNTRY_CODE_REGEX = /^[a-z]{2}$/;
               ]
             ]
 } */
-const batchingWithPayloadSize = (
-  payload: FbCustomAudiencePayload,
-  workspaceId: string,
-): FbCustomAudiencePayload[] => {
-  const maxPayloadSize = config.getMaxPayloadSize(workspaceId);
-  const payloadSize = jsonSize(payload);
-  if (payloadSize > maxPayloadSize) {
-    const revisedPayloadArray: FbCustomAudiencePayload[] = [];
-    const noOfBatches = Math.ceil(payloadSize / maxPayloadSize);
-    const data = payload.data!;
-    const revisedRecordsPerPayload = Math.floor(data.length / noOfBatches);
-    const revisedDataArray = lodash.chunk(data, revisedRecordsPerPayload);
-    revisedDataArray.forEach((chunk) => {
-      revisedPayloadArray.push({ ...payload, data: chunk });
-    });
-    return revisedPayloadArray;
-  }
-  return [payload];
-};
+const batchingWithPayloadSize = (payload: FbCustomAudiencePayload): FbCustomAudiencePayload[] => [
+  payload,
+];
 
 const getSchemaForEventMappedToDest = (message: FbRecordMessage): string[] => {
   const mappedSchema = message?.context?.destinationFields;
@@ -87,157 +64,136 @@ const getSchemaForEventMappedToDest = (message: FbRecordMessage): string[] => {
   return userSchema;
 };
 
-/**
- * Ensures user inputs are in the format required by Facebook Custom Audiences.
- * Returns empty string for invalid field values.
- */
-const ensureApplicableFormat = (
-  userProperty: string,
-  userInformation: unknown,
-  workspaceId: string,
-  destinationId: string,
-): unknown => {
-  let updatedProperty: unknown;
-  let userInformationTrimmed: string;
-  if (isDefinedAndNotNull(userInformation)) {
-    const stringifiedUserInformation = convertToString(userInformation).trim();
-    // https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/customer-information-parameters
-    switch (userProperty) {
-      case 'EMAIL': {
-        const emailValue = stringifiedUserInformation.toLowerCase();
-        if (validator.isEmail(emailValue)) {
-          updatedProperty = emailValue;
-        } else {
-          stats.increment('fb_custom_audience_invalid_email', { workspaceId, destinationId });
-          updatedProperty = isRejectInvalidFieldsEnabled() ? '' : emailValue;
-        }
-        break;
-      }
-      case 'PHONE': {
-        // remove all non-numerical characters, then remove all leading zeros
-        updatedProperty = stringifiedUserInformation.replace(/\D/g, '').replace(/^0+/g, '');
-        // Note: libphonenumber-js is not used here as it requires a country code to validate, which may not always be present.
-        break;
-      }
-      case 'GEN':
-        updatedProperty =
-          stringifiedUserInformation.toLowerCase() === 'f' ||
-          stringifiedUserInformation.toLowerCase() === 'female'
-            ? 'f'
-            : 'm';
-        break;
-      case 'DOBY':
-        updatedProperty = stringifiedUserInformation.replace(/\./g, '');
-        break;
-      case 'DOBM':
-      case 'DOBD':
-        userInformationTrimmed = stringifiedUserInformation.replace(/\./g, '');
-        if (userInformationTrimmed.length < 2) {
-          updatedProperty = `0${userInformationTrimmed}`;
-        } else {
-          updatedProperty = userInformationTrimmed;
-        }
-        break;
-      case 'LN':
-      case 'FN':
-        // Remove ASCII punctuation (0x21-0x2F, 0x3A-0x40, 0x5B-0x60, 0x7B-0x7E).
-        // Preserves spaces, digits, accented letters, and all non-ASCII (UTF-8) characters.
-        updatedProperty = stringifiedUserInformation
-          .toLowerCase()
-          .replace(/[\x21-\x2F\x3A-\x40\x5B-\x60\x7B-\x7E]/g, '');
-        break;
-      case 'FI':
-        updatedProperty = stringifiedUserInformation
-          .toLowerCase()
-          .replace(/[^!"#$%&'()*+,-./a-z]/g, '');
-        break;
-      case 'MADID':
-        updatedProperty = stringifiedUserInformation.toLowerCase();
-        break;
-      case 'COUNTRY': {
-        const countryCode = stringifiedUserInformation.toLowerCase();
-        if (COUNTRY_CODE_REGEX.test(countryCode)) {
-          updatedProperty = countryCode;
-        } else {
-          stats.increment('fb_custom_audience_invalid_country_code', {
-            workspaceId,
-            destinationId,
-          });
-          updatedProperty = isRejectInvalidFieldsEnabled() ? '' : countryCode;
-        }
-        break;
-      }
-      case 'ZIP':
-        updatedProperty = stringifiedUserInformation.replace(/[\s-]/g, '').toLowerCase();
-        break;
-      case 'ST':
-      case 'CT':
-        updatedProperty = stringifiedUserInformation
-          .replace(/[^ A-Za-z]/g, '')
-          .replace(/\s/g, '')
-          .toLowerCase();
-        break;
-      case 'EXTERN_ID':
-        updatedProperty = stringifiedUserInformation;
-        break;
-      case 'LOOKALIKE_VALUE':
-        updatedProperty = userInformation;
-        break;
-      default:
-        throw new ConfigurationError(`The property ${userProperty} is not supported`);
-    }
-  }
-  return updatedProperty;
+// Shared normalizers for fields with identical processing logic.
+// Remove ASCII punctuation (0x21-0x2F, 0x3A-0x40, 0x5B-0x60, 0x7B-0x7E).
+// Preserves spaces, digits, accented letters, and all non-ASCII (UTF-8) characters.
+const normalizeNameField = (v: string) =>
+  v
+    .trim()
+    .toLowerCase()
+    .replace(/[\x21-\x2F\x3A-\x40\x5B-\x60\x7B-\x7E]/g, '');
+
+// Remove non-alpha/space chars, collapse spaces, lowercase — used by ST and CT.
+const normalizeLocationTextField = (v: string) =>
+  v
+    .trim()
+    .replace(/[^ A-Za-z]/g, '')
+    .replace(/\s/g, '')
+    .toLowerCase();
+
+// Strip dots and zero-pad to 2 digits — used by DOBM and DOBD.
+const normalizeDobPart = (v: string) => {
+  const trimmed = v.trim().replace(/\./g, '');
+  return trimmed.length < 2 ? `0${trimmed}` : trimmed;
 };
 
-const getUpdatedDataElement = (
+/**
+ * Per-field normalization and validation rules for Facebook Custom Audiences.
+ * https://developers.facebook.com/docs/marketing-api/conversions-api/parameters/customer-information-parameters
+ */
+const FB_FIELD_CONFIG = {
+  EMAIL: {
+    normalize: (v: string) => v.trim().toLowerCase(),
+    validate: (v: string) => validator.isEmail(v),
+    hashingType: HashingType.SHA256,
+  },
+  PHONE: {
+    // Remove all non-numerical characters, then remove all leading zeros.
+    // Note: libphonenumber-js is not used here as it requires a country code to validate.
+    normalize: (v: string) => v.trim().replace(/\D/g, '').replace(/^0+/g, ''),
+    validate: isValidPhoneNumber,
+    hashingType: HashingType.SHA256,
+  },
+  GEN: {
+    normalize: (v: string) => {
+      const lower = v.trim().toLowerCase();
+      return lower === 'f' || lower === 'female' ? 'f' : 'm';
+    },
+    hashingType: HashingType.SHA256,
+  },
+  DOBY: { normalize: (v: string) => v.trim().replace(/\./g, ''), hashingType: HashingType.SHA256 },
+  DOBM: { normalize: normalizeDobPart, hashingType: HashingType.SHA256 },
+  DOBD: { normalize: normalizeDobPart, hashingType: HashingType.SHA256 },
+  LN: { normalize: normalizeNameField, hashingType: HashingType.SHA256 },
+  FN: { normalize: normalizeNameField, hashingType: HashingType.SHA256 },
+  FI: {
+    normalize: (v: string) =>
+      v
+        .trim()
+        .toLowerCase()
+        .replace(/[^!"#$%&'()*+,-./a-z]/g, ''),
+    hashingType: HashingType.SHA256,
+  },
+  MADID: { normalize: (v: string) => v.trim().toLowerCase(), hashingType: HashingType.NONE },
+  COUNTRY: {
+    normalize: (v: string) => v.trim().toLowerCase(),
+    validate: (v: string) => COUNTRY_CODE_REGEX.test(v),
+    hashingType: HashingType.SHA256,
+  },
+  ZIP: {
+    normalize: (v: string) => v.trim().replace(/[\s-]/g, '').toLowerCase(),
+    hashingType: HashingType.SHA256,
+  },
+  ST: { normalize: normalizeLocationTextField, hashingType: HashingType.SHA256 },
+  CT: { normalize: normalizeLocationTextField, hashingType: HashingType.SHA256 },
+  EXTERN_ID: { normalize: (v: string) => v, hashingType: HashingType.NONE },
+  LOOKALIKE_VALUE: { normalize: (v: string) => v, hashingType: HashingType.NONE },
+};
+
+/**
+ * Normalizes, validates, and optionally hashes a single user property value,
+ * then appends the result to dataElement.
+ *
+ * Reference: https://developers.facebook.com/docs/marketing-api/audiences/guides/custom-audiences#hash
+ */
+const processAndAppendDataElement = (
   dataElement: unknown[],
   isHashRequired: boolean,
+  disableFormat: boolean,
   propertyName: string,
   propertyValue: unknown,
   workspaceId: string,
   destinationId: string,
 ): unknown[] => {
-  const destination = {
-    workspaceId,
-    id: destinationId,
-    type: DESTINATION,
-    config: { isHashRequired },
-  };
-  // Normalize undefined/null to empty string
-  const normalizedValue = propertyValue ?? '';
+  const value = propertyValue ?? '';
 
   /**
-   * Special case for LOOKALIKE_VALUE, for value-based audience
-   * Ensure it's a finite number and greater than or equal to 0, if not, default to 0.
+   * Special case for LOOKALIKE_VALUE, for value-based audience.
+   * Ensure it's a finite number >= 0, otherwise default to 0.
    */
   if (propertyName === 'LOOKALIKE_VALUE') {
-    const lookalikeValue = Number(normalizedValue);
+    const lookalikeValue = Number(value);
     const validLookalikeValue =
       Number.isFinite(lookalikeValue) && lookalikeValue >= 0 ? lookalikeValue : 0;
     dataElement.push(validLookalikeValue);
     return dataElement;
   }
 
-  /**
-   * Hash the original value for the properties apart from 'MADID' and 'EXTERN_ID',
-   * as hashing is not required for them.
-   * Reference: https://developers.facebook.com/docs/marketing-api/audiences/guides/custom-audiences#hash
-   * Send an empty string for the properties for which the user hasn't provided any value.
-   */
-  const isHashableField = propertyName !== 'MADID' && propertyName !== 'EXTERN_ID';
-  const shouldHash = isHashRequired && isHashableField;
-
-  if (isHashableField) {
-    validateHashingConsistency(propertyName, String(normalizedValue), destination);
+  const fieldConfig = FB_FIELD_CONFIG[propertyName];
+  if (!fieldConfig) {
+    throw new ConfigurationError(`The property ${propertyName} is not supported`);
   }
 
-  if (shouldHash) {
-    dataElement.push(normalizedValue ? sha256(String(normalizedValue)) : '');
-  } else {
-    dataElement.push(normalizedValue);
-  }
+  // Bridge string-typed FB_FIELD_CONFIG to the unknown-typed AudienceField interface.
+  // When disableFormat=true, skip normalization by omitting the normalize function.
+  const { normalize, validate } = fieldConfig;
+  const effectiveFieldConfig: AudienceField = {
+    ...fieldConfig,
+    normalize: disableFormat ? undefined : (v) => normalize(String(v)),
+    validate: validate ? (v) => validate(v as string) : undefined,
+  };
+  const destination = {
+    workspaceId,
+    id: destinationId,
+    type: DESTINATION,
+    config: { isHashRequired },
+  };
 
+  const processed = processAudienceRecord(
+    { [propertyName]: String(value) },
+    { fieldConfigs: { [propertyName]: effectiveFieldConfig }, destination },
+  );
+  dataElement.push(processed[propertyName] ?? '');
   return dataElement;
 };
 
@@ -260,22 +216,13 @@ const prepareDataField = (
 
     userSchema.forEach((eachProperty) => {
       const userProperty = eachUser[eachProperty];
-      let updatedProperty: unknown = userProperty;
 
-      if (isHashRequired && !disableFormat) {
-        updatedProperty = ensureApplicableFormat(
-          eachProperty,
-          userProperty,
-          workspaceId,
-          destinationId,
-        );
-      }
-
-      dataElement = getUpdatedDataElement(
+      dataElement = processAndAppendDataElement(
         dataElement,
         isHashRequired,
+        disableFormat,
         eachProperty,
-        updatedProperty,
+        userProperty,
         workspaceId,
         destinationId,
       );
@@ -334,10 +281,9 @@ const getDataSource = (type: string | undefined, subType: string | undefined): D
 
 const responseBuilderSimple = (payload: WrappedResponse | undefined, audienceId: string) => {
   if (payload) {
-    const responseParams = payload.responseField;
     const response = defaultRequestConfig();
     response.endpoint = getEndPoint(audienceId);
-    response.endpointPath = config.ENDPOINT_PATH;
+    response.endpointPath = ENDPOINT_PATH;
 
     if (payload.operationCategory === 'add') {
       response.method = defaultPostRequestConfig.requestMethod;
@@ -346,7 +292,9 @@ const responseBuilderSimple = (payload: WrappedResponse | undefined, audienceId:
       response.method = defaultDeleteRequestConfig.requestMethod;
     }
 
-    response.params = responseParams;
+    const { payload: fbPayload, ...authParams } = payload.responseField;
+    response.params = authParams;
+    response.body.JSON = { payload: fbPayload };
     return response;
   }
   // fail-safety for developer error
@@ -357,8 +305,7 @@ export {
   prepareDataField,
   getSchemaForEventMappedToDest,
   batchingWithPayloadSize,
-  ensureApplicableFormat,
-  getUpdatedDataElement,
+  processAndAppendDataElement,
   generateAppSecretProof,
   responseBuilderSimple,
   getDataSource,

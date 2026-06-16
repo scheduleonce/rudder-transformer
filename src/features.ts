@@ -99,6 +99,9 @@ const defaultFeaturesConfig: FeaturesConfig = {
     CUSTOMERIO_AUDIENCE: true,
     ACCOIL_ANALYTICS: true,
     POSTSCRIPT: true,
+    POSTHOG: true,
+    CUSTOM_AUDIENCE: true,
+    ITERABLE_AUDIENCE: true,
   },
   regulations: [
     'BRAZE',
