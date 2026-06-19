@@ -232,14 +232,14 @@ describe("User transformation", () => {
     const jsonResponse = { type: "json" };
     const textResponse = "200 OK";
     when(fetch)
-      .calledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Object) }))
+      .calledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Function) }))
       .mockResolvedValueOnce(getfetchResponse(jsonResponse, dummyUrl))
       .mockResolvedValueOnce(getfetchResponse(textResponse, dummyUrl))
       .mockRejectedValue(new Error("Timed Out"));
 
     const output = await userTransformHandler(inputData, versionId, []);
     expect(fetch).toHaveBeenCalledWith(transformerUrl);
-    expect(fetch).toHaveBeenCalledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Object) }));
+    expect(fetch).toHaveBeenCalledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Function) }));
 
     expect(output[0].transformedEvent.body).toEqual(jsonResponse);
     expect(output[1].transformedEvent.body).toEqual(textResponse);
@@ -277,14 +277,14 @@ describe("User transformation", () => {
     const jsonResponse = { type: "json" };
     const textResponse = "200 OK";
     when(fetch)
-      .calledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Object) }))
+      .calledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Function) }))
       .mockResolvedValueOnce(getfetchResponse(jsonResponse, dummyUrl))
       .mockResolvedValueOnce(getfetchResponse(textResponse, dummyUrl))
       .mockRejectedValue(new Error("Timed Out"));
 
     const output = await userTransformHandler(inputData, versionId, []);
     expect(fetch).toHaveBeenCalledWith(transformerUrl);
-    expect(fetch).toHaveBeenCalledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Object) }));
+    expect(fetch).toHaveBeenCalledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Function) }));
 
     expect(output[0].transformedEvent.body).toEqual(jsonResponse);
     expect(output[1].transformedEvent.body).toEqual(textResponse);
@@ -1373,7 +1373,7 @@ describe("User transformation with IVM cache", () => {
     const jsonResponse = { type: "json" };
     const textResponse = "200 OK";
     when(fetch)
-      .calledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Object) }))
+      .calledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Function) }))
       .mockResolvedValueOnce(getfetchResponse(jsonResponse, dummyUrl))
       .mockResolvedValueOnce(getfetchResponse(textResponse, dummyUrl))
       .mockRejectedValueOnce(new Error("Timed Out"))
@@ -1384,7 +1384,7 @@ describe("User transformation with IVM cache", () => {
 
     const output = await userTransformHandler(inputData, versionId, []);
     expect(fetch).toHaveBeenCalledWith(transformerUrl);
-    expect(fetch).toHaveBeenCalledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Object) }));
+    expect(fetch).toHaveBeenCalledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Function) }));
 
     expect(output[0].transformedEvent.body).toEqual(jsonResponse);
     expect(output[1].transformedEvent.body).toEqual(textResponse);
@@ -1393,7 +1393,7 @@ describe("User transformation with IVM cache", () => {
     // Should get the same output when using cached isolate vm
     const outputCached = await userTransformHandler(inputData, versionId, []);
     expect(fetch).toHaveBeenCalledWith(transformerUrl);
-    expect(fetch).toHaveBeenCalledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Object) }));
+    expect(fetch).toHaveBeenCalledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Function) }));
     
     expect(outputCached[0].transformedEvent.body).toEqual(jsonResponse);
     expect(outputCached[1].transformedEvent.body).toEqual(textResponse);
@@ -2432,7 +2432,7 @@ describe("User transformation with IVM cache TTL expiration", () => {
     const jsonResponse = { type: "json" };
     const textResponse = "200 OK";
     when(fetch)
-      .calledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Object) }))
+      .calledWith(dummyUrl, expect.objectContaining({ agent: expect.any(Function) }))
       // First execution (cache miss)
       .mockResolvedValueOnce(getfetchResponse(jsonResponse, dummyUrl))
       .mockResolvedValueOnce(getfetchResponse(textResponse, dummyUrl))
@@ -2981,6 +2981,7 @@ describe("Geolocation function", () => {
     process.env.GEOLOCATION_URL = undefined;
     const versionId = randomID();
     const inputData = require(`./data/${integration}_input.json`);
+    inputData.forEach((input) => { input.message.request_ip = "1.1.1.1"; });
     const transformerUrl = `https://api.rudderlabs.com/transformation/getByVersionId?versionId=${versionId}`;
     when(fetch)
       .calledWith(transformerUrl)
@@ -3004,12 +3005,8 @@ describe("Geolocation function", () => {
         status: 200,
         json: jest.fn().mockResolvedValue({ ...respBodyV1, versionId })
       });
-    when(fetch)
-      .calledWith("https://dummyUrl.com/geoip/invalid", { timeout: 1000 })
-      .mockResolvedValue({ status: 400 });
-
     const output = await userTransformHandler(inputData, versionId, []);
-    expect(output[0].transformedEvent.context.geoerror).toBe("request to fetch geolocation failed with status code: 400");
+    expect(output[0].transformedEvent.context.geoerror).toBe("invalid ip address");
   });
 
   it("Should enrich context when geo request succeedes", async () => {

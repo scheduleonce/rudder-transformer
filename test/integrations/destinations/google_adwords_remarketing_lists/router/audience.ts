@@ -1,5 +1,12 @@
-import { Destination, RouterTransformationRequest } from '../../../../../src/types';
+import { Account, Destination, RouterTransformationRequest } from '../../../../../src/types';
 import { generateGoogleOAuthMetadata } from '../../../testUtils';
+
+const deliveryAccount: Account = {
+  id: '',
+  options: null,
+  secret: null,
+  accountDefinitionName: 'DESTINATION_GOOGLE_ADWORDS_REMARKETING_LISTS_OAUTH',
+};
 
 const destination: Destination = {
   Config: {
@@ -12,6 +19,7 @@ const destination: Destination = {
     isHashRequired: true,
     typeOfList: 'General',
   },
+  deliveryAccount,
   ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
   Name: 'GOOGLE_ADWORDS_REMARKETING_LISTS',
   Enabled: true,
@@ -42,7 +50,7 @@ export const rETLAudienceRouterRequest: RouterTransformationRequest = {
             add: [
               {
                 email: 'test@abc.com',
-                phone: '@09876543210',
+                phone: '09876543210',
                 firstName: 'test',
                 lastName: 'rudderlabs',
                 country: 'US',
@@ -69,7 +77,7 @@ export const rETLAudienceRouterRequest: RouterTransformationRequest = {
             remove: [
               {
                 email: 'test@abc.com',
-                phone: '@09876543210',
+                phone: '09876543210',
                 firstName: 'test',
                 lastName: 'rudderlabs',
                 country: 'US',
@@ -96,7 +104,7 @@ export const rETLAudienceRouterRequest: RouterTransformationRequest = {
             remove: [
               {
                 email: 'test@abc.com',
-                phone: '@09876543210',
+                phone: '09876543210',
                 firstName: 'test',
                 lastName: 'rudderlabs',
                 country: 'US',
@@ -106,7 +114,7 @@ export const rETLAudienceRouterRequest: RouterTransformationRequest = {
             add: [
               {
                 email: 'test@abc.com',
-                phone: '@09876543210',
+                phone: '09876543210',
                 firstName: 'test',
                 lastName: 'rudderlabs',
                 country: 'US',

@@ -108,7 +108,12 @@ const gaecProxyRequest = async (request) => {
     googleAds,
   });
 
-  set(body.JSON, 'conversionAdjustments[0].conversionAction', `${conversionActionId}`);
+  // A request may carry multiple conversion adjustments when events are batched. They all
+  // share the same conversion name (grouping key), so the single resolved conversionActionId
+  // applies to every adjustment. For the non-batched path this is an array of one.
+  body.JSON.conversionAdjustments.forEach((_, index) => {
+    set(body.JSON, `conversionAdjustments[${index}].conversionAction`, `${conversionActionId}`);
+  });
 
   const response = await googleAds.addConversionAdjustMent(body.JSON);
 
@@ -126,7 +131,9 @@ const gaecResponseHandler = (responseParams) => {
   const { status } = destinationResponse;
   if (isHttpStatusSuccess(status)) {
     // for google ads enhance conversions the partialFailureError returns with status 200
-    const { partialFailureError } = destinationResponse.response;
+    // a successful 200 may also have an empty/undefined body (no partial failures),
+    // so guard against destructuring undefined before reading partialFailureError
+    const { partialFailureError } = destinationResponse?.response || {};
     // non-zero code signifies partialFailure
     // Ref - https://github.com/googleapis/googleapis/blob/master/google/rpc/code.proto
     if (partialFailureError && partialFailureError.code !== 0) {
@@ -170,4 +177,4 @@ class networkHandler {
   }
 }
 
-module.exports = { networkHandler };
+module.exports = { networkHandler, gaecProxyRequest, gaecProcessAxiosResponse };

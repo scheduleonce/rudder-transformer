@@ -1,0 +1,299 @@
+import sha256 from 'sha256';
+import { InstrumentationError } from '@rudderstack/integrations-lib';
+import { HashingType } from '../../util/audienceUtils';
+import {
+  buildRequestHeaders,
+  injectCustomMappings,
+  lookupActionConfig,
+  processFields,
+  resolveEndpoint,
+  validateRequiredFields,
+} from './utils';
+import { AUTHENTICATION_TYPES } from './constants';
+import type {
+  ActionConfig,
+  CustomAudienceConnectionDestConfig,
+  CustomAudienceDestConfig,
+} from './types';
+
+const baseConnection: CustomAudienceConnectionDestConfig = {
+  audienceId: 'aud-42',
+  isHashRequired: false,
+};
+
+const baseDestConfig: CustomAudienceDestConfig = {
+  baseUrl: 'https://api.example.com',
+  authenticationType: AUTHENTICATION_TYPES.NO_AUTH,
+  actions: {
+    insert: {
+      endpoint: '/audiences/{{connection.audienceId}}/members',
+      method: 'POST',
+      requestBody: '{ "users": $.records }',
+      batchSize: 100,
+      fields: [],
+    },
+  },
+};
+
+const destinationMeta = { id: 'dest-1', type: 'CUSTOM_AUDIENCE', workspaceId: 'ws-1' };
+
+describe('lookupActionConfig', () => {
+  it('returns the action and config when present', () => {
+    const result = lookupActionConfig('insert', baseDestConfig.actions);
+    expect(result.action).toBe('insert');
+    expect(result.config.endpoint).toBe('/audiences/{{connection.audienceId}}/members');
+  });
+
+  it('throws InstrumentationError when action key is missing', () => {
+    expect(() => lookupActionConfig('delete', baseDestConfig.actions)).toThrow(
+      InstrumentationError,
+    );
+  });
+
+  const useInsertConfigCases = [
+    {
+      name: 'resolves to insert action and config when useInsertConfig is true',
+      updateConfig: {
+        ...baseDestConfig.actions.insert!,
+        endpoint: '/update-path',
+        useInsertConfig: true,
+      },
+      expectedAction: 'insert',
+      expectedEndpoint: '/audiences/{{connection.audienceId}}/members',
+    },
+    {
+      name: 'keeps update action and config when useInsertConfig is false',
+      updateConfig: {
+        ...baseDestConfig.actions.insert!,
+        endpoint: '/update-path',
+        useInsertConfig: false,
+      },
+      expectedAction: 'update',
+      expectedEndpoint: '/update-path',
+    },
+    {
+      name: 'keeps update action and config when useInsertConfig is absent',
+      updateConfig: { ...baseDestConfig.actions.insert!, endpoint: '/update-path' },
+      expectedAction: 'update',
+      expectedEndpoint: '/update-path',
+    },
+  ];
+
+  it.each(useInsertConfigCases)('$name', ({ updateConfig, expectedAction, expectedEndpoint }) => {
+    const config: CustomAudienceDestConfig = {
+      ...baseDestConfig,
+      actions: { ...baseDestConfig.actions, update: updateConfig },
+    };
+    const result = lookupActionConfig('update', config.actions);
+    expect(result.action).toBe(expectedAction);
+    expect(result.config.endpoint).toBe(expectedEndpoint);
+  });
+
+  it('throws when useInsertConfig is true but insert config is missing', () => {
+    const config: CustomAudienceDestConfig = {
+      ...baseDestConfig,
+      actions: {
+        update: { ...baseDestConfig.actions.insert!, useInsertConfig: true },
+      },
+    };
+    expect(() => lookupActionConfig('update', config.actions)).toThrow(InstrumentationError);
+  });
+});
+
+describe('resolveEndpoint', () => {
+  const cases = [
+    {
+      name: 'interpolates connection fields and prepends baseUrl',
+      endpoint: '/audiences/{{connection.audienceId}}/members',
+      baseUrl: 'https://api.example.com',
+      expected: 'https://api.example.com/audiences/aud-42/members',
+    },
+    {
+      name: 'strips trailing slash from baseUrl before joining',
+      endpoint: '/v1/users',
+      baseUrl: 'https://api.example.com/',
+      expected: 'https://api.example.com/v1/users',
+    },
+    {
+      name: 'adds leading slash if path lacks one',
+      endpoint: 'v1/users',
+      baseUrl: 'https://api.example.com',
+      expected: 'https://api.example.com/v1/users',
+    },
+    {
+      name: 'leaves template without placeholders unchanged',
+      endpoint: '/static/path',
+      baseUrl: 'https://api.example.com',
+      expected: 'https://api.example.com/static/path',
+    },
+  ];
+
+  it.each(cases)('$name', ({ endpoint, baseUrl, expected }) => {
+    expect(resolveEndpoint(endpoint, baseUrl, baseConnection)).toBe(expected);
+  });
+
+  it('throws InstrumentationError when placeholder references a missing connection field', () => {
+    expect(() =>
+      resolveEndpoint(
+        '/audiences/{{connection.nonExistent}}/members',
+        'https://api.example.com',
+        baseConnection,
+      ),
+    ).toThrow(InstrumentationError);
+  });
+});
+
+describe('injectCustomMappings', () => {
+  const cases = [
+    {
+      name: 'returns fields untouched when no mappings',
+      fields: { email: 'a@b.com' },
+      mappings: undefined,
+      expected: { email: 'a@b.com' },
+    },
+    {
+      name: 'injects literal values onto target field names',
+      fields: { email: 'a@b.com' },
+      mappings: [{ from: 'fixed-list-id', to: 'listId' }],
+      expected: { email: 'a@b.com', listId: 'fixed-list-id' },
+    },
+    {
+      name: 'overwrites existing keys when target collides',
+      fields: { listId: 'from-warehouse' },
+      mappings: [{ from: 'fixed', to: 'listId' }],
+      expected: { listId: 'fixed' },
+    },
+  ];
+
+  it.each(cases)('$name', ({ fields, mappings, expected }) => {
+    expect(injectCustomMappings(fields, mappings)).toEqual(expected);
+  });
+
+  it('allows mapping targets that are not in configured action fields', () => {
+    expect(
+      injectCustomMappings({ email: 'a@b.com' }, [{ from: 'some-value', to: 'unknownField' }]),
+    ).toEqual({ email: 'a@b.com', unknownField: 'some-value' });
+  });
+});
+
+describe('validateRequiredFields', () => {
+  const actionFields = [
+    { name: 'email', hashType: HashingType.SHA256, isRequired: true, isCustom: false },
+    { name: 'phone', hashType: HashingType.NONE, isRequired: true, isCustom: false },
+    { name: 'listType', hashType: HashingType.NONE, isRequired: false, isCustom: true },
+  ];
+
+  it('does not throw when all required fields are present', () => {
+    expect(() =>
+      validateRequiredFields('insert', { email: 'a@b.com', phone: '+1' }, actionFields),
+    ).not.toThrow();
+  });
+
+  it('throws InstrumentationError when required fields are missing', () => {
+    expect(() => validateRequiredFields('insert', { email: 'a@b.com' }, actionFields)).toThrow(
+      'Missing required fields for action "insert": phone',
+    );
+  });
+
+  it.each([
+    { name: 'null', fields: { email: 'a@b.com', phone: null } },
+    { name: 'undefined', fields: { email: 'a@b.com', phone: undefined } },
+    { name: 'empty string', fields: { email: 'a@b.com', phone: '' } },
+    { name: 'false', fields: { email: 'a@b.com', phone: false } },
+  ])('allows required field with $name value (key present)', ({ fields }) => {
+    expect(() => validateRequiredFields('insert', fields, actionFields)).not.toThrow();
+  });
+});
+
+describe('processFields', () => {
+  const insertAction: ActionConfig = {
+    endpoint: '/x',
+    method: 'POST',
+    requestBody: '$.records',
+    batchSize: 100,
+    fields: [
+      { name: 'email', hashType: HashingType.SHA256, isRequired: true, isCustom: false },
+      { name: 'phone', hashType: HashingType.NONE, isRequired: false, isCustom: false },
+    ],
+  };
+
+  const cases = [
+    {
+      name: 'strips empty values, no hashing when isHashRequired=false',
+      fields: { email: sha256('a@b.com'), phone: '', missing: null },
+      isHashRequired: false,
+      expected: { email: sha256('a@b.com') },
+    },
+    {
+      name: 'hashes hashable fields when isHashRequired=true',
+      fields: { email: 'a@b.com', phone: '+1' },
+      isHashRequired: true,
+      expected: { email: sha256('a@b.com'), phone: '+1' },
+    },
+  ];
+
+  it.each(cases)('$name', ({ fields, isHashRequired, expected }) => {
+    expect(processFields(fields, insertAction, destinationMeta, isHashRequired)).toEqual(expected);
+  });
+
+  it('throws InstrumentationError when all fields are stripped', () => {
+    expect(() =>
+      processFields({ email: null, phone: '' }, insertAction, destinationMeta, false),
+    ).toThrow(InstrumentationError);
+  });
+});
+
+describe('buildRequestHeaders', () => {
+  const cases: {
+    name: string;
+    overrides: Partial<CustomAudienceDestConfig>;
+    expectedHeaders: Record<string, string>;
+  }[] = [
+    {
+      name: 'returns Content-Type only for noAuth + no headers',
+      overrides: {},
+      expectedHeaders: { 'Content-Type': 'application/json' },
+    },
+    {
+      name: 'merges destination headers',
+      overrides: { headers: [{ key: 'X-App', value: 'rudder' }] },
+      expectedHeaders: { 'Content-Type': 'application/json', 'X-App': 'rudder' },
+    },
+    {
+      name: 'builds Basic auth header with base64-encoded credentials',
+      overrides: {
+        authenticationType: AUTHENTICATION_TYPES.BASIC_AUTH,
+        basicAuthUserName: 'user',
+        basicAuthPassword: 'pass',
+      },
+      expectedHeaders: {
+        'Content-Type': 'application/json',
+        Authorization: `Basic ${Buffer.from('user:pass').toString('base64')}`,
+      },
+    },
+    {
+      name: 'builds Bearer token header',
+      overrides: { authenticationType: AUTHENTICATION_TYPES.BEARER_TOKEN, bearerToken: 'abc' },
+      expectedHeaders: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer abc',
+      },
+    },
+    {
+      name: 'builds API key header with custom name',
+      overrides: {
+        authenticationType: AUTHENTICATION_TYPES.API_KEY,
+        apiKeyName: 'X-API-Key',
+        apiKeyValue: 'secret',
+      },
+      expectedHeaders: {
+        'Content-Type': 'application/json',
+        'X-API-Key': 'secret',
+      },
+    },
+  ];
+
+  it.each(cases)('$name', ({ overrides, expectedHeaders }) => {
+    expect(buildRequestHeaders({ ...baseDestConfig, ...overrides })).toEqual(expectedHeaders);
+  });
+});

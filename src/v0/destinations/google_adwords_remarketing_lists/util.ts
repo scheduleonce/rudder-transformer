@@ -1,6 +1,6 @@
 import get from 'get-value';
-import sha256 from 'sha256';
-import { ConfigurationError } from '@rudderstack/integrations-lib';
+import validator from 'validator';
+import { ConfigurationError, InstrumentationError } from '@rudderstack/integrations-lib';
 import {
   isDefinedAndNotNullAndNotEmpty,
   constructPayload,
@@ -9,6 +9,11 @@ import {
   removeUndefinedAndNullValues,
   getDestinationExternalIDInfoForRetl,
 } from '../../util';
+import {
+  processAudienceRecord,
+  isValidPhoneNumber,
+  type AudienceField,
+} from '../../util/audienceUtils';
 import logger from '../../../logger';
 import { MappedToDestinationKey } from '../../../constants';
 import { JSON_MIME_TYPE } from '../../util/constant';
@@ -18,19 +23,84 @@ import {
   TYPEOFLIST,
   OFFLINE_USER_DATA_JOBS_ENDPOINT,
   BASE_ENDPOINT,
-  hashAttributes,
   ADDRESS_INFO_ATTRIBUTES,
+  destType,
 } from './config';
 import type { GARLDestinationConfig } from './types';
+import { HashingType } from '../../util/audienceUtils';
 
-const hashEncrypt = (object: Record<string, unknown>) => {
-  Object.keys(object).forEach((key) => {
-    if (hashAttributes.includes(key) && object[key]) {
-      // eslint-disable-next-line no-param-reassign
-      object[key] = sha256(object[key]);
-    }
-  });
+const COUNTRY_CODE_REGEX = /^[A-Za-z]{2,3}$/;
+const GMAIL_DOMAINS = new Set(['gmail.com', 'googlemail.com']);
+
+const normalizeEmail = (v: string): string => {
+  const trimmed = v.trim().toLowerCase();
+  const atIdx = trimmed.indexOf('@');
+  if (atIdx === -1) return trimmed;
+  const domain = trimmed.slice(atIdx + 1);
+  if (GMAIL_DOMAINS.has(domain)) {
+    const username = trimmed.slice(0, atIdx).replace(/\./g, '').replace(/\+.*$/, '');
+    return `${username}@${domain}`;
+  }
+  return trimmed;
 };
+
+const normalizePhone = (v: string): string => {
+  const stripped = v.replace(/[\s().-]/g, '');
+  if (!stripped) {
+    return '';
+  }
+  return stripped.startsWith('+') ? stripped : `+${stripped}`;
+};
+
+/**
+ * Per-field normalization and validation rules for GARL.
+ * Normalization follows Google Customer Match requirements:
+ * https://developers.google.com/google-ads/api/docs/remarketing/audience-segments/customer-match/get-started
+ */
+const GARL_STRING_FIELD_CONFIG = {
+  email: {
+    normalize: normalizeEmail,
+    validate: validator.isEmail,
+    hashingType: HashingType.SHA256,
+  },
+  phone: {
+    normalize: normalizePhone,
+    validate: isValidPhoneNumber,
+    hashingType: HashingType.SHA256,
+  },
+  firstName: {
+    normalize: (v: string) => v.trim().toLowerCase(),
+    validate: (v: string) => v.length > 0,
+    hashingType: HashingType.SHA256,
+  },
+  lastName: {
+    normalize: (v: string) => v.trim().toLowerCase(),
+    validate: (v: string) => v.length > 0,
+    hashingType: HashingType.SHA256,
+  },
+  country: {
+    normalize: (v: string) => v.trim(),
+    validate: (v: string) => COUNTRY_CODE_REGEX.test(v),
+    hashingType: HashingType.NONE,
+  },
+  postalCode: {
+    normalize: (v: string) => v.trim(),
+    validate: (v: string) => v.length > 0,
+    hashingType: HashingType.NONE,
+  },
+};
+
+// Bridge string-typed config to the unknown-typed AudienceField interface
+const GARL_FIELD_CONFIG: Record<string, AudienceField> = Object.fromEntries(
+  Object.entries(GARL_STRING_FIELD_CONFIG).map(([key, { normalize, validate, ...rest }]) => [
+    key,
+    {
+      ...rest,
+      normalize: (v: unknown) => normalize(String(v)),
+      validate: (v: unknown) => validate(v as string),
+    },
+  ]),
+);
 
 const responseBuilder = (
   accessToken: string,
@@ -66,22 +136,25 @@ const responseBuilder = (
 };
 
 /**
- * This function helps creates an array with proper mapping for userIdentiFier.
- * Logics: Here we are creating an array with all the attributes provided in the add/remove array
- * inside listData.
+ * This function helps create the userIdentifiers grouped per user.
+ * Logics: Here we traverse every element in the add/remove array inside listData and build
+ * the identifiers for that single user. Each element of the input array maps to one inner
+ * array in the output, so identifiers from different users are never mixed together.
  * @param {Array} attributeArray rudder event message properties listData add
  * @param {string} typeOfList
  * @param {Array<string>} userSchema
  * @param {boolean} isHashRequired
- * @returns
+ * @returns {Array<Array>} one inner array of identifiers per user
  */
 const populateIdentifiers = (
   attributeArray: Record<string, unknown>[],
   typeOfList: string,
   userSchema: string[],
   isHashRequired: boolean,
-) => {
-  const userIdentifier: Record<string, unknown>[] = [];
+  workspaceId: string,
+  destinationId: string,
+): Record<string, unknown>[][] => {
+  const userIdentifiersByUser: Record<string, unknown>[][] = [];
   let attribute: string | string[];
   if (TYPEOFLIST[typeOfList]) {
     attribute = TYPEOFLIST[typeOfList];
@@ -89,11 +162,20 @@ const populateIdentifiers = (
     attribute = userSchema;
   }
   if (isDefinedAndNotNullAndNotEmpty(attributeArray)) {
+    const audienceDest = {
+      workspaceId,
+      id: destinationId,
+      type: destType,
+      config: { isHashRequired },
+    };
     // traversing through every element in the add array
-    attributeArray.forEach((element, index) => {
-      if (isHashRequired) {
-        hashEncrypt(element);
-      }
+    attributeArray.forEach((rawElement, index) => {
+      const element = processAudienceRecord(rawElement, {
+        fieldConfigs: GARL_FIELD_CONFIG,
+        destination: audienceDest,
+      });
+      // identifiers belonging to this single user
+      const userIdentifier: Record<string, unknown>[] = [];
       // checking if the attribute is an array or not for generic type list
       if (!Array.isArray(attribute)) {
         if (element[attribute]) {
@@ -116,9 +198,12 @@ const populateIdentifiers = (
           }
         });
       }
+      if (userIdentifier.length > 0) {
+        userIdentifiersByUser.push(userIdentifier);
+      }
     });
   }
-  return userIdentifier;
+  return userIdentifiersByUser;
 };
 
 const populateIdentifiersForRecordEvent = (
@@ -126,33 +211,54 @@ const populateIdentifiersForRecordEvent = (
   typeOfList: string,
   userSchema: string[] | undefined,
   isHashRequired: boolean,
-) => {
-  const userIdentifiers: Record<string, unknown>[] = [];
-
-  if (isDefinedAndNotNullAndNotEmpty(identifiersArray)) {
-    // traversing through every element in the add array
-    identifiersArray.forEach((identifiers) => {
-      if (isHashRequired) {
-        hashEncrypt(identifiers);
-      }
-      if (TYPEOFLIST[typeOfList] && identifiers[TYPEOFLIST[typeOfList]]) {
-        userIdentifiers.push({ [TYPEOFLIST[typeOfList]]: identifiers[TYPEOFLIST[typeOfList]] });
-      } else {
-        Object.entries(attributeMapping).forEach(([key, mappedKey]) => {
-          if (identifiers[key] && userSchema?.includes(key))
-            userIdentifiers.push({ [mappedKey]: identifiers[key] });
-        });
-        const addressInfo = constructPayload(identifiers, addressInfoMapping);
-        if (
-          isDefinedAndNotNullAndNotEmpty(addressInfo) &&
-          (userSchema?.includes('addressInfo') ||
-            userSchema?.some((schema) => ADDRESS_INFO_ATTRIBUTES.includes(schema)))
-        )
-          userIdentifiers.push({ addressInfo });
-      }
-    });
+  workspaceId: string,
+  destinationId: string,
+): ({ identifiers: Record<string, unknown>[] } | { error: Error })[] => {
+  if (!isDefinedAndNotNullAndNotEmpty(identifiersArray)) {
+    return [];
   }
-  return userIdentifiers;
+
+  const audienceDest = {
+    workspaceId,
+    id: destinationId,
+    type: destType,
+    config: { isHashRequired },
+  };
+
+  return identifiersArray.map((rawIdentifiers) => {
+    let identifiers: Record<string, unknown>;
+    try {
+      identifiers = processAudienceRecord(rawIdentifiers, {
+        fieldConfigs: GARL_FIELD_CONFIG,
+        destination: audienceDest,
+      });
+    } catch (e) {
+      return { error: e instanceof Error ? e : new Error(String(e)) };
+    }
+    const recordIdentifiers: Record<string, unknown>[] = [];
+    if (TYPEOFLIST[typeOfList] && identifiers[TYPEOFLIST[typeOfList]]) {
+      recordIdentifiers.push({
+        [TYPEOFLIST[typeOfList]]: identifiers[TYPEOFLIST[typeOfList]],
+      });
+    } else {
+      Object.entries(attributeMapping).forEach(([key, mappedKey]) => {
+        if (identifiers[key] && userSchema?.includes(key))
+          recordIdentifiers.push({ [mappedKey]: identifiers[key] });
+      });
+      const addressInfo = constructPayload(identifiers, addressInfoMapping);
+      if (
+        isDefinedAndNotNullAndNotEmpty(addressInfo) &&
+        (userSchema?.includes('addressInfo') ||
+          userSchema?.some((schema) => ADDRESS_INFO_ATTRIBUTES.includes(schema)))
+      )
+        recordIdentifiers.push({ addressInfo });
+    }
+
+    if (recordIdentifiers.length === 0) {
+      return { error: new InstrumentationError('Event has no valid identifiers') };
+    }
+    return { identifiers: recordIdentifiers };
+  });
 };
 
 const getOperationAudienceId = (audienceId: string, message: Record<string, unknown>) => {
@@ -173,4 +279,5 @@ export {
   responseBuilder,
   getOperationAudienceId,
   populateIdentifiersForRecordEvent,
+  GARL_FIELD_CONFIG,
 };

@@ -809,6 +809,18 @@ class Prometheus {
         labelNames: ['sourceType', 'destinationType', 'k8_namespace'],
       },
       { name: 'get_tracking_plan', help: 'get_tracking_plan', type: 'histogram', labelNames: [] },
+      {
+        name: 'get_ajv_duration',
+        help: 'get_ajv_duration',
+        type: 'histogram',
+        labelNames: ['isDraft4'],
+      },
+      {
+        name: 'ajv_compile_duration',
+        help: 'Time taken to compile an event schema with ajv',
+        type: 'histogram',
+        labelNames: ['isDraft4', 'useEphemeralAjv'],
+      },
       // User transform metrics
       // counter
       {
@@ -942,6 +954,12 @@ class Prometheus {
         help: 'ivm_cache_size',
         type: 'gauge',
         labelNames: ['cache', 'operation'],
+      },
+      {
+        name: 'ivm_cache_total_heap',
+        help: 'Sum of V8 total_heap_size across all cached isolates (bytes)',
+        type: 'gauge',
+        labelNames: ['cache'],
       },
       {
         name: 'fetchV2_call_duration',

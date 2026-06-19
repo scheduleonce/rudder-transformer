@@ -1,4 +1,4 @@
-const BASE_URL = 'https://graph.facebook.com/v23.0';
+const BASE_URL = 'https://graph.facebook.com/v25.0';
 
 const ENDPOINT_PATH = 'users';
 
@@ -99,44 +99,6 @@ const USER_ADD = 'add';
 const USER_DELETE = 'remove';
 // https://developers.facebook.com/docs/marketing-api/audiences/guides/custom-audiences/
 const MAX_USER_COUNT = 10000;
-/* No official Documentation is available for this but using trial
-and error method we found that 65000 bytes is the maximum payload allowed size but we are 60000 just to be sure batching is done properly
-*/
-const DEFAULT_MAX_PAYLOAD_SIZE = 60000; // bytes
-
-/**
- * Returns the maximum payload size in bytes for FB Custom Audience batching.
- * Can be overridden per workspace via env var FB_CUSTOM_AUDIENCE_MAX_PAYLOAD_SIZE_<WORKSPACE_ID>,
- * or globally via FB_CUSTOM_AUDIENCE_MAX_PAYLOAD_SIZE. Defaults to 60000.
- */
-function getMaxPayloadSize(workspaceId: string): number {
-  if (workspaceId) {
-    const workspaceVal = Number.parseInt(
-      process.env[`FB_CUSTOM_AUDIENCE_MAX_PAYLOAD_SIZE_${workspaceId}`] ?? '',
-      10,
-    );
-    if (!Number.isNaN(workspaceVal) && workspaceVal > 0) {
-      return workspaceVal;
-    }
-  }
-  const globalVal = Number.parseInt(process.env.FB_CUSTOM_AUDIENCE_MAX_PAYLOAD_SIZE ?? '', 10);
-  if (!Number.isNaN(globalVal) && globalVal > 0) {
-    return globalVal;
-  }
-  return DEFAULT_MAX_PAYLOAD_SIZE;
-}
-
-/**
- * Whether to reject invalid field values (e.g., malformed emails, invalid country codes)
- * by replacing them with empty strings. When disabled, invalid values are passed through as-is.
- *
- * Controlled via env var: FB_CUSTOM_AUDIENCE_REJECT_INVALID_FIELDS=true
- * Default: false
- */
-function isRejectInvalidFieldsEnabled(): boolean {
-  return process.env.FB_CUSTOM_AUDIENCE_REJECT_INVALID_FIELDS === 'true';
-}
-
 export {
   DESTINATION,
   ENDPOINT_PATH,
@@ -147,6 +109,4 @@ export {
   MAX_USER_COUNT,
   typeFields,
   subTypeFields,
-  getMaxPayloadSize,
-  isRejectInvalidFieldsEnabled,
 };
