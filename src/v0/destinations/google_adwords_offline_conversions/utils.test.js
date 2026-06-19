@@ -1,4 +1,10 @@
 const sha256 = require('sha256');
+
+jest.mock('../../../adapters/network', () => ({
+  httpPOST: jest.fn(),
+}));
+
+const { httpPOST } = require('../../../adapters/network');
 const {
   getClickConversionPayloadAndEndpoint,
   buildAndGetAddress,
@@ -6,6 +12,7 @@ const {
   getConsentsDataFromIntegrationObj,
   getCallConversionPayload,
   getAddConversionPayload,
+  getConversionActionIds,
 } = require('./utils');
 const {
   CLICK_CONVERSION_ENDPOINT_PATH,
@@ -329,7 +336,7 @@ describe('getCallConversionPayload', () => {
     });
     expect(result).toEqual({
       endpointDetails: {
-        endpoint: 'https://googleads.googleapis.com/v22/customers/9625812972:uploadCallConversions',
+        endpoint: 'https://googleads.googleapis.com/v23/customers/9625812972:uploadCallConversions',
         path: CALL_CONVERSION_ENDPOINT_PATH,
       },
       payload: {
@@ -361,7 +368,7 @@ describe('getCallConversionPayload', () => {
     });
     expect(result).toEqual({
       endpointDetails: {
-        endpoint: 'https://googleads.googleapis.com/v22/customers/9625812972:uploadCallConversions',
+        endpoint: 'https://googleads.googleapis.com/v23/customers/9625812972:uploadCallConversions',
         path: CALL_CONVERSION_ENDPOINT_PATH,
       },
       payload: {
@@ -390,7 +397,7 @@ describe('getCallConversionPayload', () => {
     const result = getCallConversionPayload(message, '9625812972', {});
     expect(result).toEqual({
       endpointDetails: {
-        endpoint: 'https://googleads.googleapis.com/v22/customers/9625812972:uploadCallConversions',
+        endpoint: 'https://googleads.googleapis.com/v23/customers/9625812972:uploadCallConversions',
         path: CALL_CONVERSION_ENDPOINT_PATH,
       },
       payload: {
@@ -578,5 +585,83 @@ describe('getAddConversionPayload', () => {
       adUserData: 'GRANTED',
       adPersonalization: 'DENIED',
     });
+  });
+});
+
+describe('getConversionActionIds', () => {
+  const MCC = '9998887777';
+  const metadata = { secret: { access_token: 'test-token' } };
+  const Config = { subAccount: true, loginCustomerId: MCC };
+
+  // Use unique customerIds per test to avoid cache interference across tests
+  let testCounter = 0;
+  const getUniqueCustomerId = () => `${Date.now()}${++testCounter}`;
+
+  beforeEach(() => {
+    process.env.GOOGLE_ADS_DEVELOPER_TOKEN = 'test-dev-token';
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    delete process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  });
+
+  const testCases = [
+    {
+      name: 'should prefer conversion action owned by customerId when MCC action comes first',
+      conversionNames: ['Purchase'],
+      buildApiResults: (cid) => [
+        { name: 'Purchase', owner: MCC, actionId: '50001' },
+        { name: 'Purchase', owner: cid, actionId: '70002' },
+      ],
+      buildExpected: (cid) => ({
+        Purchase: `customers/${cid}/conversionActions/70002`,
+      }),
+    },
+    {
+      name: 'should prefer customerId action even if it appears before MCC action',
+      conversionNames: ['Purchase'],
+      buildApiResults: (cid) => [
+        { name: 'Purchase', owner: cid, actionId: '70002' },
+        { name: 'Purchase', owner: MCC, actionId: '50001' },
+      ],
+      buildExpected: (cid) => ({
+        Purchase: `customers/${cid}/conversionActions/70002`,
+      }),
+    },
+    {
+      name: 'should fall back to MCC action when no customerId-owned action exists',
+      conversionNames: ['Purchase'],
+      buildApiResults: () => [{ name: 'Purchase', owner: MCC, actionId: '50001' }],
+      buildExpected: (cid) => ({
+        Purchase: `customers/${cid}/conversionActions/50001`,
+      }),
+    },
+  ];
+
+  it.each(testCases)('$name', async ({ conversionNames, buildApiResults, buildExpected }) => {
+    const customerId = getUniqueCustomerId();
+
+    const results = buildApiResults(customerId).map(({ name, owner, actionId }) => ({
+      conversionAction: {
+        name,
+        resourceName: `customers/${customerId}/conversionActions/${actionId}`,
+        ownerCustomer: `customers/${owner}`,
+      },
+    }));
+
+    httpPOST.mockResolvedValue({
+      success: true,
+      response: { data: [{ results }], status: 200 },
+    });
+
+    const result = await getConversionActionIds({
+      Config,
+      customerId,
+      conversionNames,
+      metadata,
+    });
+
+    expect(result).toEqual(buildExpected(customerId));
   });
 });

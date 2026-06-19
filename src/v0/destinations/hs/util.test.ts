@@ -15,8 +15,8 @@ import {
   validatePayloadDataTypes,
   getObjectAndIdentifierType,
   removeHubSpotSystemField,
-  isUpsertEnabled,
   isLookupFieldUnique,
+  getUTCMidnightTimeStampValue,
 } from './util';
 import { primaryToSecondaryFields } from './config';
 import { HubspotRudderMessage } from './types';
@@ -300,56 +300,6 @@ describe('removeHubSpotSystemField utility test cases', () => {
   });
 });
 
-describe('isUpsertEnabled utility test cases', () => {
-  const originalEnv = process.env;
-
-  beforeEach(() => {
-    // Reset environment variables before each test
-    jest.resetModules();
-    process.env = { ...originalEnv };
-    delete process.env.HUBSPOT_UPSERT_ENABLED_WORKSPACES;
-  });
-
-  afterAll(() => {
-    process.env = originalEnv;
-  });
-
-  it('should return true when enabled is ALL', () => {
-    process.env.HUBSPOT_UPSERT_ENABLED_WORKSPACES = 'ALL';
-    const result = isUpsertEnabled('workspace123');
-    expect(result).toBe(true);
-  });
-
-  it('should return true when enabled is all (case insensitive)', () => {
-    process.env.HUBSPOT_UPSERT_ENABLED_WORKSPACES = 'all';
-    const result = isUpsertEnabled('workspace123');
-    expect(result).toBe(true);
-  });
-
-  it('should return true when workspace is in enabled list', () => {
-    process.env.HUBSPOT_UPSERT_ENABLED_WORKSPACES = 'workspace123,workspace456,workspace789';
-    const result = isUpsertEnabled('workspace456');
-    expect(result).toBe(true);
-  });
-
-  it('should return false when workspace is not in enabled list', () => {
-    process.env.HUBSPOT_UPSERT_ENABLED_WORKSPACES = 'workspace123,workspace456';
-    const result = isUpsertEnabled('workspace999');
-    expect(result).toBe(false);
-  });
-
-  it('should return false when enabled workspaces env is not set', () => {
-    const result = isUpsertEnabled('workspace123');
-    expect(result).toBe(false);
-  });
-
-  it('should return false when enabled workspaces env is empty string', () => {
-    process.env.HUBSPOT_UPSERT_ENABLED_WORKSPACES = '';
-    const result = isUpsertEnabled('workspace123');
-    expect(result).toBe(false);
-  });
-});
-
 describe('isLookupFieldUnique utility test cases', () => {
   const mockDestination = {
     ID: 'dest-123',
@@ -455,5 +405,53 @@ describe('isLookupFieldUnique utility test cases', () => {
     );
 
     expect(result).toBe(false);
+  });
+});
+
+describe('getUTCMidnightTimeStampValue', () => {
+  const testCases: {
+    description: string;
+    input: string | number | Date | null;
+    expected: string | number | Date | null;
+  }[] = [
+    {
+      description: 'ISO date string with time component',
+      input: '2023-06-15T10:30:00Z',
+      expected: 1686787200000,
+    },
+    {
+      description: 'plain date string',
+      input: '2023-06-15',
+      expected: 1686787200000,
+    },
+    {
+      description: 'Date object',
+      input: new Date('2023-06-15T14:00:00Z'),
+      expected: 1686787200000,
+    },
+    {
+      description: 'numeric timestamp',
+      input: new Date('2023-06-15T14:00:00Z').getTime(),
+      expected: 1686787200000,
+    },
+    {
+      description: 'empty string (customer intentionally clears the field)',
+      input: '',
+      expected: '',
+    },
+    {
+      description: 'unparseable string',
+      input: 'not-a-date',
+      expected: 'not-a-date',
+    },
+    {
+      description: 'null (customer intentionally clears the field)',
+      input: null,
+      expected: null,
+    },
+  ];
+
+  it.each(testCases)('$description', ({ input, expected }) => {
+    expect(getUTCMidnightTimeStampValue(input)).toBe(expected);
   });
 });

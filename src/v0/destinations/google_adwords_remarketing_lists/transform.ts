@@ -16,6 +16,17 @@ import { offlineDataJobsMapping, consentConfigMap } from './config';
 import { processRecordInputs } from './recordTransform';
 import { populateIdentifiers, responseBuilder, getOperationAudienceId } from './util';
 import type { GARLDestination, Message, OfflineDataJobPayload, RecordInput } from './types';
+import { Metadata } from '../../../types';
+import { isDataManagerAccount } from './dataManager/util';
+import {
+  processRouterDest as dataManagerProcessRouterDest,
+  transformAudienceListEvent as dataManagerTransformAudienceListEvent,
+} from './dataManager/transform';
+import type {
+  GARLAudienceMessage as DMGARLAudienceMessage,
+  GARLDestination as DMGARLDestination,
+  GARLRouterRequest as DMGARLRouterRequest,
+} from './dataManager/types';
 
 function extraKeysPresent(dictionary: Record<string, unknown>, keyList: string[]) {
   // eslint-disable-next-line no-restricted-syntax
@@ -27,17 +38,20 @@ function extraKeysPresent(dictionary: Record<string, unknown>, keyList: string[]
   return false;
 }
 
+// Google Ads caps userIdentifiers at 20 per UserData (i.e. per operation/user).
+const MAX_IDENTIFIERS_PER_OPERATION = 20;
+
 /**
- * This function helps to create different operations by breaking the
- * userIdentiFier Array in chunks of 20.
- * Logics: Here for add/remove type lists, we are creating create/remove operations by
- * breaking the userIdentiFier array in chunks of 20 and putting them inside one
- * create/remove object each chunk.
+ * This function helps to create one operation per user.
+ * Logics: Here for add/remove type lists, we create one create/remove operation per user so
+ * identifiers from different users are never mixed into the same UserData. If a single user
+ * has more than 20 identifiers, that user's identifiers are split across multiple operations
+ * to respect Google's per-UserData limit.
  * @param {rudder event message} message
  * @param {rudder event destination} destination
  * @returns
  */
-const createPayload = (message: Message, destination: GARLDestination) => {
+const createPayload = (message: Message, destination: GARLDestination, workspaceId: string) => {
   const { listData } = message.properties;
   const properties = ['add', 'remove'];
   const { typeOfList, userSchema, isHashRequired } = destination.Config;
@@ -46,13 +60,16 @@ const createPayload = (message: Message, destination: GARLDestination) => {
   const typeOfOperation = Object.keys(listData);
   typeOfOperation.forEach((key) => {
     if (properties.includes(key)) {
-      const userIdentifiersList = populateIdentifiers(
+      // one inner array of identifiers per user
+      const userIdentifiersByUser = populateIdentifiers(
         listData[key],
         typeOfList,
         userSchema,
         isHashRequired,
+        workspaceId,
+        destination.ID,
       );
-      if (userIdentifiersList.length === 0) {
+      if (userIdentifiersByUser.length === 0) {
         logger.info(
           `Google_adwords_remarketing_list]:: No attributes are present in the '${key}' property.`,
         );
@@ -64,35 +81,14 @@ const createPayload = (message: Message, destination: GARLDestination) => {
         offlineDataJobsMapping,
       ) as OfflineDataJobPayload;
       outputPayload.operations = [];
-      // breaking the userIdentiFier array in chunks of 20
-      const userIdentifierChunks: Record<string, unknown>[][] = returnArrayOfSubarrays(
-        userIdentifiersList,
-        20,
-      );
-      // putting each chunk in different create/remove operations
-      switch (key) {
-        case 'add':
-          // for add operation
-          userIdentifierChunks.forEach((element) => {
-            const operations = {
-              create: { userIdentifiers: element },
-            };
-            outputPayload.operations.push(operations);
-          });
-          outputPayloads = { ...outputPayloads, create: outputPayload };
-          break;
-        case 'remove':
-          // for remove operation
-          userIdentifierChunks.forEach((element) => {
-            const operations = {
-              remove: { userIdentifiers: element },
-            };
-            outputPayload.operations.push(operations);
-          });
-          outputPayloads = { ...outputPayloads, remove: outputPayload };
-          break;
-        default:
-      }
+      const operationType = key === 'add' ? 'create' : 'remove';
+      // one operation per user; a user exceeding the limit is split across operations
+      userIdentifiersByUser.forEach((userIdentifiers) => {
+        returnArrayOfSubarrays(userIdentifiers, MAX_IDENTIFIERS_PER_OPERATION).forEach((chunk) => {
+          outputPayload.operations.push({ [operationType]: { userIdentifiers: chunk } });
+        });
+      });
+      outputPayloads = { ...outputPayloads, [operationType]: outputPayload };
     } else {
       logger.info(`listData "${key}" is not valid. Supported types are "add" and "remove"`);
     }
@@ -101,11 +97,7 @@ const createPayload = (message: Message, destination: GARLDestination) => {
   return outputPayloads;
 };
 
-const processEvent = async (
-  metadata: Record<string, unknown>,
-  message: Message,
-  destination: GARLDestination,
-) => {
+const processEvent = async (metadata: Metadata, message: Message, destination: GARLDestination) => {
   const response: unknown[] = [];
   if (!message.type) {
     throw new InstrumentationError('Message Type is not present. Aborting message.');
@@ -117,7 +109,7 @@ const processEvent = async (
     throw new InstrumentationError('listData is not present inside properties. Aborting message.');
   }
   if (message.type.toLowerCase() === 'audiencelist') {
-    const createdPayload = createPayload(message, destination);
+    const createdPayload = createPayload(message, destination, metadata.workspaceId);
 
     if (Object.keys(createdPayload).length === 0) {
       throw new InstrumentationError(
@@ -147,12 +139,29 @@ const processEvent = async (
 };
 
 const process = async (event: {
-  metadata: Record<string, unknown>;
+  metadata: Metadata;
   message: Message;
   destination: GARLDestination;
-}) => processEvent(event.metadata, event.message, event.destination);
+}) => {
+  const { metadata, message, destination } = event;
+  if (isDataManagerAccount(destination)) {
+    return dataManagerTransformAudienceListEvent({
+      metadata,
+      message: message as unknown as DMGARLAudienceMessage,
+      destination: destination as unknown as DMGARLDestination,
+    });
+  }
+
+  return processEvent(metadata, message, destination);
+};
 
 const processRouterDest = async (inputs: { message: Message }[], reqMetadata: unknown) => {
+  const { destination } = inputs[0] as unknown as RecordInput;
+
+  if (isDataManagerAccount(destination)) {
+    return dataManagerProcessRouterDest(inputs as unknown as DMGARLRouterRequest[], reqMetadata);
+  }
+
   const respList: unknown[] = [];
   const groupedInputs = await groupByInBatches(inputs, (input) =>
     input.message.type?.toLowerCase(),
