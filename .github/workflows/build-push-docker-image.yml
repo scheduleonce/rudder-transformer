@@ -38,6 +38,10 @@ permissions:
   id-token: write # allows the JWT to be requested from GitHub's OIDC provider
   contents: read # This is required for actions/checkout
 
+permissions:
+  id-token: write # allows the JWT to be requested from GitHub's OIDC provider
+  contents: read # This is required for actions/checkout
+
 env:
   DOCKERHUB_PROD_TOKEN: ${{ secrets.DOCKERHUB_PROD_TOKEN }}
   DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -166,9 +170,8 @@ jobs:
         if: ${{ needs.check_actor.outputs.is_dependabot == 'false' }}
         uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
         with:
-          registry: dockeronce.azurecr.io
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}    
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
