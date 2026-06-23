@@ -88,7 +88,15 @@ const oncehubTransformer = (destination, event) => {
   }
 
   // eslint-disable-next-line no-console
-  // if(doesEventContainsTraits(event)) console.log("event log=>destination : ", JSON.stringify(destination), " , ==> event traits : ", JSON.stringify(event.message.traits), " , ==> event here : ",JSON.stringify(event));
+  if (doesEventContainsTraits(event))
+    console.log(
+      'event log=>destination : ',
+      JSON.stringify(destination),
+      ' , ==> event traits : ',
+      JSON.stringify(event.message.traits),
+      ' , ==> event here : ',
+      JSON.stringify(event),
+    );
   return event;
 };
 
