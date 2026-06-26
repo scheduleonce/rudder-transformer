@@ -79,13 +79,14 @@ const oncehubTransformer = (destination, event) => {
     }
   }
 
-  console.log(`
-    Step 1: 
-    Event: ${JSON.stringify(event)}
-    Destination: ${JSON.stringify(destination)},
-    contextTraitsPresent: ${contextTraitsPresent},
-    eventTraitsPresent: ${eventTraitsPresent},
-    checkDestinationList: ${checkDestinationList}`);
+  // eslint-disable-next-line no-console
+  // console.log(`
+  //   Step 1:
+  //   Event: ${JSON.stringify(event)}
+  //   Destination: ${JSON.stringify(destination)},
+  //   contextTraitsPresent: ${JSON.stringify(contextTraitsPresent)},
+  //   eventTraitsPresent: ${JSON.stringify(eventTraitsPresent)},
+  //   checkDestinationList: ${checkDestinationList}`);
 
   // Adding check for firstLoginGA4 property
   if (eventTraitsPresent) {
