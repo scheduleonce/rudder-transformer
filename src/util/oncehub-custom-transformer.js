@@ -60,14 +60,15 @@ const oncehubTransformer = (destination, event) => {
     event,
   );
 
-  if (!checkDestinationList && eventTraitsPresent) {
-    // eslint-disable-next-line no-param-reassign
-    delete event.message.traits.email;
-    // eslint-disable-next-line no-param-reassign
-    delete event.message.traits.firstName;
-    // eslint-disable-next-line no-param-reassign
-    delete event.message.traits.lastName;
-
+  if (!checkDestinationList) {
+    if (eventTraitsPresent) {
+      // eslint-disable-next-line no-param-reassign
+      delete event.message.traits.email;
+      // eslint-disable-next-line no-param-reassign
+      delete event.message.traits.firstName;
+      // eslint-disable-next-line no-param-reassign
+      delete event.message.traits.lastName;
+    }
     if (contextTraitsPresent) {
       // eslint-disable-next-line no-param-reassign
       delete event.message.context.traits.email;
@@ -77,6 +78,15 @@ const oncehubTransformer = (destination, event) => {
       delete event.message.context.traits.lastName;
     }
   }
+
+  // eslint-disable-next-line no-console
+  // console.log(`
+  //   Step 1:
+  //   Event: ${JSON.stringify(event)}
+  //   Destination: ${JSON.stringify(destination)},
+  //   contextTraitsPresent: ${JSON.stringify(contextTraitsPresent)},
+  //   eventTraitsPresent: ${JSON.stringify(eventTraitsPresent)},
+  //   checkDestinationList: ${checkDestinationList}`);
 
   // Adding check for firstLoginGA4 property
   if (eventTraitsPresent) {
