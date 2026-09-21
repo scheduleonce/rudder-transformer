@@ -30,6 +30,7 @@ jest.mock('../../../../logger', () => ({
 }));
 
 const mockStats = {
+  counter: jest.fn(),
   increment: jest.fn(),
   gauge: jest.fn(),
 };
@@ -40,9 +41,25 @@ jest.mock('../../../../util/stats', () => mockStats);
 // all 5 concurrent callers to enter getOrCreate() before the first one resolves.
 jest.mock('isolated-vm', () => {
   class MockContext {
+    constructor(private readonly isolate: { isDisposed: boolean }) {}
+
     release() {}
 
     async evalClosure(code: string) {
+      // Test hook: `__THROW__ <kind>` simulates a platform failure inside the
+      // isolate (timeout / OOM / disposed) so execute()'s catch path runs.
+      if (code.includes('__THROW__')) {
+        if (code.includes('timeout')) throw new Error('Script execution timed out.');
+        if (code.includes('memory')) {
+          this.isolate.isDisposed = true;
+          throw new Error('Isolate was disposed during execution due to memory limit');
+        }
+        if (code.includes('disposed')) {
+          this.isolate.isDisposed = true;
+          throw new Error('Isolate is disposed');
+        }
+        throw new Error('boom');
+      }
       if (code.includes('parseTemplateInSandbox')) {
         return { valid: true, recordFields: ['email'] };
       }
@@ -57,7 +74,7 @@ jest.mock('isolated-vm', () => {
   }
 
   class MockIsolate {
-    private disposed = false;
+    isDisposed = false;
 
     constructor() {
       isolateCreateCount++;
@@ -71,7 +88,7 @@ jest.mock('isolated-vm', () => {
       // With coalescing: they find the pending promise in the map and await it.
       // Without coalescing: they each start their own createEntry().
       await new Promise((r) => setTimeout(r, 50));
-      return new MockContext();
+      return new MockContext(this);
     }
 
     async compileScript() {
@@ -79,12 +96,12 @@ jest.mock('isolated-vm', () => {
     }
 
     getHeapStatisticsSync() {
-      if (this.disposed) throw new Error('Isolate is disposed');
+      if (this.isDisposed) throw new Error('Isolate is disposed');
       return { used_heap_size: 1024, total_heap_size: 2048 };
     }
 
     dispose() {
-      this.disposed = true;
+      this.isDisposed = true;
     }
   }
 
@@ -93,17 +110,56 @@ jest.mock('isolated-vm', () => {
 
 import { IvmScriptRunner, BUNDLE_PATH } from './ivmScriptRunner';
 
+const restoreEnv = (key: string, value: string | undefined) => {
+  if (value !== undefined) {
+    process.env[key] = value;
+  } else {
+    delete process.env[key];
+  }
+};
+
+const hasAggregateHeapGaugeCall = (heapSize: number) =>
+  mockStats.gauge.mock.calls.some(
+    ([metric, value, tags]) =>
+      metric === 'ivm_cache_total_heap' &&
+      value === heapSize &&
+      tags?.cache === 'custom_audience_ivm',
+  );
+
+const waitForAggregateHeapGauge = async (heapSize: number) => {
+  const timeoutAt = Date.now() + 2_000;
+
+  while (Date.now() < timeoutAt) {
+    if (hasAggregateHeapGaugeCall(heapSize)) {
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 25));
+  }
+
+  expect(mockStats.gauge).toHaveBeenCalledWith('ivm_cache_total_heap', heapSize, {
+    cache: 'custom_audience_ivm',
+  });
+};
+
+const waitForTtlExpiryAndPurge = async (runner: IvmScriptRunner, cacheKey: string) => {
+  await new Promise((r) => setTimeout(r, 150));
+  // Access after TTL makes lru-cache purge stale entries deterministically.
+  (runner as any).cache.get(cacheKey);
+};
+
 describe('IvmScriptRunner', () => {
   let runner: IvmScriptRunner;
 
   beforeEach(() => {
     isolateCreateCount = 0;
     mockStats.gauge.mockClear();
+    mockStats.increment.mockClear();
     runner = new IvmScriptRunner({
       bundlePath: BUNDLE_PATH,
       memoryLimitMb: 8,
       initTimeoutMs: 5_000,
       execTimeoutMs: 1_000,
+      cacheName: 'custom_audience_ivm',
     });
   });
 
@@ -184,6 +240,29 @@ describe('IvmScriptRunner', () => {
     });
   });
 
+  describe('platform error metrics', () => {
+    it('emits ivm_platform_error tagged with the expression, workspaceId (cacheKey), cache and errorType', async () => {
+      const expression = 'return evaluateTemplateInSandbox($0) /* __THROW__ timeout */';
+
+      await expect(runner.execute('ws-err', expression, [])).rejects.toThrow(
+        'Script execution timed out.',
+      );
+
+      expect(mockStats.increment).toHaveBeenCalledWith('ivm_platform_error', {
+        functionName: expression,
+        workspaceId: 'ws-err',
+        cache: 'custom_audience_ivm',
+        errorType: 'timeout',
+      });
+    });
+
+    it('does not emit the platform error metric on success', async () => {
+      await runner.execute('ws-ok', 'return parseTemplateInSandbox($0)', []);
+
+      expect(mockStats.increment).not.toHaveBeenCalledWith('ivm_platform_error', expect.anything());
+    });
+  });
+
   describe('heap metrics', () => {
     it('should emit aggregate heap gauges on cache mutation (new entry)', async () => {
       await runner.execute('ws-1', 'parseTemplateInSandbox("test")', []);
@@ -220,99 +299,73 @@ describe('IvmScriptRunner', () => {
     });
 
     it('should emit 0 aggregate after TTL expiry', async () => {
-      const savedTtl = process.env.IVM_CACHE_TTL_MS;
-      process.env.IVM_CACHE_TTL_MS = '100';
-
       const shortTtlRunner = new IvmScriptRunner({
         bundlePath: BUNDLE_PATH,
         memoryLimitMb: 8,
         initTimeoutMs: 5_000,
         execTimeoutMs: 1_000,
+        cacheName: 'custom_audience_ivm',
+        ttlMs: 100,
       });
 
       await shortTtlRunner.execute('ws-ttl', 'parseTemplateInSandbox("test")', []);
       mockStats.gauge.mockClear();
 
-      // Wait for TTL expiry + autopurge
-      await new Promise((r) => setTimeout(r, 300));
-
-      expect(mockStats.gauge).toHaveBeenCalledWith('ivm_cache_total_heap', 0, {
-        cache: 'custom_audience_ivm',
-      });
-
-      // Restore
-      if (savedTtl !== undefined) {
-        process.env.IVM_CACHE_TTL_MS = savedTtl;
-      } else {
-        delete process.env.IVM_CACHE_TTL_MS;
-      }
+      await waitForTtlExpiryAndPurge(shortTtlRunner, 'ws-ttl');
+      await waitForAggregateHeapGauge(0);
     });
 
     it('should emit 0 aggregate after TTL expiry on second request too', async () => {
-      const savedTtl = process.env.IVM_CACHE_TTL_MS;
-      process.env.IVM_CACHE_TTL_MS = '100';
-
       const shortTtlRunner = new IvmScriptRunner({
         bundlePath: BUNDLE_PATH,
         memoryLimitMb: 8,
         initTimeoutMs: 5_000,
         execTimeoutMs: 1_000,
+        cacheName: 'custom_audience_ivm',
+        ttlMs: 100,
       });
 
-      // 1st request → TTL expiry → should reset to 0
       await shortTtlRunner.execute('ws-ttl', 'parseTemplateInSandbox("test")', []);
-      await new Promise((r) => setTimeout(r, 300));
+      await waitForTtlExpiryAndPurge(shortTtlRunner, 'ws-ttl');
+      await waitForAggregateHeapGauge(0);
 
-      // 2nd request (same key, re-creates isolate) → TTL expiry → should also reset to 0
       await shortTtlRunner.execute('ws-ttl', 'parseTemplateInSandbox("test")', []);
       mockStats.gauge.mockClear();
 
-      await new Promise((r) => setTimeout(r, 300));
-
-      expect(mockStats.gauge).toHaveBeenCalledWith('ivm_cache_total_heap', 0, {
-        cache: 'custom_audience_ivm',
-      });
-
-      // Restore
-      if (savedTtl !== undefined) {
-        process.env.IVM_CACHE_TTL_MS = savedTtl;
-      } else {
-        delete process.env.IVM_CACHE_TTL_MS;
-      }
+      await waitForTtlExpiryAndPurge(shortTtlRunner, 'ws-ttl');
+      await waitForAggregateHeapGauge(0);
     });
 
     it('should reflect correct aggregate after LRU eviction', async () => {
       const savedMaxSize = process.env.IVM_CACHE_MAX_SIZE;
       process.env.IVM_CACHE_MAX_SIZE = '2';
 
-      const smallCacheRunner = new IvmScriptRunner({
-        bundlePath: BUNDLE_PATH,
-        memoryLimitMb: 8,
-        initTimeoutMs: 5_000,
-        execTimeoutMs: 1_000,
-      });
+      try {
+        const smallCacheRunner = new IvmScriptRunner({
+          bundlePath: BUNDLE_PATH,
+          memoryLimitMb: 8,
+          initTimeoutMs: 5_000,
+          execTimeoutMs: 1_000,
+          cacheName: 'custom_audience_ivm',
+        });
 
-      // Fill cache to max (2 entries)
-      await smallCacheRunner.execute('ws-1', 'parseTemplateInSandbox("test")', []);
-      await smallCacheRunner.execute('ws-2', 'parseTemplateInSandbox("test")', []);
-      mockStats.gauge.mockClear();
+        // Fill cache to max (2 entries)
+        await smallCacheRunner.execute('ws-1', 'parseTemplateInSandbox("test")', []);
+        await smallCacheRunner.execute('ws-2', 'parseTemplateInSandbox("test")', []);
+        mockStats.gauge.mockClear();
 
-      // 3rd key evicts ws-1 (LRU). After set, cache has ws-2 + ws-3.
-      await smallCacheRunner.execute('ws-3', 'parseTemplateInSandbox("test")', []);
+        // 3rd key evicts ws-1 (LRU). After set, cache has ws-2 + ws-3.
+        await smallCacheRunner.execute('ws-3', 'parseTemplateInSandbox("test")', []);
 
-      // disposeAfter fires asynchronously — wait one tick
-      await new Promise((r) => setTimeout(r, 0));
+        // disposeAfter fires asynchronously — wait one tick
+        await new Promise((r) => setTimeout(r, 0));
 
-      // Aggregate should reflect 2 live entries (ws-2 + ws-3), not 3
-      expect(mockStats.gauge).toHaveBeenCalledWith('ivm_cache_total_heap', 4096, {
-        cache: 'custom_audience_ivm',
-      });
-
-      // Restore
-      if (savedMaxSize !== undefined) {
-        process.env.IVM_CACHE_MAX_SIZE = savedMaxSize;
-      } else {
-        delete process.env.IVM_CACHE_MAX_SIZE;
+        // Aggregate should reflect 2 live entries (ws-2 + ws-3), not 3
+        expect(mockStats.gauge).toHaveBeenCalledWith('ivm_cache_total_heap', 4096, {
+          cache: 'custom_audience_ivm',
+        });
+      } finally {
+        restoreEnv('IVM_CACHE_MAX_SIZE', savedMaxSize);
       }
     });
   });

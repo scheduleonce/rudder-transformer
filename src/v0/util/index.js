@@ -28,7 +28,12 @@ const {
 
 const { JsonTemplateEngine, PathType } = require('@rudderstack/json-template-engine');
 const isString = require('lodash/isString');
+const { parsePhoneNumberFromString } = require('libphonenumber-js');
+// Distinct from `set` above (integrations-lib's setValue, which never splits paths and
+// never throws): this is the `set-value` package that destinations require directly.
+const setValuePkg = require('set-value');
 const { shouldGroupByDestinationConfig } = require('../../util/utils');
+const { sandboxedApplyCustomMappings } = require('../../util/customMappings/sandboxClient');
 const logger = require('../../logger');
 const stats = require('../../util/stats');
 const { DestCanonicalNames } = require('../../constants/destinationCanonicalNames');
@@ -1362,6 +1367,53 @@ const generateExclusionList = (mappingConfig) =>
   );
 
 /**
+ * `set-value` write for a path built out of untrusted event data.
+ *
+ * `set-value` refuses to write keys that would corrupt the prototype chain and throws
+ * `Cannot set unsafe key: "<key>"`. It validates *every* segment of the path, so
+ * `address.constructor` is rejected just like `constructor`. That throw is a plain `Error`,
+ * which `generateErrorObject` classifies as a 500 — a *retryable* status for a payload that
+ * can never succeed, so the job is retried until its TTL instead of failing once.
+ *
+ * A key the customer chose is their input, not our defect, so this re-raises it as an
+ * InstrumentationError (4xx): the event aborts immediately and shows up in the errors table
+ * with an actionable message. Call sites whose path comes from our own mapping config should
+ * keep using plain `set`, where a throw really is a 5xx-worthy bug on our side.
+ *
+ * Which keys count as unsafe is deliberately NOT duplicated here. `set-value` enforces that
+ * policy but never exposes it — no option relaxes it and no predicate is exported — so on
+ * failure we ask it the same question again against a throwaway target. If it still refuses,
+ * the path is what it objected to; otherwise the failure came from the target object (frozen,
+ * exotic setter, ...) and the original error is re-thrown untouched. That stays correct for
+ * free if the library's rules ever change, and the happy path pays nothing because the probe
+ * only runs after a write has already failed.
+ *
+ * @param {object} target object to write into
+ * @param {string|symbol|Array|undefined|null} setPath set-value path. As in `set-value`
+ *   itself, a falsy path is a no-op rather than an error — several callers rely on that for
+ *   optional keys.
+ * @param {*} value value to write
+ * @param {object} [options] set-value options, forwarded as-is
+ * @returns {object} target
+ * @throws {InstrumentationError} when set-value rejects the path itself
+ */
+const setValueForUntrustedPath = (target, setPath, value, options) => {
+  try {
+    return setValuePkg(target, setPath, value, options);
+  } catch (error) {
+    try {
+      setValuePkg({}, setPath, value, options);
+    } catch {
+      // set-value objects to the path itself, not to `target`
+      throw new InstrumentationError(
+        `Invalid key in event payload at "${String(setPath)}": ${error.message}`,
+      );
+    }
+    throw error;
+  }
+};
+
+/**
  * Extract fileds from message with exclusions
  * Pass the keys of message for extraction and
  * exclusion fields to exlude and the payload to map into
@@ -1947,6 +1999,41 @@ const validatePhoneWithCountryCode = (phone) => {
 };
 
 /**
+ * Parses a phone number and returns its canonical E.164 form, or null when it is not valid
+ * E.164. Non-numeric separators (spaces, hyphens, parentheses) are stripped before parsing,
+ * so the number must otherwise already carry a leading `+` and a valid country code.
+ *
+ * Callers that need the value they validated should use this rather than validating and
+ * sanitizing separately: the sanitization here and the validation are one step, so the
+ * returned string is always exactly the form that passed.
+ * @param {*} phoneNumber
+ * @returns {string|null} the sanitized E.164 number, or null when invalid
+ */
+const getValidE164PhoneNumber = (phoneNumber) => {
+  try {
+    // Remove all non-numeric characters from the phone number like spaces, hyphens, etc.
+    const sanitizedPhoneNumber = String(phoneNumber).replace(/[^\d+]/g, '');
+    const parsedNumber = parsePhoneNumberFromString(sanitizedPhoneNumber);
+    // Check if the number is valid and properly formatted in E.164.
+    return parsedNumber && parsedNumber.format('E.164') === sanitizedPhoneNumber
+      ? sanitizedPhoneNumber
+      : null;
+  } catch (error) {
+    // If parsing fails, it's not a valid E.164 number, i.e doesn't start with '+' and country code
+    logger.debug('Error parsing phone number', error);
+    return null;
+  }
+};
+
+/**
+ * Checks whether a phone number is in E.164 format. For callers that only need a yes/no
+ * answer; use `getValidE164PhoneNumber` when the sanitized number itself is needed.
+ * @param {*} phoneNumber
+ * @returns {boolean} true when the sanitized number round-trips to itself in E.164
+ */
+const isValidE164PhoneNumber = (phoneNumber) => getValidE164PhoneNumber(phoneNumber) !== null;
+
+/**
  * checks for hybrid mode
  * @param {*} Config
  * @returns
@@ -2365,13 +2452,15 @@ const validateEventAndLowerCaseConversion = (event, isMandatory, convertToLowerC
  * @param {*} mappings The custom mappings to be applied.
  * @returns {object} The transformed event.
  */
-const applyCustomMappings = (event, mappings) =>
-  JsonTemplateEngine.createAsSync(mappings, { defaultPathType: PathType.JSON }).evaluate(event);
-
-const applyJSONStringTemplate = (message, template) =>
-  JsonTemplateEngine.createAsSync(template.replace(/{{/g, '${').replace(/}}/g, '}'), {
-    defaultPathType: PathType.JSON,
-  }).evaluate(message);
+const applyCustomMappings = async (event, mappings, workspaceId) => {
+  if (process.env.CUSTOM_MAPPINGS_SANDBOX_ENABLED === 'false') {
+    // Revert path: in-process eval (legacy behavior). Awaited so the signature is stable.
+    return JsonTemplateEngine.createAsSync(mappings, { defaultPathType: PathType.JSON }).evaluate(
+      event,
+    );
+  }
+  return sandboxedApplyCustomMappings(event, mappings, workspaceId);
+};
 
 /**
  * This groups the events by destination ID, source ID, and optionally by destination config.
@@ -2476,7 +2565,6 @@ module.exports = {
   addExternalIdToTraits,
   adduserIdFromExternalId,
   applyCustomMappings,
-  applyJSONStringTemplate,
   base64Convertor,
   batchMultiplexedEvents,
   checkEmptyStringInarray,
@@ -2492,6 +2580,7 @@ module.exports = {
   deleteObjectProperty,
   generateExclusionList,
   extractCustomFields,
+  setValueForUntrustedPath,
   flattenJson,
   flattenMap,
   flattenMultilevelPayload,
@@ -2573,6 +2662,8 @@ module.exports = {
   refinePayload,
   validateEventName,
   validatePhoneWithCountryCode,
+  isValidE164PhoneNumber,
+  getValidE164PhoneNumber,
   getEventReqMetadata,
   isHybridModeEnabled,
   getEventType,

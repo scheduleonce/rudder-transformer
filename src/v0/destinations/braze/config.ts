@@ -8,7 +8,49 @@ const ConfigCategory = {
   DEFAULT: {
     name: 'BrazeUserAttributesConfig',
   },
-};
+  // Recommended ecommerce events — per-event mappings powering the
+  // `useEcommerceRecommendedEvents` flag. The `brazeEvent` + `rsEvents` rows are
+  // the single source of truth for routing in ecommerceUtil.ts; adding a new
+  // event = one entry here + one JSON under `data/ecommerce/`.
+  BRAZE_PRODUCT_VIEWED: {
+    name: 'ecommerce/ProductViewed',
+    brazeEvent: 'ecommerce.product_viewed',
+    rsEvents: [{ name: 'product viewed' }],
+  },
+  BRAZE_CART_UPDATED: {
+    name: 'ecommerce/CartUpdated',
+    brazeEvent: 'ecommerce.cart_updated',
+    rsEvents: [
+      { name: 'product added', action: 'add' },
+      { name: 'product removed', action: 'remove' },
+    ],
+  },
+  BRAZE_CHECKOUT_STARTED: {
+    name: 'ecommerce/CheckoutStarted',
+    brazeEvent: 'ecommerce.checkout_started',
+    rsEvents: [{ name: 'checkout started' }],
+  },
+  BRAZE_ORDER_PLACED: {
+    name: 'ecommerce/OrderPlaced',
+    brazeEvent: 'ecommerce.order_placed',
+    rsEvents: [{ name: 'order completed' }],
+  },
+  BRAZE_ORDER_REFUNDED: {
+    name: 'ecommerce/OrderRefunded',
+    brazeEvent: 'ecommerce.order_refunded',
+    rsEvents: [{ name: 'order refunded' }],
+  },
+  BRAZE_ORDER_CANCELLED: {
+    name: 'ecommerce/OrderCancelled',
+    brazeEvent: 'ecommerce.order_cancelled',
+    rsEvents: [{ name: 'order cancelled' }],
+  },
+  // Shared per-product mapping for ecommerce events with a `products[]` array.
+  // No `brazeEvent` → not a top-level routed event.
+  BRAZE_ECOMMERCE_PRODUCT: {
+    name: 'ecommerce/Product',
+  },
+} as const;
 
 function getIdentifyEndpoint(baseEndpoint: string): BrazeEndpointDetails {
   return {
@@ -51,6 +93,11 @@ const BRAZE_PARTNER_NAME = 'RudderStack';
 const TRACK_BRAZE_MAX_REQ_COUNT = 75;
 const TRACK_BRAZE_MAX_EXTERNAL_ID_COUNT = 75;
 const IDENTIFY_BRAZE_MAX_REQ_COUNT = 50;
+
+// Per-item and per-batch byte-size caps enforced during chunking.
+// Ref: https://www.braze.com/docs/user_guide/data/activation/events/recommended_events#event-size-limit
+const TRACK_BRAZE_MAX_ITEM_BYTE_SIZE = 100 * 1024; // 100 KB
+const TRACK_BRAZE_MAX_BATCH_BYTE_SIZE = 4 * 1024 * 1024; // 4 MB
 // https://www.braze.com/docs/api/endpoints/user_data/post_user_delete/
 
 const ALIAS_BRAZE_MAX_REQ_COUNT = 50;
@@ -94,4 +141,6 @@ export {
   BRAZE_NON_BILLABLE_ATTRIBUTES,
   ALIAS_BRAZE_MAX_REQ_COUNT,
   SUBSCRIPTION_BRAZE_MAX_REQ_COUNT,
+  TRACK_BRAZE_MAX_ITEM_BYTE_SIZE,
+  TRACK_BRAZE_MAX_BATCH_BYTE_SIZE,
 };

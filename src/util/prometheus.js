@@ -12,6 +12,32 @@ function appendPrefix(name) {
   return `${prefix}_${name}`;
 }
 
+function getSupportedMetricTags(metric, tags, fullName) {
+  // prom-client labelNames are immutable after registration; record known labels and ignore extras
+  // rather than dropping the metric by throwing on an unsupported label key.
+  const labelNames = new Set(metric.labelNames || []);
+  const supportedTags = {};
+  const unsupportedTagNames = [];
+
+  Object.entries(tags).forEach(([tagName, tagValue]) => {
+    if (labelNames.has(tagName)) {
+      supportedTags[tagName] = tagValue;
+    } else {
+      unsupportedTagNames.push(tagName);
+    }
+  });
+
+  if (unsupportedTagNames.length > 0) {
+    logger.warn(
+      `Prometheus: Metric ${fullName} received unsupported labels: ${unsupportedTagNames.join(
+        ', ',
+      )}. Ignoring unsupported labels`,
+    );
+  }
+
+  return supportedTags;
+}
+
 class Prometheus {
   constructor(enableSummaryMetrics = true) {
     if (clusterEnabled && useMetricsAggregator) {
@@ -65,11 +91,16 @@ class Prometheus {
     return counter;
   }
 
-  newGaugeStat(name, help, labelNames) {
+  // `aggregator` controls how prom-client merges this gauge across the NUM_PROCS cluster
+  // workers when serving aggregatorRegistry.clusterMetrics(). It defaults to 'sum', which is
+  // right for additive quantities (bytes, counts) but wrong for ratios: summing four workers'
+  // "16%" would export "64%". Pass 'max' for anything that is already a percentage.
+  newGaugeStat(name, help, labelNames, aggregator = 'sum') {
     const gauge = new prometheusClient.Gauge({
       name,
       help,
       labelNames,
+      aggregator,
     });
     this.prometheusRegistry.registerMetric(gauge);
     return gauge;
@@ -122,12 +153,12 @@ class Prometheus {
     try {
       let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
-        logger.warn(
+        logger.info(
           `Prometheus: Summary metric ${fullName} not found in the registry. Creating a new one`,
         );
         metric = this.newSummaryStat(fullName, name, Object.keys(tags));
       }
-      metric.observe(tags, value);
+      metric.observe(getSupportedMetricTags(metric, tags, fullName), value);
     } catch (e) {
       logger.error(`Prometheus: Summary metric ${fullName} failed with error ${e}`);
     }
@@ -138,12 +169,12 @@ class Prometheus {
     try {
       let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
-        logger.warn(
+        logger.info(
           `Prometheus: Timing metric ${fullName} not found in the registry. Creating a new one`,
         );
         metric = this.newHistogramStat(fullName, name, Object.keys(tags));
       }
-      metric.observe(tags, (Date.now() - start) / 1000);
+      metric.observe(getSupportedMetricTags(metric, tags, fullName), (Date.now() - start) / 1000);
     } catch (e) {
       logger.error(`Prometheus: Timing metric ${fullName} failed with error ${e}`);
     }
@@ -154,12 +185,12 @@ class Prometheus {
     try {
       let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
-        logger.warn(
+        logger.info(
           `Prometheus: summary metric ${fullName} not found in the registry. Creating a new one`,
         );
         metric = this.newSummaryStat(fullName, name, Object.keys(tags));
       }
-      metric.observe(tags, (Date.now() - start) / 1000);
+      metric.observe(getSupportedMetricTags(metric, tags, fullName), (Date.now() - start) / 1000);
     } catch (e) {
       logger.error(`Prometheus: Summary metric ${fullName} failed with error ${e}`);
     }
@@ -170,12 +201,12 @@ class Prometheus {
     try {
       let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
-        logger.warn(
+        logger.info(
           `Prometheus: Histogram metric ${fullName} not found in the registry. Creating a new one`,
         );
         metric = this.newHistogramStat(fullName, name, Object.keys(tags));
       }
-      metric.observe(tags, value);
+      metric.observe(getSupportedMetricTags(metric, tags, fullName), value);
     } catch (e) {
       logger.error(`Prometheus: Histogram metric ${fullName} failed with error ${e}`);
     }
@@ -190,12 +221,12 @@ class Prometheus {
     try {
       let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
-        logger.warn(
+        logger.info(
           `Prometheus: Counter metric ${fullName} not found in the registry. Creating a new one`,
         );
         metric = this.newCounterStat(fullName, name, Object.keys(tags));
       }
-      metric.inc(tags, delta);
+      metric.inc(getSupportedMetricTags(metric, tags, fullName), delta);
     } catch (e) {
       logger.error(
         `Prometheus: Counter metric ${fullName} failed with error ${e}. Value: ${delta}`,
@@ -208,12 +239,12 @@ class Prometheus {
     try {
       let metric = this.prometheusRegistry.getSingleMetric(fullName);
       if (!metric) {
-        logger.warn(
+        logger.info(
           `Prometheus: Gauge metric ${fullName} not found in the registry. Creating a new one`,
         );
         metric = this.newGaugeStat(fullName, name, Object.keys(tags));
       }
-      metric.set(tags, value);
+      metric.set(getSupportedMetricTags(metric, tags, fullName), value);
     } catch (e) {
       logger.error(`Prometheus: Gauge metric ${fullName} failed with error ${e}. Value: ${value}`);
     }
@@ -323,6 +354,12 @@ class Prometheus {
         help: 'tf_proxy_dest_req_count',
         type: 'counter',
         labelNames: ['destination'],
+      },
+      {
+        name: 'proxy_destination_response_truncated',
+        help: 'Delivery response errors truncated for exceeding the size cap',
+        type: 'counter',
+        labelNames: ['destType'],
       },
       {
         name: 'source_transform_errors',
@@ -625,7 +662,25 @@ class Prometheus {
         name: 'braze_partial_failure',
         help: 'braze_partial_failure',
         type: 'counter',
-        labelNames: [],
+        labelNames: ['destinationId', 'workspaceId'],
+      },
+      {
+        name: 'braze_audience_partial_failure',
+        help: 'braze_audience_partial_failure',
+        type: 'counter',
+        labelNames: ['destinationId', 'workspaceId'],
+      },
+      {
+        name: 'braze_audience_aborted',
+        help: 'braze_audience_aborted',
+        type: 'counter',
+        labelNames: ['destinationId', 'workspaceId'],
+      },
+      {
+        name: 'braze_audience_retryable',
+        help: 'braze_audience_retryable',
+        type: 'counter',
+        labelNames: ['destinationId', 'workspaceId', 'reason'],
       },
       {
         name: 'braze_deduped_users_count',
@@ -720,15 +775,53 @@ class Prometheus {
         name: 'dest_transform_input_events',
         help: 'dest_transform_input_events',
         type: 'histogram',
-        labelNames: ['destination', 'version', 'sourceType', 'destinationType', 'k8_namespace'],
+        labelNames: [
+          'destination',
+          'version',
+          'destVersion',
+          'sourceType',
+          'destinationType',
+          'k8_namespace',
+        ],
         buckets: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200],
       },
       {
         name: 'dest_transform_output_events',
         help: 'dest_transform_output_events',
         type: 'histogram',
-        labelNames: ['destination', 'version', 'sourceType', 'destinationType', 'k8_namespace'],
+        labelNames: [
+          'destination',
+          'version',
+          'destVersion',
+          'sourceType',
+          'destinationType',
+          'k8_namespace',
+        ],
         buckets: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200],
+      },
+      {
+        name: 'delivery_payload_size_bytes',
+        help: 'Uncompressed (pre-compression) size in bytes of the outbound delivery request body',
+        type: 'histogram',
+        labelNames: [
+          'destType',
+          'endpointPath',
+          'destinationId',
+          'workspaceId',
+          'sourceId',
+          'feature',
+          'module',
+          'implementation',
+          'compressed',
+        ],
+        // Small-end-weighted so sub-1KB payloads are legible (default Prometheus buckets are
+        // latency-scaled and collapse everything under 1KB), extended to 50MB so the large-batch
+        // tail this metric exists to size (destination body limits run to tens of MB) is not lost
+        // in a single +Inf bucket.
+        buckets: [
+          64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 65536, 262144, 1048576, 4194304,
+          16777216, 52428800,
+        ],
       },
 
       // tracking plan metrics:
@@ -962,6 +1055,20 @@ class Prometheus {
         labelNames: ['cache'],
       },
       {
+        name: 'ivm_execution_queue_wait',
+        help: 'Time an evaluation waited for a free isolate concurrency slot (seconds)',
+        type: 'histogram',
+        labelNames: ['functionName', 'workspaceId', 'cache'],
+        // Declared explicitly because the default bucket set starts at 5ms, and a gated
+        // isolate drains far faster than that: measured locally, 99.45% of 312k waits landed
+        // in that single first bucket, which makes histogram_quantile() interpolate inside it
+        // and report nothing useful. These start at 0.5ms so a healthy sub-millisecond wait is
+        // distinguishable from a degraded one, and extend to 10s so a real backlog (queue depth
+        // growing behind timed-out executions) stays on-scale instead of pinning p99 at the top
+        // finite bucket.
+        buckets: [0.0005, 0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+      },
+      {
         name: 'fetchV2_call_duration',
         help: 'fetchV2_call_duration',
         type: 'histogram',
@@ -1052,7 +1159,16 @@ class Prometheus {
         name: 'memory_fenced_requests',
         help: 'number of requests that were memory fenced',
         type: 'counter',
+        labelNames: ['route'],
+      },
+      {
+        name: 'memory_heap_used_percent',
+        // A percentage is not additive. Without aggregator 'max' prom-client would sum the
+        // four cluster workers' values and export ~4x the real figure.
+        help: 'heap used as a percentage of the V8 heap limit, for the hottest cluster worker',
+        type: 'gauge',
         labelNames: [],
+        aggregator: 'max',
       },
       {
         name: 'http_concurrent_requests',
@@ -1081,7 +1197,7 @@ class Prometheus {
         if (metric.type === 'counter') {
           this.newCounterStat(fullName, metric.help, metric.labelNames);
         } else if (metric.type === 'gauge') {
-          this.newGaugeStat(fullName, metric.help, metric.labelNames);
+          this.newGaugeStat(fullName, metric.help, metric.labelNames, metric.aggregator);
         } else if (metric.type === 'histogram') {
           this.newHistogramStat(fullName, metric.help, metric.labelNames, metric.buckets);
         } else if (metric.type === 'summary') {

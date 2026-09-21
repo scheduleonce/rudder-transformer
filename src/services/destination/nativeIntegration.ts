@@ -5,6 +5,8 @@ import cloneDeep from 'lodash/cloneDeep';
 import groupBy from 'lodash/groupBy';
 import { mapInBatches } from '@rudderstack/integrations-lib';
 import networkHandlerFactory from '../../adapters/networkHandlerFactory';
+import { proxyRequest } from '../../adapters/network';
+import { processAxiosResponse } from '../../adapters/utils/networkUtils';
 import { FetchHandler } from '../../helpers/fetchHandlers';
 import { DestinationService } from '../../interfaces/DestinationService';
 import {
@@ -28,8 +30,42 @@ import stats from '../../util/stats';
 import tags from '../../v0/util/tags';
 import { DestinationPostTransformationService } from './postTransformation';
 import { groupRouterTransformEvents } from '../../v0/util';
-import { isBatchingFrameworkEnabled } from '../../constants/batchedDestinationsMap';
-import { processBatchedDestination } from './nativeBatching/processBatchedDestination';
+import {
+  isDestinationIntegrationEnabled,
+  isBatchingFrameworkTransportEnabled,
+} from '../../constants/destinationIntegrationsMap';
+import { processDestinationIntegration } from './destinationIntegration/processDestinationIntegration';
+import {
+  handleDeliveryResponse,
+  toDeliveryV1Response,
+  firstJobIdentity,
+  resolveDeliverySpec,
+} from './destinationIntegration/delivery';
+import type { DeliveryContext, DeliveryRequestContext } from './destinationIntegration/delivery';
+
+/**
+ * Whether the framework's delivery branch may answer this request — the route rudder-server called
+ * *and* the shape it sent, because neither alone is sufficient.
+ *
+ * The route alone does not prove the shape: the branch indexes `metadata`, hands it to
+ * `handleDeliveryResponse` as the job list, and returns a `DeliveryV1Response` shaped to it.
+ * Narrowing on the array both proves that and removes the cast.
+ *
+ * The shape alone does not prove the route: a v0 payload carrying an array is not a v1 request, and
+ * answering it with a `DeliveryV1Response` gives rudder-server a body its v0 reader cannot parse.
+ * `intercom_v2`'s `INTERCOM_V2_v0_oauth_scenario_1` is exactly that request — a `version: 'v0'`
+ * scenario whose body comes from `generateProxyV1Payload`.
+ *
+ * Requiring both also keeps this branch strictly narrower than the `version === 'v1'` test the catch
+ * below uses, so any request this accepts is one the catch also treats as v1. A single call can
+ * therefore never answer with a v1 body when the destination succeeds and a v0 body when it fails.
+ *
+ * Preferred over `ProxyV1RequestSchema` for the shape half — that schema requires `secret` and
+ * `dontBatch` on every entry, so a real payload omitting either would fail validation and silently
+ * fall through to the legacy handler, which is a worse failure than the cast it replaces.
+ */
+const isProxyV1Request = (request: ProxyRequest, version: string): request is ProxyV1Request =>
+  version.toLowerCase() === 'v1' && Array.isArray(request.metadata);
 
 export class NativeIntegrationDestinationService implements DestinationService {
   public init() {}
@@ -111,7 +147,10 @@ export class NativeIntegrationDestinationService implements DestinationService {
       groupedEvents,
       async (destInputArray: RouterTransformationRequestData[]) => {
         const { workspaceId } = destInputArray[0].metadata;
-        const useBatchingFramework = isBatchingFrameworkEnabled(destinationType, workspaceId);
+        const useDestinationIntegration = isDestinationIntegrationEnabled(
+          destinationType,
+          workspaceId,
+        );
 
         const metaTO = this.getTags(
           destinationType,
@@ -125,9 +164,9 @@ export class NativeIntegrationDestinationService implements DestinationService {
           // destHandler is null for the batching framework path — handleRouterTransformSuccessEvents
           // handles this safely via optional chaining on destHandler?.processMetadataForRouter
           let destHandler: any = null;
-          if (useBatchingFramework) {
-            const IntegrationClass = FetchHandler.getBatchDestinationHandler(destinationType);
-            transformedResponse = await processBatchedDestination(
+          if (useDestinationIntegration) {
+            const IntegrationClass = FetchHandler.getDestinationIntegrationHandler(destinationType);
+            transformedResponse = await processDestinationIntegration(
               destInputArray,
               IntegrationClass,
               requestMetadata,
@@ -212,8 +251,99 @@ export class NativeIntegrationDestinationService implements DestinationService {
         originalDestName,
         version,
       );
-      const rawProxyResponse = await networkHandler.proxy(deliveryRequest, destinationType);
-      const processedProxyResponse = networkHandler.processAxiosResponse(rawProxyResponse);
+      const frameworkRequest = isProxyV1Request(deliveryRequest, version);
+      const workspaceId = frameworkRequest ? deliveryRequest.metadata[0]?.workspaceId : '';
+      const frameworkOwnsTransport =
+        frameworkRequest && isBatchingFrameworkTransportEnabled(destinationType, workspaceId);
+      const frameworkOwnsResponse =
+        frameworkRequest && isDestinationIntegrationEnabled(destinationType, workspaceId);
+      const IntegrationClass =
+        frameworkOwnsTransport || frameworkOwnsResponse
+          ? FetchHandler.getDestinationIntegrationHandler(destinationType)
+          : undefined;
+      const reqCtx: DeliveryRequestContext | undefined = frameworkRequest
+        ? {
+            jobs: deliveryRequest.metadata,
+            request: deliveryRequest,
+            destinationConfig: deliveryRequest.destinationConfig,
+            ...firstJobIdentity(deliveryRequest.metadata),
+          }
+        : undefined;
+
+      let sentDeliveryRequest = deliveryRequest;
+      let processedProxyResponse;
+      if (frameworkOwnsTransport) {
+        const spec = resolveDeliverySpec(IntegrationClass);
+        // `prepareRequest` is also where a destination rejects a request it must not send — GAEC
+        // uses it to catch legacy-shape payloads left over from a transport flag flip. Throwing
+        // from it lands in this method's catch, same as any other delivery failure.
+        sentDeliveryRequest = spec.prepareRequest?.(deliveryRequest, reqCtx!) ?? deliveryRequest;
+        // The framework sent this request, so the framework reads the reply: the shared axios
+        // normalizer, not `networkHandler.processAxiosResponse`. A destination overrides that hook
+        // to adapt *its own* transport — GAEC's, for one, exists solely to unwrap the Google Ads
+        // SDK's `{ statusCode, responseBody }` — and none of that applies to a response this
+        // request never went through the destination to get. Destination-specific reading of a
+        // framework-sent response belongs in `DeliverySpec` (`statusOverrides`/`failureReason`).
+        processedProxyResponse = processAxiosResponse(
+          await proxyRequest(sentDeliveryRequest, destinationType),
+        );
+      } else {
+        processedProxyResponse = networkHandler.processAxiosResponse(
+          await networkHandler.proxy(deliveryRequest, destinationType),
+        );
+      }
+
+      // The same predicate that chose `processDestinationIntegration` in `doRouterTransformation`, so
+      // the response is read by whichever half built the request. `handlerVersion` is deliberately
+      // ignored here, and so is the v0->v1 adaptation below — the framework produces a v1 response
+      // natively, and that adaptation would collapse the metadata array to its first entry.
+      //
+      // The guard is `isProxyV1Request`, which requires the v1 route *and* an array `metadata`;
+      // see its declaration for why neither half alone is enough.
+      if (frameworkRequest && frameworkOwnsResponse) {
+        const ctx: DeliveryContext = {
+          status: processedProxyResponse.status,
+          response: processedProxyResponse.response,
+          jobs: deliveryRequest.metadata,
+          request: sentDeliveryRequest as ProxyV1Request,
+          destinationConfig: deliveryRequest.destinationConfig,
+          ...firstJobIdentity(deliveryRequest.metadata),
+        };
+        // Uppercased to match `statTags.destType`, which is what every other destination tag in a
+        // delivery response and in the stats emitted alongside it uses.
+        const frameworkResponse = toDeliveryV1Response(
+          handleDeliveryResponse(IntegrationClass, ctx),
+          ctx,
+          destinationType.toUpperCase(),
+        );
+
+        // The bridge sets `statTags` only for a uniform whole-response failure, and only the
+        // error-describing half of it. Enrich it with the same identifying tags
+        // `handlevV1DeliveriesFailureEvents` merges for a thrown error, so a returned failure and a
+        // thrown one produce the same tag set on `integration.failure_detailed` — a counter carrying
+        // just `errorType` could not be attributed to a destination or workspace.
+        if (frameworkResponse.statTags) {
+          const deliveryMetaTO = this.getTags(
+            destinationType,
+            ctx.destinationId,
+            ctx.workspaceId,
+            tags.FEATURES.DATA_DELIVERY,
+          );
+          frameworkResponse.statTags = {
+            ...frameworkResponse.statTags,
+            ...deliveryMetaTO.errorDetails,
+          };
+        }
+        // `ErrorReportingService.reportError` is deliberately not called for a *returned* failure,
+        // and that matches the legacy path rather than diverging from it: `deliver` returns
+        // `networkHandler.responseHandler(...)` straight through, and no network handler reports
+        // either — reporting fires only from `postTransformation`, i.e. only on the throw path,
+        // for both. A returned per-job failure is a delivery outcome the router acts on, not a
+        // transformer error, and routing every partial batch failure into error reporting would be
+        // a new behaviour for the 20 v1 handlers this replaces, not parity with them.
+        return frameworkResponse;
+      }
+
       let rudderJobMetadata =
         version.toLowerCase() === 'v1'
           ? (deliveryRequest as ProxyV1Request).metadata

@@ -1,30 +1,19 @@
-import get from 'get-value';
 import { InstrumentationError } from '@rudderstack/integrations-lib';
-import { EventType, MappedToDestinationKey, GENERIC_TRUE_VALUES } from '../../../constants';
-import {
-  handleRtTfSingleEventError,
-  getDestinationExternalIDInfoForRetl,
-  groupEventsByType,
-} from '../../util';
+import { EventType } from '../../../constants';
+import { handleRtTfSingleEventError, groupEventsByType } from '../../util';
 import { API_VERSION } from './config';
-import { processLegacyIdentify, processLegacyTrack, legacyBatchEvents } from './HSTransform-v1';
-import { processIdentify, processTrack, batchEvents } from './HSTransform-v2';
-import {
-  splitEventsForCreateUpdate,
-  fetchFinalSetOfTraits,
-  getProperties,
-  validateDestinationConfig,
-} from './util';
+import { processLegacyIdentify, processLegacyTrack, legacyBatchEvents } from './es-retl-v1';
+import { processIdentify, processTrack, batchEvents } from './es-retl-v3';
+import { fetchFinalSetOfTraits, getProperties, validateDestinationConfig } from './util';
+import { processBatchRouterRetl, shouldUseHsRetlSplitPath } from './retl-transform';
 import type {
   HubSpotPropertyMap,
   HubSpotBatchRouterResult,
   HubSpotRouterTransformationOutput,
   HubspotRouterRequest,
   HubspotProcessorTransformationOutput,
-  HubspotProcessorRequest,
   HubSpotBatchProcessingItem,
 } from './types';
-import { isProcessorOutput } from './types';
 
 const processSingleMessage = async (
   { message, destination, metadata }: HubspotRouterRequest,
@@ -33,9 +22,6 @@ const processSingleMessage = async (
   if (!message.type) {
     throw new InstrumentationError('Message type is not present. Aborting message.');
   }
-
-  // Config Validation
-  validateDestinationConfig(destination);
 
   let response: HubspotProcessorTransformationOutput | HubspotProcessorTransformationOutput[];
   switch (message.type) {
@@ -63,55 +49,33 @@ const processSingleMessage = async (
   return response;
 };
 
-// has been deprecated - using routerTransform for both the versions
-const process = async (
-  event: HubspotProcessorRequest,
-): Promise<HubspotProcessorTransformationOutput | HubspotProcessorTransformationOutput[]> => {
-  const { destination, message, metadata } = event;
-  const mappedToDestination = get(message, MappedToDestinationKey);
-  let events: HubspotProcessorRequest[] = [event];
-  if (mappedToDestination && GENERIC_TRUE_VALUES.includes(mappedToDestination?.toString())) {
-    // get info about existing objects and splitting accordingly.
-    events = await splitEventsForCreateUpdate(events, destination, metadata);
-  }
-  return processSingleMessage({
-    message: events[0].message,
-    destination,
-    metadata,
-  });
-};
-
 const processBatchRouter = async (
   inputs: HubspotRouterRequest[],
   reqMetadata: NonNullable<unknown>,
 ): Promise<HubSpotBatchRouterResult> => {
-  let tempInputs = inputs;
+  // rETL (mappedToDestination) batches are handled by the dedicated rETL code
+  // path. A router call is homogeneous per source, so the remaining logic below
+  // only ever runs for event-stream batches.
+  if (inputs.length > 0 && shouldUseHsRetlSplitPath(inputs[0])) {
+    return processBatchRouterRetl(inputs, reqMetadata);
+  }
+
+  const tempInputs = inputs;
   // using the first destination config for transforming the batch
   const { destination, metadata } = tempInputs[0];
   let propertyMap: HubSpotPropertyMap | undefined;
-  const mappedToDestination = get(tempInputs[0].message, MappedToDestinationKey);
-  const externalIdInfo = getDestinationExternalIDInfoForRetl(tempInputs[0].message, 'HS');
-  const objectType = externalIdInfo?.objectType;
   const successRespList: HubSpotBatchProcessingItem[] = [];
   const errorRespList: HubSpotRouterTransformationOutput[] = [];
   // batch implementation
   let batchedResponseList: HubSpotRouterTransformationOutput[] = [];
   try {
-    if (mappedToDestination && GENERIC_TRUE_VALUES.includes(mappedToDestination?.toString())) {
-      // skip splitting the batches to inserts and updates if object it is an association
-      if (!objectType || String(objectType).toLowerCase() !== 'association') {
-        propertyMap = await getProperties(destination, metadata);
-        // get info about existing objects and splitting accordingly.
-        tempInputs = await splitEventsForCreateUpdate(tempInputs, destination, metadata);
-      }
-    } else {
-      // reduce the no. of calls for properties endpoint
-      const traitsFound = tempInputs.some(
-        (input) => fetchFinalSetOfTraits(input.message) !== undefined,
-      );
-      if (traitsFound) {
-        propertyMap = await getProperties(destination, metadata);
-      }
+    validateDestinationConfig(destination);
+    // reduce the no. of calls for properties endpoint
+    const traitsFound = tempInputs.some(
+      (input) => fetchFinalSetOfTraits(input.message) !== undefined,
+    );
+    if (traitsFound) {
+      propertyMap = await getProperties(destination, metadata);
     }
   } catch (error: unknown) {
     // Any error thrown from the above try block applies to all the events
@@ -127,34 +91,22 @@ const processBatchRouter = async (
   await Promise.all(
     inputs.map(async (input) => {
       try {
-        if (input.message.statusCode && isProcessorOutput(input.message)) {
-          // already transformed event
+        let receivedResponse = await processSingleMessage(
+          { message: input.message, destination, metadata: input.metadata },
+          propertyMap,
+        );
+
+        receivedResponse = Array.isArray(receivedResponse) ? receivedResponse : [receivedResponse];
+
+        // received response can be in array format [{}, {}, {}, ..., {}]
+        // if multiple response is being returned
+        receivedResponse.forEach((element) => {
           successRespList.push({
-            message: input.message,
+            message: element,
             metadata: input.metadata,
             destination,
           });
-        } else {
-          // event is not transformed
-          let receivedResponse = await processSingleMessage(
-            { message: input.message, destination, metadata: input.metadata },
-            propertyMap,
-          );
-
-          receivedResponse = Array.isArray(receivedResponse)
-            ? receivedResponse
-            : [receivedResponse];
-
-          // received response can be in array format [{}, {}, {}, ..., {}]
-          // if multiple response is being returned
-          receivedResponse.forEach((element) => {
-            successRespList.push({
-              message: element,
-              metadata: input.metadata,
-              destination,
-            });
-          });
-        }
+        });
       } catch (error: unknown) {
         const errRespEvent = handleRtTfSingleEventError(input, error, reqMetadata);
         errorRespList.push(errRespEvent);
@@ -225,4 +177,4 @@ const processRouterDest = async (
   return [...batchedResponseList, ...errorRespList, ...dontBatchEvents];
 };
 
-export { process, processRouterDest };
+export { processRouterDest };

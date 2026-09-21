@@ -5,9 +5,10 @@ import {
   Metadata,
 } from '../../../types';
 import {
-  BatchedRequest,
-  MultiBatchRequestOutput,
+  BatchRequestOutput,
   ProcessorTransformationOutput,
+  ProxyMetdata,
+  ProxyV1Request,
 } from '../../../types/destinationTransformation';
 
 // Braze User Alias Object
@@ -142,14 +143,67 @@ export interface BrazeSubscriptionGroup {
   phones?: string[];
 }
 
+// Single entry in Braze's per-item partial-failure array. Braze surfaces
+// per-item validation failures inside an otherwise-2xx `/users/track`
+// response as `errors[i] = { type, input_array, index }` — the network
+// handler correlates each entry back to an originating job by looking up
+// `input_array` + `index` against the per-metadata `destInfo` positional
+// map populated on the router-transform side.
+export interface BrazeError {
+  type: string;
+  input_array: string;
+  index: number;
+}
+
+// Populated on the metadata of `/users/track` router outputs so the v1
+// networkHandler can correlate Braze's per-item `errors[]` entries (keyed by
+// input_array + index) back to the originating job. Set when the outgoing
+// chunk is assembled.
+//
+// Design-doc contract (Braze partial-error handling, Option 1, Section 4):
+// - Every index field is an array. Length-1 arrays for the standard single-
+//   contribution case; longer only when a job legitimately contributes
+//   multiple entries to the same sub-array (e.g. order-completed with
+//   multiple purchase items).
+// - Fields live at the top of `destInfo` (no per-destination wrapper) — the
+//   fields are populated only by Braze's router transform and read only by
+//   Braze's network handler within a single destination's request flow.
+export interface BrazeDestInfo {
+  attributesIndices?: number[];
+  eventsIndices?: number[];
+  purchasesIndices?: number[];
+}
+
+// The proxy request as Braze's own handler reads it: a ProxyV1Request whose
+// JSON body is narrowed to the /users/track chunk this destination built, so
+// the network handler can reach `events[]` without re-describing the shape.
+// `Omit<..., 'JSON'>` keeps the sibling body formats in sync with the base type.
+// The value still arrives unvalidated over the wire, so the handler keeps its
+// runtime guards rather than trusting this declaration.
+export interface BrazeProxyV1Request extends Omit<ProxyV1Request, 'body'> {
+  body?: Omit<NonNullable<ProxyV1Request['body']>, 'JSON'> & {
+    JSON?: BrazeTrackRequestBody;
+  };
+}
+
 export interface BrazeResponseHandlerParams {
   destinationResponse: {
     response?: {
       message?: string;
-      errors?: unknown[];
+      errors?: BrazeError[];
     };
     status: number;
   };
+  rudderJobMetadata: ProxyMetdata[];
+  // The framework's `deliver` step (nativeIntegration.ts) always forwards the
+  // original proxy request as `destinationRequest`. The v1 networkHandler uses
+  // its `endpointPath` (e.g. `'users/track'`) to decide whether to run the
+  // per-item correlation logic — Braze's `/users/track` is the only endpoint
+  // that returns per-entry `errors[]` — and its `body.JSON.events` to tell
+  // recommended-ecommerce events apart from legacy custom ones. Optional so
+  // unit-test call sites that need neither can omit it; when absent the
+  // handler skips correlation and falls back to uniform per-job outcomes.
+  destinationRequest?: BrazeProxyV1Request;
 }
 
 export interface BrazeUser extends BrazeUserAttributes {
@@ -175,6 +229,10 @@ export interface BrazeDestinationConfig {
   enableIdentifyForAnonymousUser?: boolean;
   blacklistedEvents?: string[];
   whitelistedEvents?: string[];
+  // When true, RS ecommerce track events are mapped to Braze recommended
+  // `ecommerce.*` events instead of legacy custom/purchase events.
+  // Single toggle gates both cloud and device-mode SDKs.
+  useEcommerceRecommendedEvents?: boolean;
 }
 
 // Product object structure for e-commerce events
@@ -231,7 +289,7 @@ export interface BrazeEndpointDetails {
 
 // Braze Subscription Group request body structure
 export interface BrazeSubscriptionBatchPayload {
-  subscription_groups?: unknown[];
+  subscription_groups?: BrazeSubscriptionGroup[];
 }
 
 // Braze Merge Update Object
@@ -249,7 +307,11 @@ export interface BrazeMergeBatchPayload {
   merge_updates?: BrazeMergeUpdate[];
 }
 
-// Union of all possible Braze batch payload types
+// Union of all possible Braze batch payload types. Each outgoing HTTP request
+// populates fields for exactly one endpoint (`/users/track` OR subscription-
+// groups OR alias-merge), so a body is one of these three shapes at runtime.
+// Consumers reading `body.JSON` must narrow (via `in` guards or a boundary
+// cast to a specific member) before accessing member-specific fields.
 export type BrazeBatchPayload =
   | BrazeTrackRequestBody
   | BrazeSubscriptionBatchPayload
@@ -264,12 +326,6 @@ export type BrazeBatchHeaders = {
 
 type BrazeBatchParams = Record<string, unknown>;
 
-export type BrazeBatchRequest = BatchedRequest<
-  BrazeBatchPayload,
-  BrazeBatchHeaders,
-  BrazeBatchParams
->;
-
 export type BrazeTransformedEvent = {
   statusCode: number;
   batchedRequest?: ProcessorTransformationOutput;
@@ -280,13 +336,12 @@ export type BrazeTransformedEvent = {
   authErrorCategory?: string;
 };
 
+// Braze emits one `BatchRequestOutput` per outgoing HTTP request. Track
+// outputs carry scoped metadata with per-metadata `destInfo` positional maps
+// consumed by the v1 networkHandler; failures and filtered events pass through
+// as `BrazeTransformedEvent`.
 export type BrazeBatchResponse =
-  | MultiBatchRequestOutput<
-      BrazeBatchPayload,
-      BrazeBatchHeaders,
-      BrazeBatchParams,
-      BrazeDestination
-    >
+  | BatchRequestOutput<BrazeBatchPayload, BrazeBatchHeaders, BrazeBatchParams, BrazeDestination>
   | BrazeTransformedEvent;
 
 // Delete user types

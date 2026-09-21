@@ -1,0 +1,597 @@
+import { z } from 'zod';
+import {
+  ConfigurationError,
+  InstrumentationError,
+  NetworkError,
+} from '@rudderstack/integrations-lib';
+import {
+  processDestinationIntegration,
+  validateInputs,
+  groupByDontBatchDirective,
+  resolveMetadata,
+  groupPayloadsByCompositeKey,
+} from '../processDestinationIntegration';
+import {
+  DestinationIntegration,
+  TransformedEvent,
+  ChunkBatchStrategy,
+  CustomBatchStrategy,
+} from '../destinationIntegration';
+import type { BatchStrategy, TransformResult } from '../destinationIntegration';
+import type {
+  ProcessorTransformationOutput,
+  RouterTransformationRequestData,
+} from '../../../../types/destinationTransformation';
+import type { Destination } from '../../../../types/controlPlaneConfig';
+import type { MessageType, Metadata, RudderMessage } from '../../../../types/rudderEvents';
+
+// ---------------------------------------------------------------------------
+// Test types
+// ---------------------------------------------------------------------------
+
+type TestBody = { value: string };
+
+interface TestMessage extends RudderMessage {
+  data?: string;
+  shouldFail?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Test helpers
+// ---------------------------------------------------------------------------
+
+const mockDestination: Destination = {
+  ID: 'dest-1',
+  Config: { apiKey: 'test-key' },
+  DestinationDefinition: { ID: 'destDef-1', Name: 'TEST', DisplayName: 'Test', Config: {} },
+  Name: 'test-dest',
+  Enabled: true,
+  WorkspaceID: 'ws-1',
+  Transformations: [],
+};
+
+class SimpleIntegration extends DestinationIntegration<TestBody> {
+  // Declared as the sync-or-async union so subclasses below can override it with an async
+  // implementation; TypeScript will not let an async override narrow a sync base signature.
+  transformEvent(
+    input: RouterTransformationRequestData<TestMessage>,
+  ): TransformedEvent<TestBody> | Promise<TransformedEvent<TestBody>> {
+    const { message } = input;
+    return {
+      body: { value: message.data ?? '' },
+      endpoint: 'https://api.test.com/events',
+      endpointPath: '/events',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    };
+  }
+
+  getBatchStrategy(): BatchStrategy<TestBody> {
+    return new ChunkBatchStrategy({
+      maxItems: 3,
+      wrapBody: (bodies) => ({ events: bodies }),
+    });
+  }
+
+  getInputSchema() {
+    return z.object({}).passthrough();
+  }
+}
+
+class MultiEndpointIntegration extends DestinationIntegration<TestBody> {
+  transformEvent(input: RouterTransformationRequestData<TestMessage>): TransformedEvent<TestBody> {
+    const { message } = input;
+    return {
+      body: { value: message.data ?? '' },
+      endpoint:
+        message.type === 'track' ? 'https://api.test.com/track' : 'https://api.test.com/identify',
+      endpointPath: message.type === 'track' ? '/track' : '/identify',
+      method: 'POST',
+    };
+  }
+
+  getBatchStrategy(endpoint: string): BatchStrategy<TestBody> {
+    if (endpoint.includes('/track')) {
+      return new ChunkBatchStrategy({ maxItems: 2, wrapBody: (bodies) => ({ tracks: bodies }) });
+    }
+    return new ChunkBatchStrategy({ maxItems: 2, wrapBody: (bodies) => ({ identifies: bodies }) });
+  }
+
+  getInputSchema() {
+    return z.object({}).passthrough();
+  }
+}
+
+class PartialFailIntegration extends DestinationIntegration<TestBody> {
+  transformEvent(input: RouterTransformationRequestData<TestMessage>): TransformedEvent<TestBody> {
+    const { message } = input;
+    if (message.shouldFail) {
+      throw new Error('Transform failed');
+    }
+    return {
+      body: { value: 'ok' },
+      endpoint: 'https://api.test.com/events',
+      endpointPath: '/events',
+      method: 'POST',
+    };
+  }
+
+  getBatchStrategy(): BatchStrategy<TestBody> {
+    return new ChunkBatchStrategy({ wrapBody: (bodies) => ({ events: bodies }) });
+  }
+
+  getInputSchema() {
+    return z.object({}).passthrough();
+  }
+}
+
+class AsyncEnrichFailIntegration extends SimpleIntegration {
+  async transformEvent(
+    input: RouterTransformationRequestData<TestMessage>,
+  ): Promise<TransformedEvent<TestBody>> {
+    if (input.metadata.jobId === 1) {
+      throw new ConfigurationError('enrichment lookup failed');
+    }
+    return super.transformEvent(input);
+  }
+}
+
+class AsyncAuthFailIntegration extends SimpleIntegration {
+  async transformEvent(): Promise<TransformedEvent<TestBody>> {
+    throw new NetworkError(
+      'lookup auth failed',
+      401,
+      {},
+      { error: { message: 'expired' } },
+      'REFRESH_TOKEN',
+    );
+  }
+}
+
+class CustomBatchIntegration extends DestinationIntegration<TestBody> {
+  transformEvent(input: RouterTransformationRequestData<TestMessage>): TransformedEvent<TestBody> {
+    const { message } = input;
+    return {
+      body: { value: message.data ?? '' },
+      endpoint: 'https://api.test.com/merge',
+      endpointPath: '/merge',
+      method: 'POST',
+    };
+  }
+
+  getBatchStrategy(): BatchStrategy<TestBody> {
+    return new CustomBatchStrategy((payloads) => {
+      const merged = payloads.map((p) => p.body.value).join(',');
+      return [
+        {
+          body: { merged },
+          jobIds: new Set(payloads.map((p) => p.jobId)),
+        },
+      ];
+    });
+  }
+
+  getInputSchema() {
+    return z.object({}).passthrough();
+  }
+}
+
+class TypedErrorIntegration extends DestinationIntegration<TestBody> {
+  transformEvent(input: RouterTransformationRequestData<TestMessage>): TransformedEvent<TestBody> {
+    const { message } = input;
+    if (message.shouldFail) {
+      throw new InstrumentationError('missing required field');
+    }
+    return {
+      body: { value: 'ok' },
+      endpoint: 'https://api.test.com/events',
+      endpointPath: '/events',
+      method: 'POST',
+    };
+  }
+
+  getBatchStrategy(): BatchStrategy<TestBody> {
+    return new ChunkBatchStrategy({ wrapBody: (bodies) => ({ events: bodies }) });
+  }
+
+  getInputSchema() {
+    return z.object({}).passthrough();
+  }
+}
+
+function makeInput(
+  jobId: number,
+  data: string,
+  opts?: { type?: MessageType; dontBatch?: boolean; shouldFail?: boolean },
+): RouterTransformationRequestData<TestMessage> {
+  const message: TestMessage = {
+    data,
+    type: opts?.type || 'track',
+    shouldFail: opts?.shouldFail,
+  };
+  const metadata: Metadata = {
+    jobId,
+    workspaceId: 'ws-1',
+    sourceId: 'src-1',
+    sourceType: 'web',
+    sourceCategory: 'cloud',
+    destinationId: 'dest-1',
+    destinationType: 'TEST',
+    messageId: `msg-${jobId}`,
+    dontBatch: opts?.dontBatch,
+  };
+  return { message, metadata, destination: mockDestination };
+}
+
+function getSingleBatchedRequest(result: {
+  batchedRequest?: ProcessorTransformationOutput | ProcessorTransformationOutput[];
+}): ProcessorTransformationOutput {
+  if (Array.isArray(result.batchedRequest)) {
+    return result.batchedRequest[0];
+  }
+  return result.batchedRequest!;
+}
+
+function getBatchedRequestBody(result: {
+  batchedRequest?: ProcessorTransformationOutput | ProcessorTransformationOutput[];
+}) {
+  return getSingleBatchedRequest(result).body?.JSON;
+}
+
+function getBatchedRequestEndpoint(result: {
+  batchedRequest?: ProcessorTransformationOutput | ProcessorTransformationOutput[];
+}) {
+  return getSingleBatchedRequest(result).endpoint;
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe('processDestinationIntegration', () => {
+  describe('chunk strategy', () => {
+    it('batches events into chunks respecting maxItems', async () => {
+      const inputs = [
+        makeInput(1, 'a'),
+        makeInput(2, 'b'),
+        makeInput(3, 'c'),
+        makeInput(4, 'd'),
+        makeInput(5, 'e'),
+      ];
+
+      const results = await processDestinationIntegration(inputs, SimpleIntegration, {});
+
+      // maxItems=3 → 2 chunks: [a,b,c] and [d,e]
+      expect(results).toHaveLength(2);
+
+      const chunk1 = results[0];
+      expect(chunk1.statusCode).toBe(200);
+      expect(chunk1.batched).toBe(true);
+      expect(getBatchedRequestBody(chunk1)!.events).toHaveLength(3);
+      expect(chunk1.metadata).toHaveLength(3);
+
+      const chunk2 = results[1];
+      expect(getBatchedRequestBody(chunk2)!.events).toHaveLength(2);
+      expect(chunk2.metadata).toHaveLength(2);
+    });
+
+    it('produces correct server format envelope', async () => {
+      const inputs = [makeInput(1, 'hello')];
+      const results = await processDestinationIntegration(inputs, SimpleIntegration, {});
+
+      expect(results).toHaveLength(1);
+      const resp = results[0];
+      const req = getSingleBatchedRequest(resp);
+      expect(req.version).toBe('1');
+      expect(req.type).toBe('REST');
+      expect(req.method).toBe('POST');
+      expect(req.endpoint).toBe('https://api.test.com/events');
+      expect(req.headers).toEqual({ 'Content-Type': 'application/json' });
+      expect(req.body?.JSON).toEqual({ events: [{ value: 'hello' }] });
+      expect(req.body?.JSON_ARRAY).toEqual({});
+      expect(req.body?.XML).toEqual({});
+      expect(req.body?.FORM).toEqual({});
+      expect(req.files).toEqual({});
+      expect(resp.destination).toBe(mockDestination);
+    });
+  });
+
+  describe('multi-endpoint grouping', () => {
+    it('groups payloads by endpoint and applies different strategies', async () => {
+      const inputs = [
+        makeInput(1, 'a', { type: 'track' }),
+        makeInput(2, 'b', { type: 'identify' }),
+        makeInput(3, 'c', { type: 'track' }),
+        makeInput(4, 'd', { type: 'identify' }),
+        makeInput(5, 'e', { type: 'track' }),
+      ];
+
+      const results = await processDestinationIntegration(inputs, MultiEndpointIntegration, {});
+
+      // track: 3 events, maxItems=2 → 2 chunks
+      // identify: 2 events, maxItems=2 → 1 chunk
+      expect(results).toHaveLength(3);
+
+      const trackResults = results.filter((r) => getBatchedRequestEndpoint(r)?.includes('/track'));
+      const identifyResults = results.filter((r) =>
+        getBatchedRequestEndpoint(r)?.includes('/identify'),
+      );
+
+      expect(trackResults).toHaveLength(2);
+      expect(identifyResults).toHaveLength(1);
+    });
+  });
+
+  describe('customBatch strategy', () => {
+    it('uses custom batch function for merging', async () => {
+      const inputs = [makeInput(1, 'a'), makeInput(2, 'b'), makeInput(3, 'c')];
+      const results = await processDestinationIntegration(inputs, CustomBatchIntegration, {});
+
+      expect(results).toHaveLength(1);
+      expect(getBatchedRequestBody(results[0])).toEqual({ merged: 'a,b,c' });
+      expect(results[0].metadata).toHaveLength(3);
+    });
+  });
+
+  describe('dontBatch flag', () => {
+    it('processes dontBatch events individually', async () => {
+      const inputs = [makeInput(1, 'a'), makeInput(2, 'b', { dontBatch: true }), makeInput(3, 'c')];
+
+      const results = await processDestinationIntegration(inputs, SimpleIntegration, {});
+
+      const allJobIds = results.flatMap((r) => r.metadata.map((m) => m.jobId));
+      expect(allJobIds).toContain(1);
+      expect(allJobIds).toContain(2);
+      expect(allJobIds).toContain(3);
+      expect(allJobIds).toHaveLength(3);
+    });
+  });
+
+  describe('error handling', () => {
+    it('turns an async transformEvent rejection into a per-job failure and batches the rest', async () => {
+      const inputs = [makeInput(1, 'a'), makeInput(2, 'b')];
+
+      const results = await processDestinationIntegration(inputs, AsyncEnrichFailIntegration, {});
+
+      const successes = results.filter((r) => r.statusCode === 200);
+      const errors = results.filter((r) => r.statusCode !== 200);
+      expect(successes).toHaveLength(1);
+      expect(errors).toEqual([
+        expect.objectContaining({
+          statusCode: 400,
+          error: 'enrichment lookup failed',
+          metadata: [expect.objectContaining({ jobId: 1 })],
+        }),
+      ]);
+      expect(getBatchedRequestBody(successes[0])).toEqual({ events: [{ value: 'b' }] });
+    });
+
+    it('surfaces authErrorCategory on the failed job so the token still gets refreshed', async () => {
+      const results = await processDestinationIntegration(
+        [makeInput(1, 'a')],
+        AsyncAuthFailIntegration,
+        {},
+      );
+
+      expect(results).toEqual([
+        expect.objectContaining({
+          statusCode: 401,
+          authErrorCategory: 'REFRESH_TOKEN',
+          metadata: [expect.objectContaining({ jobId: 1 })],
+        }),
+      ]);
+    });
+
+    it('leaves authErrorCategory off non-auth failures', async () => {
+      const results = await processDestinationIntegration(
+        [makeInput(1, 'a'), makeInput(2, 'b')],
+        AsyncEnrichFailIntegration,
+        {},
+      );
+
+      const failure = results.find((r) => r.statusCode !== 200)!;
+      expect(failure).not.toHaveProperty('authErrorCategory');
+    });
+
+    it('collects transform errors alongside successes', async () => {
+      const inputs = [
+        makeInput(1, 'ok'),
+        makeInput(2, 'fail', { shouldFail: true }),
+        makeInput(3, 'ok2'),
+      ];
+
+      const results = await processDestinationIntegration(inputs, PartialFailIntegration, {});
+
+      const successes = results.filter((r) => r.statusCode === 200);
+      const errors = results.filter((r) => r.statusCode !== 200);
+
+      expect(successes).toHaveLength(1);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].error).toBe('Transform failed');
+      expect(errors[0].metadata[0].jobId).toBe(2);
+    });
+  });
+
+  describe('metadata resolution', () => {
+    it('resolves correct metadata for each chunk', async () => {
+      const inputs = [makeInput(10, 'a'), makeInput(20, 'b')];
+      const results = await processDestinationIntegration(inputs, SimpleIntegration, {});
+
+      expect(results).toHaveLength(1);
+      const jobIds = results[0].metadata.map((m) => m.jobId);
+      expect(jobIds).toEqual([10, 20]);
+    });
+  });
+
+  describe('empty input', () => {
+    it('returns empty array for no events', async () => {
+      const results = await processDestinationIntegration([], SimpleIntegration, {});
+      expect(results).toEqual([]);
+    });
+  });
+
+  describe('error taxonomy with typed errors', () => {
+    it('produces proper statTags from InstrumentationError via generateErrorObject', async () => {
+      const inputs = [makeInput(1, 'ok'), makeInput(2, 'fail', { shouldFail: true })];
+      const results = await processDestinationIntegration(inputs, TypedErrorIntegration, {});
+
+      const errors = results.filter((r) => r.statusCode !== 200);
+      expect(errors).toHaveLength(1);
+      expect(errors[0].statusCode).toBe(400);
+      expect(errors[0].error).toContain('missing required field');
+      expect(errors[0].statTags).toMatchObject({
+        errorCategory: 'dataValidation',
+        errorType: 'instrumentation',
+      });
+    });
+  });
+
+  describe('failed jobIds removed from success responses', () => {
+    it('excludes failed jobIds from success response metadata', async () => {
+      const inputs = [
+        makeInput(1, 'ok'),
+        makeInput(2, 'fail', { shouldFail: true }),
+        makeInput(3, 'ok2'),
+      ];
+
+      const results = await processDestinationIntegration(inputs, PartialFailIntegration, {});
+
+      const successes = results.filter((r) => r.statusCode === 200);
+      const errors = results.filter((r) => r.statusCode !== 200);
+
+      expect(errors).toHaveLength(1);
+      expect(errors[0].metadata[0].jobId).toBe(2);
+
+      const successJobIds = successes.flatMap((r) => r.metadata.map((m) => m.jobId));
+      expect(successJobIds).not.toContain(2);
+      expect(successJobIds).toContain(1);
+      expect(successJobIds).toContain(3);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Helper function tests (moved from destinationIntegration.test.ts)
+// ---------------------------------------------------------------------------
+
+function makeMetadataMap(
+  entries: Array<{ jobId: number; [key: string]: unknown }>,
+): Map<number, Metadata> {
+  const map = new Map<number, Metadata>();
+  for (const { jobId, ...rest } of entries) {
+    map.set(jobId, {
+      jobId,
+      sourceId: 'src-1',
+      workspaceId: 'ws-1',
+      sourceType: 'web',
+      sourceCategory: 'cloud',
+      destinationId: 'dest-1',
+      destinationType: 'TEST',
+      messageId: `msg-${jobId}`,
+      ...rest,
+    });
+  }
+  return map;
+}
+
+describe('groupByDontBatchDirective', () => {
+  it('separates batchable and nonBatchable', () => {
+    const inputs = [makeInput(1, 'a'), makeInput(2, 'b', { dontBatch: true }), makeInput(3, 'c')];
+    const { batchableEvents, nonBatchableEvents } = groupByDontBatchDirective(inputs);
+    expect(batchableEvents).toHaveLength(2);
+    expect(nonBatchableEvents).toHaveLength(1);
+    expect(nonBatchableEvents[0].metadata.jobId).toBe(2);
+  });
+
+  it('returns all batchable when no dontBatch flag', () => {
+    const inputs = [makeInput(1, 'a'), makeInput(2, 'b')];
+    const { batchableEvents, nonBatchableEvents } = groupByDontBatchDirective(inputs);
+    expect(batchableEvents).toHaveLength(2);
+    expect(nonBatchableEvents).toHaveLength(0);
+  });
+});
+
+describe('resolveMetadata', () => {
+  it('resolves jobIds to metadata objects', () => {
+    const map = makeMetadataMap([
+      { jobId: 1, userId: 'u1' },
+      { jobId: 2, userId: 'u2' },
+    ]);
+    const result = resolveMetadata(new Set([1, 2]), map);
+    expect(result).toHaveLength(2);
+    expect(result[0].jobId).toBe(1);
+  });
+
+  it('throws on unknown jobId', () => {
+    const map = makeMetadataMap([{ jobId: 1 }]);
+    expect(() => resolveMetadata(new Set([1, 999]), map)).toThrow('Missing metadata for jobId 999');
+  });
+});
+
+describe('groupPayloadsByCompositeKey', () => {
+  it('groups payloads with same endpoint/method/headers/params', () => {
+    const payloads: TransformResult<TestBody>['successPayloads'] = [
+      {
+        body: { value: 'a' },
+        endpoint: 'https://a.com',
+        endpointPath: '/a',
+        method: 'POST',
+        headers: { h: '1' },
+        jobId: 1,
+      },
+      {
+        body: { value: 'b' },
+        endpoint: 'https://a.com',
+        endpointPath: '/a',
+        method: 'POST',
+        headers: { h: '1' },
+        jobId: 2,
+      },
+      {
+        body: { value: 'c' },
+        endpoint: 'https://b.com',
+        endpointPath: '/b',
+        method: 'POST',
+        headers: { h: '1' },
+        jobId: 3,
+      },
+    ];
+    const groups = groupPayloadsByCompositeKey(payloads);
+    expect(groups).toHaveLength(2);
+    expect(groups[0].payloads).toHaveLength(2);
+    expect(groups[1].payloads).toHaveLength(1);
+  });
+
+  it('separates payloads with different headers', () => {
+    const payloads: TransformResult<TestBody>['successPayloads'] = [
+      {
+        body: { value: 'a' },
+        endpoint: 'https://a.com',
+        endpointPath: '/a',
+        method: 'POST',
+        headers: { h: '1' },
+        jobId: 1,
+      },
+      {
+        body: { value: 'b' },
+        endpoint: 'https://a.com',
+        endpointPath: '/a',
+        method: 'POST',
+        headers: { h: '2' },
+        jobId: 2,
+      },
+    ];
+    const groups = groupPayloadsByCompositeKey(payloads);
+    expect(groups).toHaveLength(2);
+  });
+});
+
+describe('validateInputs', () => {
+  it('passes valid inputs', () => {
+    const integration = new SimpleIntegration(mockDestination);
+    const inputs = [makeInput(1, 'hello')];
+    const { valid, errors } = validateInputs(inputs, integration);
+    expect(valid).toHaveLength(1);
+    expect(errors).toHaveLength(0);
+  });
+});

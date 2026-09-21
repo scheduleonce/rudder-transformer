@@ -311,7 +311,7 @@ type Action = (typeof ACTIONS)[keyof typeof ACTIONS];
 
 ## Don't Re-Validate Inputs That Zod Has Already Validated
 
-If a function is reachable only through a Zod-guarded entry point (`getInputSchema()` in a `BatchDestination`, a controller's `safeParse()`, etc.), helpers downstream should treat the validated fields as guaranteed. Don't re-check enum membership, presence, or shape — let the type system carry that contract.
+If a function is reachable only through a Zod-guarded entry point (`getInputSchema()` in a `DestinationIntegration`, a controller's `safeParse()`, etc.), helpers downstream should treat the validated fields as guaranteed. Don't re-check enum membership, presence, or shape — let the type system carry that contract.
 
 ```ts
 // Good — Zod validated `action`; the helper only handles its real job (lookup)
@@ -411,3 +411,50 @@ try {
   response.transformed = [{ error: err.message }];
 }
 ```
+
+## Dispatch on the Integration Major (`destination.version`)
+
+A destination definition can ship multiple **integration majors** (its config/API v1 → v2). The data plane carries the major as `destination.version` (a number; `destinationVersion` on the proxy payload). Branch on it **inside the destination's own code** — never route majors through `getDestHandler` (that argument is the unrelated `v0`/`v1`/`v2` architecture directory).
+
+Default to an in-file inline branch on `getDestinationVersion(event.destination.version)` (from `src/util/utils`, which normalizes the raw major) at the top of the entry `process`; keep v1 in place and factor shared logic into `utils.ts`. `0`, `undefined`, non-numeric, and `1` all normalize to `1` and fall to v1; fractions are truncated. Branch on the helper, not the bare `Number(...)`, so metrics never see a `destVersion=0`.
+
+```ts
+// Good — in-file branch; v1 unchanged; shared logic in utils
+import { getDestinationVersion } from '../../../util/utils';
+
+const process = (event) => {
+  const major = getDestinationVersion(event.destination.version);
+  if (major >= 2) return processV2(event);
+  return processV1(event);
+};
+
+// Bad — bare Number(event.destination.version) (skips normalization; destVersion=0 leaks to metrics)
+// Bad — routing the major through getDestHandler (conflates the architecture-version axis)
+```
+
+Escalate the v2 branch to a sibling module (`transformV2.ts` — the existing repo convention) only on large divergence; prefer that over `./v1` / `./v2` subdirs (none exist today), though subdirs aren't strictly banned for a major large enough to warrant its own tree. Branch `routerTransform` / `deleteUsers` / the proxy `networkHandler` (which reads top-level `destinationVersion`) only when a major actually changes them. Full reference: CONTRIBUTING.md → "Dispatching on the integration major".
+
+## No Re-Export Shims, No Empty Placeholder Files
+
+A module whose entire body re-exports symbols defined elsewhere is an indirection layer with no
+owner — it makes imports point at a file that explains nothing and adds a hop for every reader.
+Import from the module that actually defines the symbol.
+
+Equally, don't commit an empty file to reserve a slot in a conventional directory layout. Either
+the destination needs `dataDelivery/data.ts` and it has fixtures, or it doesn't need it yet.
+
+```ts
+// Bad — batch.ts, whose entire content is:
+export { MAX_BATCH_SIZE, MAX_PAYLOAD_SIZE } from './config';
+export { getMaxBatchSize, getMaxPayloadSize } from './utils';
+export type { Integration } from './routerTransform';
+```
+
+## Export Only What Crosses a File Boundary
+
+Default to module-local. `export` is a claim that another file consumes the symbol; exporting
+everything makes the module's surface look larger than it is and hides which few symbols are
+genuinely shared. This applies to types, Zod schemas and `const` helpers alike.
+
+Re-check after a refactor: when a change makes a previously-shared constant local, the `export`
+keyword usually survives it.

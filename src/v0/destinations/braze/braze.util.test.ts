@@ -1,22 +1,32 @@
 import _ from 'lodash';
+import stats from '../../../util/stats';
+import logger from '../../../logger';
 import { handleHttpRequest } from '../../../adapters/network';
 import {
   BrazeDedupUtility,
   addAppId,
   formatGender,
+  formatEmail,
   getPurchaseObjs,
   setAliasObject,
   handleReservedProperties,
   combineSubscriptionGroups,
   getEndpointFromConfig,
-  processBatch,
+  processBatchWithDeliveryMapping,
+  validateDestinationConfig,
 } from './util';
 import { removeUndefinedAndNullValues, removeUndefinedAndNullAndEmptyValues } from '../../util';
-import { generateRandomString } from '@rudderstack/integrations-lib';
+import {
+  ConfigurationError,
+  InstrumentationError,
+  generateRandomString,
+} from '@rudderstack/integrations-lib';
+import type { Metadata } from '../../../types';
 import {
   BrazeDestination,
   BrazeRouterRequest,
   BrazeTransformedEvent,
+  BrazeBatchResponse,
   BrazeTrackRequestBody,
   BrazeSubscriptionBatchPayload,
   BrazeMergeBatchPayload,
@@ -25,6 +35,7 @@ import {
   BrazeDestinationConfig,
   RudderBrazeMessage,
 } from './types';
+import { ProcessorTransformationOutput } from '../../../types/destinationTransformation';
 
 // Mock the handleHttpRequest function
 jest.mock('../../../adapters/network');
@@ -1002,30 +1013,141 @@ describe('dedup utility tests', () => {
   });
 });
 
-describe('processBatch for workspaces on non MAU plan', () => {
-  test('processBatch handles more than 75 attributes, events, purchases, subscription_groups and merge users', () => {
-    // Create input data with more than 75 attributes, events, and purchases
-    const transformedEvents: BrazeTransformedEvent[] = [];
-    for (let i = 0; i < 100; i++) {
-      transformedEvents.push({
-        destination: {
-          ID: 'braze',
-          Name: 'braze',
-          Enabled: true,
-          Config: {
-            restApiKey: 'restApiKey',
-            dataCenter: 'US-03',
-            enableSubscriptionGroupInGroupCall: true,
-          },
-          DestinationDefinition: {
-            ID: 'braze',
-            Name: 'braze',
-            DisplayName: '',
-            Config: {},
-          },
-          WorkspaceID: '123',
-          Transformations: [],
+// ---------------------------------------------------------------------------
+// processBatchWithDeliveryMapping shared helpers
+// ---------------------------------------------------------------------------
+
+const brazeDestFor = (extras: Partial<BrazeDestinationConfig> = {}): BrazeDestination => ({
+  ID: 'braze',
+  Name: 'braze',
+  Enabled: true,
+  Config: {
+    restApiKey: 'restApiKey',
+    dataCenter: 'eu',
+    ...extras,
+  } as BrazeDestinationConfig,
+  DestinationDefinition: {
+    ID: 'braze',
+    Name: 'braze',
+    DisplayName: '',
+    Config: {},
+  },
+  WorkspaceID: '123',
+  Transformations: [],
+});
+
+const trackEndpointOf = (destination: BrazeDestination) =>
+  getEndpointFromConfig(destination) + '/users/track';
+const subEndpointOf = (destination: BrazeDestination) =>
+  getEndpointFromConfig(destination) + '/v2/subscription/status/set';
+const mergeEndpointOf = (destination: BrazeDestination) =>
+  getEndpointFromConfig(destination) + '/users/merge';
+
+// ---- Batch-output helpers -------------------------------------------------
+// The batching path emits one BatchRequestOutput per outgoing HTTP request; each
+// carries a single non-array `batchedRequest`. Helpers filter by endpoint.
+const isOnBatchedOutput = (out: any): boolean =>
+  Boolean(out?.batchedRequest && !Array.isArray(out.batchedRequest));
+
+const onTrackOutputs = (result: any[], destination: BrazeDestination): any[] =>
+  result.filter(
+    (r) => isOnBatchedOutput(r) && r.batchedRequest.endpoint === trackEndpointOf(destination),
+  );
+
+const onSubOutputs = (result: any[], destination: BrazeDestination): any[] =>
+  result.filter(
+    (r) => isOnBatchedOutput(r) && r.batchedRequest.endpoint === subEndpointOf(destination),
+  );
+
+const onMergeOutputs = (result: any[], destination: BrazeDestination): any[] =>
+  result.filter(
+    (r) => isOnBatchedOutput(r) && r.batchedRequest.endpoint === mergeEndpointOf(destination),
+  );
+
+const onTotalInSubArray = (outs: any[], key: 'attributes' | 'events' | 'purchases'): number =>
+  outs.reduce((acc, o) => acc + (o.batchedRequest.body.JSON[key]?.length ?? 0), 0);
+
+// ---------------------------------------------------------------------------
+// `processBatchWithDeliveryMapping` is the only Braze batching path.
+// Emits one BatchRequestOutput per outgoing HTTP request, attaches
+// per-metadata `destInfo` positional maps on track
+// outputs, and carries `destInfo: {}` on sub/merge outputs for correlation-
+// shape uniformity. Applies group-preserving chunking, byte-size caps, and
+// oversized-job rejection.
+// ---------------------------------------------------------------------------
+
+describe('processBatchWithDeliveryMapping', () => {
+  const destination = brazeDestFor();
+
+  const buildTrackEvent = (
+    i: number,
+    workspaceId = 'workspace-non-mau',
+  ): BrazeTransformedEvent => ({
+    destination,
+    statusCode: 200,
+    batchedRequest: {
+      version: '1',
+      type: 'REST',
+      method: 'POST',
+      endpoint: '',
+      headers: {},
+      params: {},
+      body: {
+        JSON: {
+          attributes: [{ external_id: `u${i}`, id: i, name: 'n' }],
+          events: [{ external_id: `u${i}`, id: i, event: 'e' }],
+          purchases: [
+            {
+              external_id: `u${i}`,
+              product_id: `p${i}`,
+              price: 1,
+              currency: 'USD',
+              quantity: 1,
+              time: 't',
+            },
+          ],
         },
+      },
+      files: {},
+    } as any,
+    metadata: [{ jobId: i, workspaceId }],
+  });
+
+  test('every output is a single BatchRequestOutput (no MultiBatchRequestOutput anywhere)', () => {
+    const transformedEvents = Array.from({ length: 20 }, (_, i) => buildTrackEvent(i));
+    const result = processBatchWithDeliveryMapping(transformedEvents);
+    for (const out of result) {
+      expect(Array.isArray((out as any).batchedRequest)).toBe(false);
+      expect((out as any).batched).toBe(true);
+    }
+  });
+
+  test('V1 chunks track outputs by per-type caps (75); every job has a destInfo positional map', () => {
+    const transformedEvents = Array.from({ length: 100 }, (_, i) => buildTrackEvent(i));
+    const result = processBatchWithDeliveryMapping(transformedEvents);
+    const tracks = onTrackOutputs(result, destination);
+    expect(tracks.length).toBeGreaterThanOrEqual(2);
+    expect(onTotalInSubArray(tracks, 'attributes')).toBe(100);
+    for (const t of tracks) {
+      for (const m of t.metadata) {
+        const info = (m as any).destInfo;
+        expect(info).toBeDefined();
+        // Each track metadata must have at least one non-empty indices array.
+        const anyIndex =
+          info.attributesIndices?.length ||
+          info.eventsIndices?.length ||
+          info.purchasesIndices?.length;
+        expect(anyIndex).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  test('subscription-group outputs carry destInfo: {} on every metadata entry', () => {
+    const dest = brazeDestFor({ enableSubscriptionGroupInGroupCall: true });
+    const transformedEvents: BrazeTransformedEvent[] = [];
+    for (let i = 0; i < 30; i += 1) {
+      transformedEvents.push({
+        destination: dest,
         statusCode: 200,
         batchedRequest: {
           version: '1',
@@ -1036,103 +1158,74 @@ describe('processBatch for workspaces on non MAU plan', () => {
           params: {},
           body: {
             JSON: {
-              attributes: [{ id: i, name: 'test', xyz: 'abc' }],
-              events: [{ id: i, event: 'test', xyz: 'abc' }],
-              purchases: [{ id: i, purchase: 'test', xyz: 'abc' }],
               subscription_groups: [
-                { subscription_group_id: i, group: 'test', subscription_state: 'abc' },
+                { subscription_group_id: `s${i}`, subscription_state: 'subscribed' },
               ],
-              merge_updates: [{ id: i, alias: 'test', xyz: 'abc' }],
             },
           },
-        },
-        metadata: [{ job_id: i, workspaceId: 'workspace-non-mau' }],
+          files: {},
+        } as any,
+        metadata: [{ jobId: i, workspaceId: 'workspace-non-mau' }],
       });
     }
-
-    // Call the processBatch function
-    const result = processBatch(transformedEvents);
-
-    // Assert that the response is as expected
-    expect(result.length).toBe(1); // One successful batched request and one failure response
-    const firstResult = result[0];
-
-    // Ensure batchedRequest exists and is an array
-    expect(firstResult.batchedRequest).toBeDefined();
-    expect(Array.isArray(firstResult.batchedRequest)).toBe(true);
-
-    if (firstResult.batchedRequest && Array.isArray(firstResult.batchedRequest)) {
-      expect(firstResult.batchedRequest.length).toBe(8); // Two batched requests
-      expect((firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      ); // Verify partner name
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).attributes?.length,
-      ).toBe(75); // First batch contains 75 attributes
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).events?.length,
-      ).toBe(75); // First batch contains 75 events
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(75); // First batch contains 75 purchases
-      expect((firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      ); // Verify partner name
-      expect(
-        (firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).attributes?.length,
-      ).toBe(25); // Second batch contains remaining 25 attributes
-      expect(
-        (firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).events?.length,
-      ).toBe(25); // Second batch contains remaining 25 events
-      expect(
-        (firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(25); // Second batch contains remaining 25 purchases
-      expect(
-        (firstResult.batchedRequest[2].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25); // First batch contains 25 subscription group
-      expect(
-        (firstResult.batchedRequest[3].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25); // Second batch contains 25 subscription group
-      expect(
-        (firstResult.batchedRequest[4].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25); // Third batch contains 25 subscription group
-      expect(
-        (firstResult.batchedRequest[5].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25); // Fourth batch contains 25 subscription group
-      expect(
-        (firstResult.batchedRequest[6].body.JSON as BrazeMergeBatchPayload).merge_updates?.length,
-      ).toBe(50); // First batch contains 50 merge_updates
-      expect(
-        (firstResult.batchedRequest[7].body.JSON as BrazeMergeBatchPayload).merge_updates?.length,
-      ).toBe(50); // First batch contains 25 merge_updates
+    const result = processBatchWithDeliveryMapping(transformedEvents);
+    const subs = onSubOutputs(result, dest);
+    expect(subs.length).toBe(Math.ceil(30 / 25));
+    for (const s of subs) {
+      for (const m of s.metadata) {
+        // destInfo must be present (present-but-empty), not undefined. The
+        // networkHandler relies on it being a defined object per metadata
+        // entry regardless of endpoint.
+        expect((m as any).destInfo).toBeDefined();
+        expect((m as any).destInfo).toEqual({});
+      }
     }
   });
 
-  test('processBatch handles more than 75 attributes, events, and purchases with non uniform distribution', () => {
-    const destination: BrazeDestination = {
-      ID: 'braze',
-      Name: 'braze',
-      Enabled: true,
-      Config: {
-        restApiKey: 'restApiKey',
-        dataCenter: 'eu',
-      },
-      DestinationDefinition: {
-        ID: 'braze',
-        Name: 'braze',
-        DisplayName: '',
-        Config: {},
-      },
-      WorkspaceID: '123',
-      Transformations: [],
-    };
-    // Create input data with more than 75 attributes, events, and purchases
-    const transformedEventsSet1: BrazeTransformedEvent[] = new Array(120).fill(0).map((_, i) => ({
-      destination,
+  test('alias-merge outputs carry destInfo: {} on every metadata entry', () => {
+    const dest = brazeDestFor();
+    const transformedEvents: BrazeTransformedEvent[] = [];
+    for (let i = 0; i < 60; i += 1) {
+      transformedEvents.push({
+        destination: dest,
+        statusCode: 200,
+        batchedRequest: {
+          version: '1',
+          type: 'REST',
+          method: 'POST',
+          endpoint: '',
+          headers: {},
+          params: {},
+          body: {
+            JSON: {
+              merge_updates: [
+                {
+                  identifier_to_merge: { external_id: `a${i}` },
+                  identifier_to_keep: { external_id: `b${i}` },
+                },
+              ],
+            },
+          },
+          files: {},
+        } as any,
+        metadata: [{ jobId: i, workspaceId: 'workspace-non-mau' }],
+      });
+    }
+    const result = processBatchWithDeliveryMapping(transformedEvents);
+    const merges = onMergeOutputs(result, dest);
+    expect(merges.length).toBe(Math.ceil(60 / 50));
+    for (const m of merges) {
+      for (const meta of m.metadata) {
+        expect((meta as any).destInfo).toBeDefined();
+        expect((meta as any).destInfo).toEqual({});
+      }
+    }
+  });
+
+  test('interleaved input types produce outputs in insertion-order runs (jobIds ascending across outputs)', () => {
+    const dest = brazeDestFor({ enableSubscriptionGroupInGroupCall: true });
+    const trackJob = (i: number): BrazeTransformedEvent => ({
+      destination: dest,
       statusCode: 200,
       batchedRequest: {
         version: '1',
@@ -1141,55 +1234,13 @@ describe('processBatch for workspaces on non MAU plan', () => {
         endpoint: '',
         headers: {},
         params: {},
-        body: {
-          JSON: {
-            events: [{ id: i, event: 'test', xyz: 'abc' }],
-          },
-        },
-      },
-      metadata: [{ job_id: i, workspaceId: 'workspace-non-mau' }],
-    }));
-
-    const transformedEventsSet2: BrazeTransformedEvent[] = new Array(160).fill(0).map((_, i) => ({
-      destination,
-      statusCode: 200,
-      batchedRequest: {
-        version: '1',
-        type: 'REST',
-        method: 'POST',
-        endpoint: '',
-        headers: {},
-        params: {},
-        body: {
-          JSON: {
-            purchases: [{ id: i, name: 'test', xyz: 'abc' }],
-          },
-        },
-      },
-      metadata: [{ job_id: 120 + i, workspaceId: 'workspace-non-mau' }],
-    }));
-
-    const transformedEventsSet3: BrazeTransformedEvent[] = new Array(100).fill(0).map((_, i) => ({
-      destination,
-      statusCode: 200,
-      batchedRequest: {
-        version: '1',
-        type: 'REST',
-        method: 'POST',
-        endpoint: '',
-        headers: {},
-        params: {},
-        body: {
-          JSON: {
-            attributes: [{ id: i, name: 'test', xyz: 'abc' }],
-          },
-        },
-      },
-      metadata: [{ job_id: 280 + i, workspaceId: 'workspace-non-mau' }],
-    }));
-
-    const transformedEventsSet4: BrazeTransformedEvent[] = new Array(70).fill(0).map((_, i) => ({
-      destination,
+        body: { JSON: { attributes: [{ external_id: `u${i}` }] } },
+        files: {},
+      } as any,
+      metadata: [{ jobId: i, workspaceId: 'workspace-non-mau', userId: 'shared' }],
+    });
+    const subJob = (i: number): BrazeTransformedEvent => ({
+      destination: dest,
       statusCode: 200,
       batchedRequest: {
         version: '1',
@@ -1201,15 +1252,70 @@ describe('processBatch for workspaces on non MAU plan', () => {
         body: {
           JSON: {
             subscription_groups: [
-              { subscription_group_id: i, group: 'test', subscription_state: 'abc' },
+              { subscription_group_id: `s${i}`, subscription_state: 'subscribed' },
             ],
           },
         },
-      },
-      metadata: [{ job_id: 280 + i, workspaceId: 'workspace-non-mau' }],
-    }));
+        files: {},
+      } as any,
+      metadata: [{ jobId: i, workspaceId: 'workspace-non-mau', userId: 'shared' }],
+    });
+    const mergeJob = (i: number): BrazeTransformedEvent => ({
+      destination: dest,
+      statusCode: 200,
+      batchedRequest: {
+        version: '1',
+        type: 'REST',
+        method: 'POST',
+        endpoint: '',
+        headers: {},
+        params: {},
+        body: {
+          JSON: {
+            merge_updates: [
+              {
+                identifier_to_merge: { external_id: `a${i}` },
+                identifier_to_keep: { external_id: `b${i}` },
+              },
+            ],
+          },
+        },
+        files: {},
+      } as any,
+      metadata: [{ jobId: i, workspaceId: 'workspace-non-mau', userId: 'shared' }],
+    });
 
-    const transformedEventsSet5: BrazeTransformedEvent[] = new Array(40).fill(0).map((_, i) => ({
+    const result = processBatchWithDeliveryMapping([
+      trackJob(1),
+      trackJob(2),
+      subJob(3),
+      subJob(4),
+      mergeJob(5),
+      mergeJob(6),
+      subJob(7),
+    ]);
+
+    // Items are coalesced globally per endpoint type — insertion-order runs
+    // are NOT preserved. Expect 3 outputs: track [1, 2], sub [3, 4, 7],
+    // merge [5, 6]. Within each output, jobIds accumulate in the order jobs
+    // appear in the input (subscription/merge use plain _.chunk), so they
+    // remain monotonically ascending inside each output.
+    expect(result.length).toBe(3);
+    const tracks = onTrackOutputs(result, dest);
+    const subs = onSubOutputs(result, dest);
+    const merges = onMergeOutputs(result, dest);
+    expect(tracks.length).toBe(1);
+    expect(subs.length).toBe(1);
+    expect(merges.length).toBe(1);
+    expect(
+      tracks[0].metadata.map((m: any) => m.jobId).sort((a: number, b: number) => a - b),
+    ).toEqual([1, 2]);
+    expect(subs[0].metadata.map((m: any) => m.jobId)).toEqual([3, 4, 7]);
+    expect(merges[0].metadata.map((m: any) => m.jobId)).toEqual([5, 6]);
+  });
+
+  test('single track job (attribute + event) → destInfo has attributesIndices + eventsIndices; purchasesIndices absent', () => {
+    const transformedEvent: BrazeTransformedEvent = {
       destination,
       statusCode: 200,
       batchedRequest: {
@@ -1221,194 +1327,98 @@ describe('processBatch for workspaces on non MAU plan', () => {
         params: {},
         body: {
           JSON: {
-            merge_updates: [{ id: i, alias: 'test', xyz: 'abc' }],
+            attributes: [{ external_id: 'u1', name: 'attr' }],
+            events: [{ external_id: 'u1', name: 'Purchase', time: 't' }],
           },
         },
-      },
-      metadata: [{ job_id: 280 + i, workspaceId: 'workspace-non-mau' }],
-    }));
-
-    // Call the processBatch function
-    const result = processBatch([
-      ...transformedEventsSet1,
-      ...transformedEventsSet2,
-      ...transformedEventsSet3,
-      ...transformedEventsSet4,
-      ...transformedEventsSet5,
-    ]);
-
-    // Assert that the response is as expected
-    expect(result.length).toBe(1); // One successful batched request and one failure response
-    const firstResult = result[0];
-
-    // Ensure batchedRequest exists, is an array, and metadata exists
-    expect(firstResult.batchedRequest).toBeDefined();
-    expect(Array.isArray(firstResult.batchedRequest)).toBe(true);
-    expect(firstResult.metadata).toBeDefined();
-
-    if (
-      firstResult.batchedRequest &&
-      Array.isArray(firstResult.batchedRequest) &&
-      firstResult.metadata
-    ) {
-      expect(firstResult.metadata.length).toBe(490); // Check the total length is same as input jobs (120 + 160 + 100 + 70 +40)
-      expect(firstResult.batchedRequest.length).toBe(7); // Two batched requests
-      expect((firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      ); // Verify partner name
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).attributes?.length,
-      ).toBe(75); // First batch contains 75 attributes
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).events?.length,
-      ).toBe(75); // First batch contains 75 events
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(75); // First batch contains 75 purchases
-      expect((firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      ); // Verify partner name
-      expect(
-        (firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).attributes?.length,
-      ).toBe(25); // Second batch contains remaining 25 attributes
-      expect(
-        (firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).events?.length,
-      ).toBe(45); // Second batch contains remaining 45 events
-      expect(
-        (firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(75); // Second batch contains remaining 75 purchases
-      expect(
-        (firstResult.batchedRequest[2].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(10); // Third batch contains remaining 10 purchases
-      expect(
-        (firstResult.batchedRequest[3].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25); // First batch contains 25 subscription group
-      expect(
-        (firstResult.batchedRequest[4].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25); // Second batch contains 25 subscription group
-      expect(
-        (firstResult.batchedRequest[5].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(20); // Third batch contains 20 subscription group
-      expect(
-        (firstResult.batchedRequest[6].body.JSON as BrazeMergeBatchPayload).merge_updates?.length,
-      ).toBe(40); // First batch contains 50 merge_updates
-    }
-  });
-
-  test('check success and failure scenarios both for processBatch', () => {
-    const transformedEvents: BrazeTransformedEvent[] = [];
-    const destination: BrazeDestination = {
-      ID: 'braze',
-      Name: 'braze',
-      Enabled: true,
-      Config: {
-        restApiKey: 'restApiKey',
-        dataCenter: 'eu',
-      },
-      DestinationDefinition: {
-        ID: 'braze',
-        Name: 'braze',
-        DisplayName: '',
-        Config: {},
-      },
-      WorkspaceID: '123',
-      Transformations: [],
+        files: {},
+      } as any,
+      metadata: [{ jobId: 42, workspaceId: 'workspace-non-mau' }],
     };
-    let successCount = 0;
-    let failureCount = 0;
-    for (let i = 0; i < 100; i++) {
-      const rando = Math.random() * 100;
-      if (rando < 50) {
-        transformedEvents.push({
-          destination,
-          statusCode: 200,
-          batchedRequest: {
-            version: '1',
-            type: 'REST',
-            method: 'POST',
-            endpoint: '',
-            headers: {},
-            params: {},
-            body: {
-              JSON: {
-                attributes: [{ id: i, name: 'test', xyz: 'abc' }],
-                events: [{ id: i, event: 'test', xyz: 'abc' }],
-                purchases: [{ id: i, purchase: 'test', xyz: 'abc' }],
-              },
-            },
-          },
-          metadata: [{ job_id: i, workspaceId: 'workspace-non-mau' }],
-        });
-        successCount = successCount + 1;
-      } else {
-        transformedEvents.push({
-          destination,
-          statusCode: 400,
-          metadata: [{ job_id: i, workspaceId: 'workspace-non-mau' }],
-          error: 'Random Error',
-        });
-        failureCount = failureCount + 1;
-      }
-    }
-    // Call the processBatch function
-    const result = processBatch(transformedEvents);
-    expect(result.length).toBe(failureCount + 1);
-    const firstResult = result[0];
-
-    // Ensure batchedRequest exists, is an array, and metadata exists
-    expect(firstResult.batchedRequest).toBeDefined();
-    expect(Array.isArray(firstResult.batchedRequest)).toBe(true);
-    expect(firstResult.metadata).toBeDefined();
-
-    if (
-      firstResult.batchedRequest &&
-      Array.isArray(firstResult.batchedRequest) &&
-      firstResult.metadata
-    ) {
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).attributes?.length,
-      ).toBe(successCount);
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).events?.length,
-      ).toBe(successCount);
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(successCount);
-      expect((firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      );
-      expect(firstResult.metadata.length).toBe(successCount);
-    }
+    const result = processBatchWithDeliveryMapping([transformedEvent]);
+    const tracks = onTrackOutputs(result, destination);
+    expect(tracks.length).toBe(1);
+    expect(tracks[0].metadata.length).toBe(1);
+    const info = (tracks[0].metadata[0] as any).destInfo;
+    expect(info.attributesIndices).toEqual([0]);
+    expect(info.eventsIndices).toEqual([0]);
+    expect(info.purchasesIndices).toBeUndefined();
   });
-});
 
-describe('processBatch for workspaces on MAU plan', () => {
-  test('processBatch handles more than 75 attributes, events, purchases, subscription_groups and merge users', () => {
-    // Create input data with more than 75 attributes, events, and purchases
-    const transformedEvents: BrazeTransformedEvent[] = [];
-    for (let i = 0; i < 100; i++) {
-      transformedEvents.push({
-        destination: {
-          ID: 'braze',
-          Name: 'braze',
-          Enabled: true,
-          DestinationDefinition: {
-            ID: 'braze',
-            Name: 'braze',
-            DisplayName: '',
-            Config: {},
-          },
-          WorkspaceID: '123',
-          Transformations: [],
-          Config: {
-            restApiKey: 'restApiKey',
-            dataCenter: 'US-03',
-            enableSubscriptionGroupInGroupCall: true,
+  test('order-completed job (attribute + multiple purchases) → destInfo.purchasesIndices is an array of all indices', () => {
+    const transformedEvent: BrazeTransformedEvent = {
+      destination,
+      statusCode: 200,
+      batchedRequest: {
+        version: '1',
+        type: 'REST',
+        method: 'POST',
+        endpoint: '',
+        headers: {},
+        params: {},
+        body: {
+          JSON: {
+            attributes: [{ external_id: 'u1', name: 'attr' }],
+            purchases: [
+              {
+                external_id: 'u1',
+                product_id: 'p1',
+                price: 1,
+                currency: 'USD',
+                quantity: 1,
+                time: 't',
+              },
+              {
+                external_id: 'u1',
+                product_id: 'p2',
+                price: 2,
+                currency: 'USD',
+                quantity: 1,
+                time: 't',
+              },
+              {
+                external_id: 'u1',
+                product_id: 'p3',
+                price: 3,
+                currency: 'USD',
+                quantity: 1,
+                time: 't',
+              },
+            ],
           },
         },
+        files: {},
+      } as any,
+      metadata: [{ jobId: 42, workspaceId: 'workspace-non-mau' }],
+    };
+    const result = processBatchWithDeliveryMapping([transformedEvent]);
+    const tracks = onTrackOutputs(result, destination);
+    expect(tracks.length).toBe(1);
+    const info = (tracks[0].metadata[0] as any).destInfo;
+    expect(info.attributesIndices).toEqual([0]);
+    expect(info.purchasesIndices).toEqual([0, 1, 2]);
+    expect(info.eventsIndices).toBeUndefined();
+  });
+
+  test('mixed batch: each job’s destInfo indices point to payload entries whose external_id matches', () => {
+    const jobs: BrazeTransformedEvent[] = [
+      {
+        destination,
+        statusCode: 200,
+        batchedRequest: {
+          version: '1',
+          type: 'REST',
+          method: 'POST',
+          endpoint: '',
+          headers: {},
+          params: {},
+          body: { JSON: { attributes: [{ external_id: 'u1', name: 'A' }] } },
+          files: {},
+        } as any,
+        metadata: [{ jobId: 1, workspaceId: 'workspace-non-mau' }],
+      },
+      {
+        destination,
         statusCode: 200,
         batchedRequest: {
           version: '1',
@@ -1419,401 +1429,211 @@ describe('processBatch for workspaces on MAU plan', () => {
           params: {},
           body: {
             JSON: {
-              attributes: [{ id: i, name: 'test', xyz: 'abc' }],
-              events: [{ id: i, event: 'test', xyz: 'abc' }],
-              purchases: [{ id: i, purchase: 'test', xyz: 'abc' }],
-              subscription_groups: [
-                { subscription_group_id: i, group: 'test', subscription_state: 'abc' },
+              attributes: [{ external_id: 'u2', name: 'B' }],
+              events: [{ external_id: 'u2', name: 'E', time: 't' }],
+            },
+          },
+          files: {},
+        } as any,
+        metadata: [{ jobId: 2, workspaceId: 'workspace-non-mau' }],
+      },
+      {
+        destination,
+        statusCode: 200,
+        batchedRequest: {
+          version: '1',
+          type: 'REST',
+          method: 'POST',
+          endpoint: '',
+          headers: {},
+          params: {},
+          body: {
+            JSON: {
+              attributes: [{ external_id: 'u3', name: 'C' }],
+              purchases: [
+                {
+                  external_id: 'u3',
+                  product_id: 'x',
+                  price: 1,
+                  currency: 'USD',
+                  quantity: 1,
+                  time: 't',
+                },
+                {
+                  external_id: 'u3',
+                  product_id: 'y',
+                  price: 2,
+                  currency: 'USD',
+                  quantity: 1,
+                  time: 't',
+                },
               ],
-              merge_updates: [{ id: i, alias: 'test', xyz: 'abc' }],
             },
           },
-        },
-        metadata: [{ job_id: i, workspaceId: 'workspace-mau' }],
-      });
-    }
-
-    // Call the processBatch function
-    const result = processBatch(transformedEvents);
-    expect(result.length).toBe(1);
-    const firstResult = result[0];
-
-    // Ensure batchedRequest exists, is an array, and metadata exists
-    expect(firstResult.batchedRequest).toBeDefined();
-    expect(Array.isArray(firstResult.batchedRequest)).toBe(true);
-    expect(firstResult.metadata).toBeDefined();
-
-    if (
-      firstResult.batchedRequest &&
-      Array.isArray(firstResult.batchedRequest) &&
-      firstResult.metadata
-    ) {
-      expect(firstResult.batchedRequest.length).toBe(10);
-      // First batch contains 75 attributes
-      expect((firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      );
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).attributes?.length,
-      ).toBe(75);
-
-      // Second batch contains 25 attributes and 50 events
-      expect((firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      ); // Verify partner name
-      expect(
-        (firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).attributes?.length,
-      ).toBe(25);
-      expect(
-        (firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).events?.length,
-      ).toBe(50);
-
-      // Third batch contains 50 events and 25 purchases
-      expect((firstResult.batchedRequest[2].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      ); // Verify partner name
-      expect(
-        (firstResult.batchedRequest[2].body.JSON as BrazeTrackRequestBody).events?.length,
-      ).toBe(50);
-      expect(
-        (firstResult.batchedRequest[2].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(25);
-
-      // Fourth batch contains 75 purchases
-      expect((firstResult.batchedRequest[3].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      ); // Verify partner name
-      expect(
-        (firstResult.batchedRequest[3].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(75);
-
-      // Fifth batch contains 25 subscription groups
-      expect(
-        (firstResult.batchedRequest[4].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25);
-      // Sixth batch contains 25 subscription groups
-      expect(
-        (firstResult.batchedRequest[5].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25);
-      // Seventh batch contains 25 subscription groups
-      expect(
-        (firstResult.batchedRequest[6].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25);
-      // Eighth batch contains 25 subscription groups
-      expect(
-        (firstResult.batchedRequest[7].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25);
-
-      // Ninth batch contains 50 merge_updates
-      expect(
-        (firstResult.batchedRequest[8].body.JSON as BrazeMergeBatchPayload).merge_updates?.length,
-      ).toBe(50);
-      // Tenth batch contains 50 merge_updates
-      expect(
-        (firstResult.batchedRequest[9].body.JSON as BrazeMergeBatchPayload).merge_updates?.length,
-      ).toBe(50);
-    }
-  });
-
-  test('processBatch handles more than 75 attributes, events, and purchases with non uniform distribution', () => {
-    const destination: BrazeDestination = {
-      ID: 'braze',
-      Name: 'braze',
-      Enabled: true,
-      Config: {
-        restApiKey: 'restApiKey',
-        dataCenter: 'eu',
+          files: {},
+        } as any,
+        metadata: [{ jobId: 3, workspaceId: 'workspace-non-mau' }],
       },
-      DestinationDefinition: {
-        ID: 'braze',
-        Name: 'braze',
-        DisplayName: '',
-        Config: {},
-      },
-      WorkspaceID: '123',
-      Transformations: [],
-    };
-    // Create input data with more than 75 attributes, events, and purchases
-    const transformedEventsSet1: BrazeTransformedEvent[] = new Array(120).fill(0).map((_, i) => ({
-      destination,
-      statusCode: 200,
-      batchedRequest: {
-        version: '1',
-        type: 'REST',
-        method: 'POST',
-        endpoint: '',
-        headers: {},
-        params: {},
-        body: {
-          JSON: {
-            events: [{ id: i, event: 'test', xyz: 'abc' }],
-          },
-        },
-      },
-      metadata: [{ job_id: i, workspaceId: 'workspace-mau' }],
-    }));
-
-    const transformedEventsSet2: BrazeTransformedEvent[] = new Array(160).fill(0).map((_, i) => ({
-      destination,
-      statusCode: 200,
-      batchedRequest: {
-        version: '1',
-        type: 'REST',
-        method: 'POST',
-        endpoint: '',
-        headers: {},
-        params: {},
-        body: {
-          JSON: {
-            purchases: [{ id: i, name: 'test', xyz: 'abc' }],
-          },
-        },
-      },
-      metadata: [{ job_id: 120 + i, workspaceId: 'workspace-mau' }],
-    }));
-
-    const transformedEventsSet3: BrazeTransformedEvent[] = new Array(100).fill(0).map((_, i) => ({
-      destination,
-      statusCode: 200,
-      batchedRequest: {
-        version: '1',
-        type: 'REST',
-        method: 'POST',
-        endpoint: '',
-        headers: {},
-        params: {},
-        body: {
-          JSON: {
-            attributes: [{ id: i, name: 'test', xyz: 'abc' }],
-          },
-        },
-      },
-      metadata: [{ job_id: 280 + i, workspaceId: 'workspace-mau' }],
-    }));
-
-    const transformedEventsSet4: BrazeTransformedEvent[] = new Array(70).fill(0).map((_, i) => ({
-      destination,
-      statusCode: 200,
-      batchedRequest: {
-        version: '1',
-        type: 'REST',
-        method: 'POST',
-        endpoint: '',
-        headers: {},
-        params: {},
-        body: {
-          JSON: {
-            subscription_groups: [
-              { subscription_group_id: i, group: 'test', subscription_state: 'abc' },
-            ],
-          },
-        },
-      },
-      metadata: [{ job_id: 280 + i, workspaceId: 'workspace-mau' }],
-    }));
-
-    const transformedEventsSet5: BrazeTransformedEvent[] = new Array(40).fill(0).map((_, i) => ({
-      destination,
-      statusCode: 200,
-      batchedRequest: {
-        version: '1',
-        type: 'REST',
-        method: 'POST',
-        endpoint: '',
-        headers: {},
-        params: {},
-        body: {
-          JSON: {
-            merge_updates: [{ id: i, alias: 'test', xyz: 'abc' }],
-          },
-        },
-      },
-      metadata: [{ job_id: 280 + i, workspaceId: 'workspace-mau' }],
-    }));
-
-    // Call the processBatch function
-    const result = processBatch([
-      ...transformedEventsSet1,
-      ...transformedEventsSet2,
-      ...transformedEventsSet3,
-      ...transformedEventsSet4,
-      ...transformedEventsSet5,
-    ]);
-
-    // Assert that the response is as expected
-    expect(result.length).toBe(1); // One successful batched response
-
-    const firstResult = result[0];
-    // Ensure batchedRequest exists, is an array, and metadata exists
-    expect(firstResult.batchedRequest).toBeDefined();
-    expect(Array.isArray(firstResult.batchedRequest)).toBe(true);
-    expect(firstResult.metadata).toBeDefined();
-
-    if (
-      firstResult.batchedRequest &&
-      Array.isArray(firstResult.batchedRequest) &&
-      firstResult.metadata
-    ) {
-      expect(firstResult.metadata.length).toBe(490); // Total metadata count: 120 events + 160 purchases + 100 attributes + 70 subscription_groups + 40 merge_updates
-      expect(firstResult.batchedRequest.length).toBe(10); // 10 batched requests total (6 track API batches + 3 subscription batches + 1 merge batch)
-
-      // Track API Batch 1: First 75 attributes (out of 100 total)
-      expect((firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      );
-      expect(
-        (firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).attributes?.length,
-      ).toBe(75);
-
-      // Track API Batch 2: Remaining 25 attributes + 50 events (out of 120 total)
-      expect((firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      );
-      expect(
-        (firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).attributes?.length,
-      ).toBe(25);
-      expect(
-        (firstResult.batchedRequest[1].body.JSON as BrazeTrackRequestBody).events?.length,
-      ).toBe(50);
-
-      // Track API Batch 3: Remaining 70 events + 5 purchases (out of 160 total)
-      expect((firstResult.batchedRequest[2].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      );
-      expect(
-        (firstResult.batchedRequest[2].body.JSON as BrazeTrackRequestBody).events?.length,
-      ).toBe(70);
-      expect(
-        (firstResult.batchedRequest[2].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(5);
-
-      // Track API Batch 4: Next 75 purchases
-      expect((firstResult.batchedRequest[3].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      );
-      expect(
-        (firstResult.batchedRequest[3].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(75);
-
-      // Track API Batch 5: Next 75 purchases
-      expect((firstResult.batchedRequest[4].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      );
-      expect(
-        (firstResult.batchedRequest[4].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(75);
-
-      // Track API Batch 6: Remaining 5 purchases
-      expect((firstResult.batchedRequest[5].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      );
-      expect(
-        (firstResult.batchedRequest[5].body.JSON as BrazeTrackRequestBody).purchases?.length,
-      ).toBe(5);
-
-      // Subscription Groups Batches: 70 total subscription_groups chunked by 25
-      expect(
-        (firstResult.batchedRequest[6].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25); // First 25
-      expect(
-        (firstResult.batchedRequest[7].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(25); // Next 25
-      expect(
-        (firstResult.batchedRequest[8].body.JSON as BrazeSubscriptionBatchPayload)
-          .subscription_groups?.length,
-      ).toBe(20); // Remaining 20
-
-      // Merge Updates Batch: 40 total merge_updates in single batch
-      expect(
-        (firstResult.batchedRequest[9].body.JSON as BrazeMergeBatchPayload).merge_updates?.length,
-      ).toBe(40);
-    }
-  });
-
-  test('check success and failure scenarios both for processBatch', () => {
-    const transformedEvents: BrazeTransformedEvent[] = [];
-    let successCount = 0;
-    let failureCount = 0;
-    const destination: BrazeDestination = {
-      ID: 'braze',
-      Name: 'braze',
-      Enabled: true,
-      Config: {
-        restApiKey: 'restApiKey',
-        dataCenter: 'eu',
-      },
-      DestinationDefinition: {
-        ID: 'braze',
-        Name: 'braze',
-        DisplayName: '',
-        Config: {},
-      },
-      WorkspaceID: '123',
-      Transformations: [],
-    };
-    for (let i = 0; i < 100; i++) {
-      const rando = Math.random() * 100;
-      if (rando < 50) {
-        transformedEvents.push({
-          destination,
-          statusCode: 200,
-          batchedRequest: {
-            version: '1',
-            type: 'REST',
-            method: 'POST',
-            endpoint: '',
-            headers: {},
-            params: {},
-            body: {
-              JSON: {
-                attributes: [{ id: i, name: 'test', xyz: 'abc' }],
-                events: [{ id: i, event: 'test', xyz: 'abc' }],
-                purchases: [{ id: i, purchase: 'test', xyz: 'abc' }],
-              },
-            },
-          },
-          metadata: [{ job_id: i, workspaceId: 'workspace-mau' }],
-        });
-        successCount = successCount + 1;
-      } else {
-        transformedEvents.push({
-          destination,
-          statusCode: 400,
-          metadata: [{ job_id: i, workspaceId: 'workspace-mau' }],
-          error: 'Random Error',
-        });
-        failureCount = failureCount + 1;
+    ];
+    const result = processBatchWithDeliveryMapping(jobs);
+    const tracks = onTrackOutputs(result, destination);
+    expect(tracks.length).toBe(1);
+    const chunk = tracks[0];
+    const body = chunk.batchedRequest.body.JSON as BrazeTrackRequestBody;
+    expect(body.attributes?.length).toBe(3);
+    expect(body.events?.length).toBe(1);
+    expect(body.purchases?.length).toBe(2);
+    for (const m of chunk.metadata) {
+      const info = (m as any).destInfo;
+      const jobId = (m as any).jobId;
+      const externalId = `u${jobId}`;
+      for (const idx of info.attributesIndices ?? []) {
+        expect((body.attributes as any)[idx].external_id).toBe(externalId);
+      }
+      for (const idx of info.eventsIndices ?? []) {
+        expect((body.events as any)[idx].external_id).toBe(externalId);
+      }
+      for (const idx of info.purchasesIndices ?? []) {
+        expect((body.purchases as any)[idx].external_id).toBe(externalId);
       }
     }
-    // Call the processBatch function
-    const result = processBatch(transformedEvents);
-    expect(result.length).toBe(failureCount + 1);
-    const firstResult = result[0];
+  });
 
-    // Ensure batchedRequest exists, is an array, and metadata exists
-    expect(firstResult.batchedRequest).toBeDefined();
-    expect(Array.isArray(firstResult.batchedRequest)).toBe(true);
-    expect(firstResult.metadata).toBeDefined();
+  test('a single job’s items never straddle chunk boundaries', () => {
+    const buildOrderCompletedJob = (i: number, numProducts: number): BrazeTransformedEvent => ({
+      destination,
+      statusCode: 200,
+      batchedRequest: {
+        version: '1',
+        type: 'REST',
+        method: 'POST',
+        endpoint: '',
+        headers: {},
+        params: {},
+        body: {
+          JSON: {
+            attributes: [{ external_id: `u${i}`, name: 'A' }],
+            purchases: Array.from({ length: numProducts }, (_, k) => ({
+              external_id: `u${i}`,
+              product_id: `p${i}-${k}`,
+              price: 1,
+              currency: 'USD',
+              quantity: 1,
+              time: 't',
+            })),
+          },
+        },
+        files: {},
+      } as any,
+      metadata: [{ jobId: i, workspaceId: 'workspace-mau' }],
+    });
 
-    if (
-      firstResult.batchedRequest &&
-      Array.isArray(firstResult.batchedRequest) &&
-      firstResult.metadata
-    ) {
-      expect((firstResult.batchedRequest[0].body.JSON as BrazeTrackRequestBody).partner).toBe(
-        'RudderStack',
-      );
-      expect(firstResult.metadata.length).toBe(successCount);
+    const jobs: BrazeTransformedEvent[] = [];
+    for (let i = 0; i < 24; i += 1) jobs.push(buildOrderCompletedJob(i, 3));
+    jobs.push(buildOrderCompletedJob(24, 6));
+
+    const result = processBatchWithDeliveryMapping(jobs);
+    const tracks = onTrackOutputs(result, destination);
+
+    for (const job of jobs) {
+      const jobId = job.metadata?.[0]?.jobId;
+      let occurrences = 0;
+      for (const t of tracks) {
+        if (t.metadata.some((m: any) => m.jobId === jobId)) occurrences += 1;
+      }
+      expect(occurrences).toBe(1);
+    }
+    for (const t of tracks) {
+      const b = t.batchedRequest.body.JSON as BrazeTrackRequestBody;
+      const total =
+        (b.attributes?.length ?? 0) + (b.events?.length ?? 0) + (b.purchases?.length ?? 0);
+      expect(total).toBeLessThanOrEqual(75);
     }
   });
-});
 
+  test('single item exceeding TRACK_BRAZE_MAX_ITEM_BYTE_SIZE (100 KB) is rejected with InstrumentationError (flag-independent)', () => {
+    const big = 'x'.repeat(150 * 1024);
+    const transformedEvent: BrazeTransformedEvent = {
+      destination,
+      statusCode: 200,
+      batchedRequest: {
+        version: '1',
+        type: 'REST',
+        method: 'POST',
+        endpoint: '',
+        headers: {},
+        params: {},
+        body: {
+          JSON: {
+            events: [{ external_id: 'u1', name: 'BigEvent', time: 't', properties: { blob: big } }],
+          },
+        },
+        files: {},
+      } as any,
+      metadata: [{ jobId: 1, workspaceId: 'workspace-non-mau' }],
+    };
+    const result = processBatchWithDeliveryMapping([transformedEvent]);
+    const failures = result.filter((r) => (r as any).statusCode === 400);
+    expect(failures.length).toBe(1);
+    expect((failures[0] as any).error).toMatch(/exceeds .* bytes/);
+    expect(onTrackOutputs(result, destination).length).toBe(0);
+  });
+
+  test('an unclassifiable body still throws, uninstrumented (out of scope — see NOTE in util.ts)', () => {
+    // classifyJobRun's throw escapes to a full-batch abort with in==out, so it
+    // structurally cannot produce the "in out mismatch" alert this PR targets.
+    // Deliberately NOT instrumented — asserting the (unchanged) throw behavior
+    // here so a future change to that doesn't silently start swallowing it.
+    const unclassifiable: BrazeTransformedEvent = {
+      destination,
+      statusCode: 200,
+      batchedRequest: {
+        userId: 'user-1',
+        type: 'track',
+      } as unknown as ProcessorTransformationOutput, // no `.body.JSON`
+      metadata: [{ jobId: 1, workspaceId: 'workspace-non-mau' }],
+    } as BrazeTransformedEvent;
+
+    expect(() => processBatchWithDeliveryMapping([unclassifiable])).toThrow();
+  });
+
+  test('instruments (stat + log) a classified body that contributes zero items', () => {
+    const statsSpy = jest.spyOn(stats, 'increment').mockImplementation(() => {});
+    const loggerSpy = jest.spyOn(logger, 'warn').mockImplementation(() => undefined);
+
+    const zeroItems: BrazeTransformedEvent = {
+      destination,
+      statusCode: 200,
+      batchedRequest: {
+        version: '1',
+        type: 'REST',
+        method: 'POST',
+        endpoint: '',
+        headers: {},
+        params: {},
+        body: { JSON: { attributes: [] } },
+        files: {},
+      },
+      metadata: [{ jobId: 1, workspaceId: 'workspace-non-mau' }],
+    };
+
+    const result = processBatchWithDeliveryMapping([zeroItems]);
+
+    expect(statsSpy).toHaveBeenCalledWith('braze_unprocessable_job', {
+      destination_id: destination.ID,
+      reason: 'no_items_to_send',
+    });
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('contributed zero items'),
+      expect.objectContaining({ destinationId: destination.ID }),
+    );
+    // Still silently drops the job today — observability only.
+    expect(onTrackOutputs(result, destination).length).toBe(0);
+
+    statsSpy.mockRestore();
+    loggerSpy.mockRestore();
+  });
+});
 describe('addAppId', () => {
   it('test_no_integrations_object', () => {
     const payload = { foo: 'bar' };
@@ -2648,6 +2468,30 @@ describe('getEndpointFromConfig', () => {
   });
 });
 
+describe('validateDestinationConfig', () => {
+  const missingKeyCases = [
+    { name: 'restApiKey is absent', config: { dataCenter: 'US-03' } },
+    { name: 'restApiKey is an empty string', config: { dataCenter: 'US-03', restApiKey: '' } },
+    { name: 'restApiKey is undefined', config: { dataCenter: 'US-03', restApiKey: undefined } },
+    { name: 'Config itself is absent', config: undefined },
+  ];
+
+  it.each(missingKeyCases)('throws when $name', ({ config }) => {
+    const destination = { Config: config } as unknown as BrazeDestination;
+    expect(() => validateDestinationConfig(destination)).toThrow(ConfigurationError);
+    expect(() => validateDestinationConfig(destination)).toThrow(
+      'Rest API Key not found. Aborting',
+    );
+  });
+
+  it('does not throw when restApiKey is present', () => {
+    const destination = {
+      Config: { dataCenter: 'US-03', restApiKey: 'dummy-rest-api-key' },
+    } as unknown as BrazeDestination;
+    expect(() => validateDestinationConfig(destination)).not.toThrow();
+  });
+});
+
 describe('formatGender', () => {
   it('should return "F" for female variations', () => {
     expect(formatGender('woman')).toBe('F');
@@ -2684,5 +2528,295 @@ describe('formatGender', () => {
     expect(formatGender(123)).toBeNull();
     expect(formatGender({})).toBeNull();
     expect(formatGender([])).toBeNull();
+  });
+});
+
+describe('formatEmail', () => {
+  const validEmails = [
+    { name: 'a plain address', input: 'user@example.com', expected: 'user@example.com' },
+    { name: 'an uppercase address', input: 'USER@EXAMPLE.COM', expected: 'user@example.com' },
+    {
+      name: 'a plus-addressed alias',
+      input: 'user+tag@example.com',
+      expected: 'user+tag@example.com',
+    },
+    { name: 'a subdomain', input: 'user@mail.example.co.uk', expected: 'user@mail.example.co.uk' },
+    {
+      name: 'dots in the local part',
+      input: 'first.last@example.com',
+      expected: 'first.last@example.com',
+    },
+    { name: 'a hyphenated domain', input: 'user@my-example.com', expected: 'user@my-example.com' },
+  ];
+
+  const invalidEmails = [
+    { name: 'no @ sign', input: 'not-an-email' },
+    { name: 'no domain', input: 'user@' },
+    { name: 'no local part', input: '@example.com' },
+    { name: 'a bare domain with no TLD', input: 'user@example' },
+    { name: 'an internal space', input: 'user name@example.com' },
+    { name: 'leading whitespace', input: ' user@example.com' },
+    { name: 'trailing whitespace', input: 'user@example.com ' },
+    { name: 'two @ signs', input: 'user@@example.com' },
+    { name: 'an empty string after trimming', input: '   ' },
+    // RFC-legal quoted local parts, which Braze rejects: the local part "cannot contain
+    // double quotes".
+    { name: 'a quoted local part with a space', input: '"user name"@example.com' },
+    { name: 'a quoted local part', input: '"user"@example.com' },
+    { name: 'a quoted local part with an @ inside', input: '"user@internal"@example.com' },
+  ];
+
+  const nonStringValues = [
+    { name: 'a number', input: 123 },
+    { name: 'a boolean', input: true },
+    { name: 'an object', input: { address: 'user@example.com' } },
+    { name: 'an array', input: ['user@example.com'] },
+  ];
+
+  it.each(validEmails)('should lowercase and accept $name', ({ input, expected }) => {
+    expect(formatEmail(input)).toBe(expected);
+  });
+
+  it.each(invalidEmails)('should throw an InstrumentationError for $name', ({ input }) => {
+    expect(() => formatEmail(input)).toThrow(InstrumentationError);
+    expect(() => formatEmail(input)).toThrow('Invalid email');
+  });
+
+  it.each(nonStringValues)('should throw an InstrumentationError for $name', ({ input }) => {
+    expect(() => formatEmail(input)).toThrow(InstrumentationError);
+    expect(() => formatEmail(input)).toThrow('email must be a valid string');
+  });
+
+  // Braze treats an explicit null as "unset this field", so it must survive validation.
+  it('should pass null through untouched', () => {
+    expect(formatEmail(null)).toBeNull();
+  });
+
+  it('should pass undefined through untouched', () => {
+    expect(formatEmail(undefined)).toBeUndefined();
+  });
+
+  it('should not leak the offending address into the error message', () => {
+    expect(() => formatEmail('leaky-address@@example.com')).not.toThrow(/leaky-address/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Router in/out job accounting — rudder-server discards the whole transformer
+// response and retries the entire batch as 500 when the number of jobIds it
+// gets back differs from the number it sent (`router_transformer_invalid_response`,
+// reason `in out mismatch`). `in` is a set of input jobIds; `out` is appended
+// once per (output element x distinct jobId in that element), so a jobId that
+// surfaces in two outputs inflates `out` even though nothing was lost.
+// ---------------------------------------------------------------------------
+
+// Structural view of the track outputs the tests below assert on. The
+// shared on*/off* helpers further up predate strict typing and return `any[]`;
+// annotating once at the call site keeps every assertion properly typed.
+type OnTrackOutput = {
+  batchedRequest: { body: { JSON: BrazeTrackRequestBody } };
+  metadata: Partial<Metadata>[];
+};
+
+const jobIdsOf = (out: BrazeBatchResponse): number[] =>
+  (out.metadata ?? [])
+    .map((meta) => meta.jobId)
+    .filter((jobId): jobId is number => jobId !== undefined);
+
+describe('router in/out job accounting', () => {
+  const destination = brazeDestFor();
+
+  // Mirrors rudder-server's check in router/transformer/transformer.go: `in` is a
+  // deduped set of input jobIds, `out` appends one entry per (output x distinct
+  // jobId), so cross-output duplicates make len(out) > len(in).
+  const outJobIdCount = (result: BrazeBatchResponse[]): number =>
+    result.reduce((acc, out) => acc + new Set(jobIdsOf(out)).size, 0);
+
+  const trackJob = (
+    jobId: number,
+    attributesExternalId: string | undefined,
+    eventsExternalId: string | undefined,
+  ): BrazeTransformedEvent => ({
+    destination,
+    statusCode: 200,
+    batchedRequest: {
+      version: '1',
+      type: 'REST',
+      method: 'POST',
+      endpoint: '',
+      headers: {},
+      params: {},
+      body: {
+        JSON: {
+          attributes: [
+            attributesExternalId === undefined
+              ? { name: `n${jobId}` }
+              : { external_id: attributesExternalId, name: `n${jobId}` },
+          ],
+          events: [
+            eventsExternalId === undefined
+              ? { name: 'e', time: 't' }
+              : { external_id: eventsExternalId, name: 'e', time: 't' },
+          ],
+        },
+      },
+      files: {},
+    },
+    metadata: [{ jobId, workspaceId: 'workspace-non-mau' }],
+  });
+
+  test('a job whose items carry different external_ids is not emitted in two chunks', () => {
+    // 80 ordinary jobs force more than one chunk (V1 cap is 75 attributes).
+    const jobs: BrazeTransformedEvent[] = Array.from({ length: 80 }, (_, i) =>
+      trackJob(i, `u${String(i).padStart(3, '0')}`, `u${String(i).padStart(3, '0')}`),
+    );
+    // One anonymous job: traits carried an `external_id`, but the message had no
+    // userId, so setExternalIdOrAliasObject took the alias branch and left the
+    // events item without an `external_id`. Its two items therefore sort to
+    // opposite ends of the batch.
+    jobs.push(trackJob(999, 'a-anonymous-user', undefined));
+
+    const result = processBatchWithDeliveryMapping(jobs);
+    const tracks: OnTrackOutput[] = onTrackOutputs(result, destination);
+    expect(tracks.length).toBeGreaterThanOrEqual(2);
+
+    const occurrences = tracks.filter((track) =>
+      track.metadata.some((meta) => meta.jobId === 999),
+    ).length;
+    expect(occurrences).toBe(1);
+  });
+
+  test('out jobId count equals in jobId count for a mixed-external_id batch', () => {
+    const jobs: BrazeTransformedEvent[] = Array.from({ length: 80 }, (_, i) =>
+      trackJob(i, `u${String(i).padStart(3, '0')}`, `u${String(i).padStart(3, '0')}`),
+    );
+    jobs.push(trackJob(999, 'a-anonymous-user', undefined));
+
+    const result = processBatchWithDeliveryMapping(jobs);
+    expect(outJobIdCount(result)).toBe(jobs.length);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Chunk-boundary invariant: chunking packs whole source-job groups, never
+// individual items, so a boundary can only fall between two jobs. A chunk may
+// therefore close under the per-type cap rather than split a job.
+// ---------------------------------------------------------------------------
+
+describe('chunk boundaries never split a source job', () => {
+  const destination = brazeDestFor();
+
+  type ItemSpec = { type: 'attributes' | 'events' | 'purchases'; externalId?: string };
+
+  const jobFromSpecs = (jobId: number, specs: ItemSpec[]): BrazeTransformedEvent => {
+    const attributes: Record<string, unknown>[] = [];
+    const events: Record<string, unknown>[] = [];
+    const purchases: Record<string, unknown>[] = [];
+    specs.forEach((spec, k) => {
+      const base: Record<string, unknown> = { tag: `${jobId}-${k}` };
+      if (spec.externalId !== undefined) {
+        base.external_id = spec.externalId;
+      }
+      if (spec.type === 'events') {
+        events.push({ ...base, name: 'e', time: 't' });
+      } else if (spec.type === 'purchases') {
+        purchases.push({
+          ...base,
+          product_id: `p${jobId}-${k}`,
+          price: 1,
+          currency: 'USD',
+          quantity: 1,
+          time: 't',
+        });
+      } else {
+        attributes.push(base);
+      }
+    });
+    return {
+      destination,
+      statusCode: 200,
+      batchedRequest: {
+        version: '1',
+        type: 'REST',
+        method: 'POST',
+        endpoint: '',
+        headers: {},
+        params: {},
+        body: { JSON: { attributes, events, purchases } },
+        files: {},
+      },
+      metadata: [{ jobId, workspaceId: 'workspace-non-mau' }],
+    };
+  };
+
+  const jobIdOccurrences = (result: BrazeBatchResponse[]): Map<number, number> => {
+    const counts = new Map<number, number>();
+    for (const out of result) {
+      for (const jobId of new Set(jobIdsOf(out))) {
+        counts.set(jobId, (counts.get(jobId) ?? 0) + 1);
+      }
+    }
+    return counts;
+  };
+
+  test('closes a chunk under the per-type cap rather than splitting the job that overflows it', () => {
+    // 37 two-attribute jobs fill 74 of the 75 attribute slots. The 38th job also
+    // contributes two attributes, and its two items carry different external_ids
+    // — the shape that used to be scattered by the item-level sort.
+    const jobs = Array.from({ length: 37 }, (_, i) =>
+      jobFromSpecs(i, [
+        { type: 'attributes', externalId: `u${String(i).padStart(3, '0')}` },
+        { type: 'attributes', externalId: `u${String(i).padStart(3, '0')}` },
+      ]),
+    );
+    jobs.push(
+      jobFromSpecs(37, [{ type: 'attributes', externalId: 'aaa' }, { type: 'attributes' }]),
+    );
+
+    const result = processBatchWithDeliveryMapping(jobs);
+    const tracks: OnTrackOutput[] = onTrackOutputs(result, destination);
+
+    // The overflowing job is not split: no chunk carries 75 attributes.
+    expect(
+      tracks.some((track) => (track.batchedRequest.body.JSON.attributes ?? []).length === 75),
+    ).toBe(false);
+    for (const [, occurrences] of jobIdOccurrences(result)) {
+      expect(occurrences).toBe(1);
+    }
+  });
+
+  test('no jobId is ever emitted twice across randomised mixed-external_id batches', () => {
+    // Deterministic LCG — reproducible, no test flakiness.
+    let seed = 0x2f6e2b1;
+    const rand = (n: number) => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed % n;
+    };
+    const types: ItemSpec['type'][] = ['attributes', 'events', 'purchases'];
+    const pool = ['e0', 'e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7'];
+
+    const jobs = Array.from({ length: 120 }, (_, i) => {
+      const specs: ItemSpec[] = [{ type: 'attributes', externalId: pool[rand(pool.length)] }];
+      const extra = rand(4);
+      for (let k = 0; k < extra; k += 1) {
+        const pick = rand(pool.length + 1);
+        specs.push({
+          type: types[rand(types.length)],
+          // pool.length means "no external_id at all" — the alias-branch shape.
+          externalId: pick === pool.length ? undefined : pool[pick],
+        });
+      }
+      return jobFromSpecs(i, specs);
+    });
+
+    const result = processBatchWithDeliveryMapping(jobs);
+    const tracks: OnTrackOutput[] = onTrackOutputs(result, destination);
+    expect(tracks.length).toBeGreaterThanOrEqual(2);
+
+    const counts = jobIdOccurrences(result);
+    expect(counts.size).toBe(jobs.length);
+    for (const [, occurrences] of counts) {
+      expect(occurrences).toBe(1);
+    }
   });
 });
