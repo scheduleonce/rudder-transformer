@@ -1,7 +1,7 @@
 import sha256 from 'sha256';
 import { HashingType } from '../../util/audienceUtils';
 import { Integration } from './routerTransform';
-import { processBatchedDestination } from '../../../services/destination/nativeBatching/processBatchedDestination';
+import { processDestinationIntegration } from '../../../services/destination/destinationIntegration/processDestinationIntegration';
 import type { Metadata } from '../../../types/rudderEvents';
 import type { RouterTransformationRequestData } from '../../../types/destinationTransformation';
 import { AUTHENTICATION_TYPES } from './constants';
@@ -31,6 +31,16 @@ const baseDeleteAction: ActionConfig = {
   endpoint: '/audiences/{{connection.audienceId}}/members',
   method: 'DELETE',
   requestBody: '{ "audienceId": $$.connection.audienceId, "users": $$.records }',
+  batchSize: 2,
+  fields: [{ name: 'email', hashType: HashingType.SHA256, isRequired: true, isCustom: false }],
+};
+
+// Templates that never read the connection's audienceId. A connection driving
+// only these has no use for the field, which is why it is optional.
+const audienceIdFreeInsertAction: ActionConfig = {
+  endpoint: '/members',
+  method: 'POST',
+  requestBody: '{ "users": [$$.records.{ "email": email }] }',
   batchSize: 2,
   fields: [{ name: 'email', hashType: HashingType.SHA256, isRequired: true, isCustom: false }],
 };
@@ -72,6 +82,15 @@ const buildConnection = (
   },
 });
 
+// buildConnection always sets audienceId, and a partial override cannot remove
+// a key — so an omitting connection gets its own builder.
+const buildConnectionWithoutAudienceId = (): CustomAudienceConnection => ({
+  sourceId: 'src-1',
+  destinationId: 'dest-1',
+  enabled: true,
+  config: { destination: { isHashRequired: false } },
+});
+
 const buildMetadata = (jobId: number): Metadata =>
   ({
     jobId,
@@ -105,7 +124,7 @@ const buildInput = (
     connection,
   }) as unknown as RouterTransformationRequestData;
 
-describe('CustomAudienceIntegration via processBatchedDestination', () => {
+describe('CustomAudienceIntegration via processDestinationIntegration', () => {
   it('groups events by action and chunks by batchSize', async () => {
     const inputs = [
       buildInput(1, 'insert', { email: hashedEmail('a@b.com') }),
@@ -114,7 +133,7 @@ describe('CustomAudienceIntegration via processBatchedDestination', () => {
       buildInput(4, 'delete', { email: hashedEmail('g@h.com') }),
     ];
 
-    const results = await processBatchedDestination(inputs, Integration, {});
+    const results = await processDestinationIntegration(inputs, Integration, {});
 
     const successResults = results.filter((r) => r.statusCode === 200);
     // 3 inserts → 2 chunks of batchSize=2; 1 delete → 1 chunk. Total 3 success batches.
@@ -134,6 +153,27 @@ describe('CustomAudienceIntegration via processBatchedDestination', () => {
     const deleteJobIds = deleteBatches.flatMap((r) => r.metadata.map((m) => m.jobId));
     expect(insertJobIds).toEqual([1, 2, 3]);
     expect(deleteJobIds).toEqual([4]);
+  });
+
+  it('delivers when no template references audienceId and the connection omits it', async () => {
+    const destination = buildDestination({ actions: { insert: audienceIdFreeInsertAction } });
+    const inputs = [
+      buildInput(
+        1,
+        'insert',
+        { email: hashedEmail('a@b.com') },
+        destination,
+        buildConnectionWithoutAudienceId(),
+      ),
+    ];
+
+    const results = await processDestinationIntegration(inputs, Integration, {});
+
+    expect(results.filter((r) => r.statusCode !== 200)).toHaveLength(0);
+    const [batch] = results;
+    expect(!Array.isArray(batch.batchedRequest) && batch.batchedRequest?.endpoint).toBe(
+      'https://api.example.com/members',
+    );
   });
 
   const errorCases = [
@@ -181,6 +221,21 @@ describe('CustomAudienceIntegration via processBatchedDestination', () => {
       errorMatch: /Custom mapping "from" value must be non-empty/,
     },
     {
+      name: 'connection omitting audienceId while the endpoint references it',
+      buildInputs: () => [
+        buildInput(
+          1,
+          'insert',
+          { email: hashedEmail('a@b.com') },
+          buildDestination(),
+          buildConnectionWithoutAudienceId(),
+        ),
+      ],
+      failingJobId: 1,
+      errorMatch:
+        /Endpoint template references \{\{connection\.audienceId\}\}, but the connection does not set it/,
+    },
+    {
       name: 'event missing required fields for action',
       buildInputs: () => [buildInput(1, 'insert', { phone: '+1' })],
       failingJobId: 1,
@@ -214,18 +269,51 @@ describe('CustomAudienceIntegration via processBatchedDestination', () => {
       failingJobId: 1,
       errorMatch: /Missing required fields for action "update": externalId/,
     },
+    {
+      name: 'update event with useInsertConfig true but missing insert config',
+      buildInputs: () => {
+        const destination = buildDestination({
+          actions: {
+            update: { useInsertConfig: true },
+            delete: baseDeleteAction,
+          },
+        });
+        return [buildInput(1, 'update', { email: hashedEmail('a@b.com') }, destination)];
+      },
+      failingJobId: 1,
+      errorMatch: /No action configuration found for action: insert/,
+    },
   ];
 
   it.each(errorCases)(
     'returns 400 for: $name',
     async ({ buildInputs, failingJobId, errorMatch }) => {
-      const results = await processBatchedDestination(buildInputs(), Integration, {});
+      const results = await processDestinationIntegration(buildInputs(), Integration, {});
       const errors = results.filter((r) => r.statusCode === 400);
       expect(errors).toHaveLength(1);
       expect(errors[0].metadata[0].jobId).toBe(failingJobId);
       expect(errors[0].error).toMatch(errorMatch);
     },
   );
+
+  it('returns controlled 400 when destination actions config is missing', async () => {
+    const destination = buildDestination();
+    delete (destination.Config as Partial<CustomAudienceDestConfig>).actions;
+    const results = await processDestinationIntegration(
+      [buildInput(1, 'insert', { email: hashedEmail('a@b.com') }, destination)],
+      Integration,
+      {},
+    );
+
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      statusCode: 400,
+      batched: false,
+      metadata: [expect.objectContaining({ jobId: 1 })],
+    });
+    expect(results[0].error).toMatch(/destination\.Config\.actions: Required/);
+    expect(results[0].error).not.toMatch(/Cannot convert undefined or null to object/);
+  });
 
   it('hashes fields when isHashRequired is true', async () => {
     const connection = buildConnection({ isHashRequired: true });
@@ -234,7 +322,7 @@ describe('CustomAudienceIntegration via processBatchedDestination', () => {
       buildInput(2, 'insert', { email: 'c@d.com' }, buildDestination(), connection),
     ];
 
-    const results = await processBatchedDestination(inputs, Integration, {});
+    const results = await processDestinationIntegration(inputs, Integration, {});
 
     const success = results.find((r) => r.statusCode === 200);
     const batched = success?.batchedRequest;
@@ -250,7 +338,7 @@ describe('CustomAudienceIntegration via processBatchedDestination', () => {
       buildInput(1, 'insert', { email: hashedEmail('a@b.com') }, buildDestination(), connection),
     ];
 
-    const results = await processBatchedDestination(inputs, Integration, {});
+    const results = await processDestinationIntegration(inputs, Integration, {});
 
     const success = results.find((r) => r.statusCode === 200);
     const batched = success?.batchedRequest;
@@ -287,7 +375,7 @@ describe('CustomAudienceIntegration via processBatchedDestination', () => {
       const destination = buildDestination(overrides);
       const inputs = [buildInput(1, 'insert', { email: hashedEmail('a@b.com') }, destination)];
 
-      const results = await processBatchedDestination(inputs, Integration, {});
+      const results = await processDestinationIntegration(inputs, Integration, {});
 
       const success = results.find((r) => r.statusCode === 200);
       const batched = success?.batchedRequest;
@@ -307,7 +395,7 @@ describe('CustomAudienceIntegration via processBatchedDestination', () => {
 
     const inputs = [buildInput(1, 'insert', { email: hashedEmail('a@b.com') }, destination)];
 
-    await expect(processBatchedDestination(inputs, Integration, {})).rejects.toThrow();
+    await expect(processDestinationIntegration(inputs, Integration, {})).rejects.toThrow();
   });
 
   it('batches insert and update events together when update uses insert config', async () => {
@@ -331,7 +419,7 @@ describe('CustomAudienceIntegration via processBatchedDestination', () => {
       buildInput(2, 'update', { email: hashedEmail('a@b.com') }, destination),
     ];
 
-    const results = await processBatchedDestination(inputs, Integration, {});
+    const results = await processDestinationIntegration(inputs, Integration, {});
 
     const success = results.filter((r) => r.statusCode === 200);
     expect(success).toHaveLength(1);
@@ -362,7 +450,7 @@ describe('CustomAudienceIntegration via processBatchedDestination', () => {
       buildInput(2, 'update', { email: hashedEmail('c@d.com') }, destination),
     ];
 
-    const results = await processBatchedDestination(inputs, Integration, {});
+    const results = await processDestinationIntegration(inputs, Integration, {});
 
     const success = results.filter((r) => r.statusCode === 200);
     expect(success).toHaveLength(2);

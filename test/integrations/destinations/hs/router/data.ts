@@ -1,7 +1,197 @@
-import { authHeader1, secret1, authHeader2, authHeader3, secret3, secret2 } from '../maskedSecrets';
+import {
+  authHeader1,
+  secret1,
+  authHeader2,
+  authHeader3,
+  secret3,
+  secret2,
+  secret4,
+} from '../maskedSecrets';
 import { destination } from './config';
 import { upsertData } from './upsertData';
-export const data = [
+import { errorValidationData } from './errorValidationData';
+import { retlUpsertData } from './retlUpsertData';
+
+/**
+ * Helpers + migrated event-stream / legacy router cases (previously eventStreamData.ts).
+ *
+ * These exercise the contact-lookup create/update path
+ * (`es-retl-v3.processIdentify` -> `util.searchContacts` -> create or update) plus
+ * the edge/error branches and the legacy (`apiVersion: 'legacyApi'`) v1 endpoints,
+ * restoring the code-path coverage the (removed) processor suite used to provide.
+ *
+ * All HTTP is served by ./network.ts (no per-case mockFns): tokens are chosen so the
+ * pre-existing token-keyed search/properties entries return the response each case
+ * needs (secret1 search=empty -> create, secret2 search=1 hit -> update, secret4=2
+ * hits -> "more than one" abort, search-fail-token=500). `lookupField: 'phone'` is
+ * non-unique in the shared crmV3PropertiesResponse mock, so identify goes through
+ * searchContacts rather than the upsert batch.
+ */
+const enrich = (errorCategory: string, errorType: string, extra: Record<string, string> = {}) => ({
+  destType: 'HS',
+  errorCategory,
+  errorType,
+  ...extra,
+  feature: 'router',
+  implementation: 'native',
+  module: 'destination',
+});
+
+const legacyApiKeyDestination = (apiKey = 'dummy-apikey') => ({
+  Config: { apiKey, hubID: 'dummy-hubId' },
+  secretConfig: {},
+  ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
+  name: 'Hubspot',
+  enabled: true,
+  workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
+  deleted: false,
+  createdAt: '2020-12-30T08:39:32.005Z',
+  updatedAt: '2021-02-03T16:22:31.374Z',
+  destinationDefinition: {
+    id: '1aIXqM806xAVm92nx07YwKbRrO9',
+    name: 'HS',
+    displayName: 'Hubspot',
+    createdAt: '2020-04-09T09:24:31.794Z',
+    updatedAt: '2021-01-11T11:03:28.103Z',
+  },
+  transformations: [],
+  isConnectionEnabled: true,
+  isProcessorEnabled: true,
+});
+
+const legacyApiKeyMissingAccessTokenOutput = (
+  jobId: number,
+  apiKey?: string,
+  metadata: Record<string, unknown> = {},
+) => ({
+  metadata: [{ jobId, userId: 'u1', ...metadata }],
+  batched: false,
+  statusCode: 400,
+  error: 'Access Token not found. Aborting',
+  statTags: enrich('dataValidation', 'configuration'),
+  destination: legacyApiKeyDestination(apiKey),
+});
+
+const errCase = (o: {
+  id: string;
+  description: string;
+  message: Record<string, unknown>;
+  config: Record<string, unknown>;
+  statusCode: number;
+  error: string;
+  statTags: Record<string, string>;
+}) => {
+  const dest = { ID: o.id, Config: o.config, Enabled: true };
+  return {
+    name: 'hs',
+    id: o.id,
+    description: o.description,
+    feature: 'router',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: {
+          input: [{ message: o.message, destination: dest, metadata: { jobId: 1, userId: 'u1' } }],
+          destType: 'hs',
+        },
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: {
+          output: [
+            {
+              metadata: [{ jobId: 1, userId: 'u1' }],
+              batched: false,
+              statusCode: o.statusCode,
+              error: o.error,
+              statTags: o.statTags,
+              destination: dest,
+            },
+          ],
+        },
+      },
+    },
+  };
+};
+
+const successCase = (o: {
+  id: string;
+  description: string;
+  message: Record<string, unknown>;
+  config: Record<string, unknown>;
+  batchedRequest: Record<string, unknown>;
+  batched: boolean;
+}) => {
+  const dest = { ID: o.id, Config: o.config, Enabled: true };
+  return {
+    name: 'hs',
+    id: o.id,
+    description: o.description,
+    feature: 'router',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: {
+          input: [{ message: o.message, destination: dest, metadata: { jobId: 1, userId: 'u1' } }],
+          destType: 'hs',
+        },
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: {
+          output: [
+            {
+              batchedRequest: o.batchedRequest,
+              metadata: [{ jobId: 1, userId: 'u1' }],
+              batched: o.batched,
+              statusCode: 200,
+              destination: dest,
+            },
+          ],
+        },
+      },
+    },
+  };
+};
+
+const esCfg = (accessToken: string, over: Record<string, unknown> = {}) => ({
+  authorizationType: 'newPrivateAppApi',
+  apiVersion: 'newApi',
+  accessToken,
+  lookupField: 'phone',
+  ...over,
+});
+const esAccessTokenOnlyCfg = (accessToken: string, over: Record<string, unknown> = {}) => ({
+  apiVersion: 'newApi',
+  accessToken,
+  lookupField: 'phone',
+  ...over,
+});
+const unsupportedLegacyAuthError =
+  'HubSpot API Key authentication is no longer supported. Use Private Apps authentication.';
+const legacyCfg = (over: Record<string, unknown> = {}) => ({
+  authorizationType: 'legacyApiKey',
+  apiVersion: 'legacyApi',
+  apiKey: 'dummy-apikey',
+  hubID: '123',
+  ...over,
+});
+
+const esIdentifyMessage = {
+  type: 'identify',
+  traits: { phone: '9999999999', firstname: 'CI', lastname: 'ES' },
+  context: { mappedToDestination: false },
+};
+
+const baseData: Record<string, unknown>[] = [
   {
     name: 'hs',
     description: 'router associated retl test',
@@ -76,6 +266,7 @@ export const data = [
                 method: 'POST',
                 endpoint:
                   'https://api.hubapi.com/crm/v3/associations/companies/contacts/batch/create',
+                endpointPath: '/crm/v3/associations/companies/contacts/batch/create',
                 headers: { 'Content-Type': 'application/json', Authorization: authHeader1 },
                 params: {},
                 body: {
@@ -222,111 +413,8 @@ export const data = [
         status: 200,
         body: {
           output: [
-            {
-              batchedRequest: {
-                version: '1',
-                type: 'REST',
-                method: 'POST',
-                endpoint: 'https://api.hubapi.com/crm/v3/objects/lead/batch/update',
-                headers: { 'Content-Type': 'application/json' },
-                params: { hapikey: 'dummy-apikey' },
-                body: {
-                  JSON: {
-                    inputs: [
-                      {
-                        properties: {
-                          firstname: 'Test Hubspot',
-                          anonymousId: '12345',
-                          country: 'India',
-                          email: 'testhubspot2@email.com',
-                        },
-                        id: '103605',
-                      },
-                    ],
-                  },
-                  JSON_ARRAY: {},
-                  XML: {},
-                  FORM: {},
-                },
-                files: {},
-              },
-              metadata: [{ jobId: 2, userId: 'u1' }],
-              batched: true,
-              statusCode: 200,
-              destination: {
-                Config: { apiKey: 'dummy-apikey', hubID: 'dummy-hubId' },
-                secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                name: 'Hubspot',
-                enabled: true,
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-                deleted: false,
-                createdAt: '2020-12-30T08:39:32.005Z',
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                destinationDefinition: {
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  displayName: 'Hubspot',
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                transformations: [],
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-              },
-            },
-            {
-              batchedRequest: {
-                version: '1',
-                type: 'REST',
-                method: 'POST',
-                endpoint: 'https://api.hubapi.com/crm/v3/objects/lead/batch/create',
-                headers: { 'Content-Type': 'application/json' },
-                params: { hapikey: 'dummy-apikey' },
-                body: {
-                  JSON: {
-                    inputs: [
-                      {
-                        properties: {
-                          firstname: 'Test Hubspot 1',
-                          anonymousId: '123451',
-                          country: 'India 1',
-                          email: 'testhubspot@email.com',
-                        },
-                      },
-                    ],
-                  },
-                  JSON_ARRAY: {},
-                  XML: {},
-                  FORM: {},
-                },
-                files: {},
-              },
-              metadata: [{ jobId: 3, userId: 'u1' }],
-              batched: true,
-              statusCode: 200,
-              destination: {
-                Config: { apiKey: 'dummy-apikey', hubID: 'dummy-hubId' },
-                secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                name: 'Hubspot',
-                enabled: true,
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-                deleted: false,
-                createdAt: '2020-12-30T08:39:32.005Z',
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                destinationDefinition: {
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  displayName: 'Hubspot',
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                transformations: [],
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-              },
-            },
+            legacyApiKeyMissingAccessTokenOutput(2),
+            legacyApiKeyMissingAccessTokenOutput(3),
           ],
         },
       },
@@ -453,52 +541,6 @@ export const data = [
             },
             {
               message: {
-                version: '1',
-                type: 'REST',
-                method: 'POST',
-                endpoint:
-                  'https://api.hubapi.com/contacts/v1/contact/createOrUpdate/email/testhubspot2@email.com',
-                headers: { 'Content-Type': 'application/json' },
-                userId: '00000000000000000000000000',
-                params: { hapikey: 'dummy-apikey' },
-                body: {
-                  JSON: {
-                    properties: [
-                      { property: 'email', value: 'testhubspot3@email.com' },
-                      { property: 'firstname', value: 'Test Hubspot3' },
-                    ],
-                  },
-                  XML: {},
-                  FORM: {},
-                },
-                files: {},
-                statusCode: 200,
-              },
-              metadata: { jobId: 3, userId: 'u1' },
-              destination: {
-                Config: { apiKey: 'dummy-apikey', hubID: 'dummy-hubId' },
-                secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                name: 'Hubspot',
-                enabled: true,
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-                deleted: false,
-                createdAt: '2020-12-30T08:39:32.005Z',
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                destinationDefinition: {
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  displayName: 'Hubspot',
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                transformations: [],
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-              },
-            },
-            {
-              message: {
                 channel: 'web',
                 context: {
                   app: {
@@ -563,191 +605,9 @@ export const data = [
         status: 200,
         body: {
           output: [
-            {
-              batchedRequest: {
-                version: '1',
-                type: 'REST',
-                method: 'POST',
-                endpoint: 'https://api.hubapi.com/contacts/v1/contact/batch/',
-                headers: { 'Content-Type': 'application/json' },
-                params: { hapikey: 'dummy-apikey' },
-                body: {
-                  JSON: {},
-                  JSON_ARRAY: {
-                    batch: JSON.stringify([
-                      {
-                        email: 'testhubspot1@email.com',
-                        properties: [{ property: 'firstname', value: 'Test Hubspot1' }],
-                      },
-                    ]),
-                  },
-                  XML: {},
-                  FORM: {},
-                },
-                files: {},
-              },
-              metadata: [{ jobId: 1, userId: 'u1' }],
-              batched: true,
-              statusCode: 200,
-              destination: {
-                Config: { apiKey: 'dummy-apikey', hubID: 'dummy-hubId' },
-                secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                name: 'Hubspot',
-                enabled: true,
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-                deleted: false,
-                createdAt: '2020-12-30T08:39:32.005Z',
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                destinationDefinition: {
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  displayName: 'Hubspot',
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                transformations: [],
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-              },
-            },
-            {
-              batchedRequest: {
-                version: '1',
-                type: 'REST',
-                method: 'GET',
-                endpoint: 'https://track.hubspot.com/v1/event',
-                headers: { 'Content-Type': 'application/json' },
-                params: {
-                  _a: 'dummy-hubId',
-                  _n: 'test track event HS',
-                  email: 'testhubspot2@email.com',
-                  firstname: 'Test Hubspot2',
-                },
-                body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
-                files: {},
-              },
-              metadata: [{ jobId: 2, userId: 'u1' }],
-              batched: false,
-              statusCode: 200,
-              destination: {
-                Config: { apiKey: 'dummy-apikey', hubID: 'dummy-hubId' },
-                secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                name: 'Hubspot',
-                enabled: true,
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-                deleted: false,
-                createdAt: '2020-12-30T08:39:32.005Z',
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                destinationDefinition: {
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  displayName: 'Hubspot',
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                transformations: [],
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-              },
-            },
-            {
-              batchedRequest: {
-                version: '1',
-                type: 'REST',
-                method: 'POST',
-                endpoint: 'https://api.hubapi.com/contacts/v1/contact/batch/',
-                headers: { 'Content-Type': 'application/json' },
-                params: { hapikey: 'dummy-apikey' },
-                body: {
-                  JSON: {},
-                  JSON_ARRAY: {
-                    batch: JSON.stringify([
-                      {
-                        email: 'testhubspot3@email.com',
-                        properties: [{ property: 'firstname', value: 'Test Hubspot3' }],
-                      },
-                    ]),
-                  },
-                  XML: {},
-                  FORM: {},
-                },
-                files: {},
-              },
-              metadata: [{ jobId: 3, userId: 'u1' }],
-              batched: true,
-              statusCode: 200,
-              destination: {
-                Config: { apiKey: 'dummy-apikey', hubID: 'dummy-hubId' },
-                secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                name: 'Hubspot',
-                enabled: true,
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-                deleted: false,
-                createdAt: '2020-12-30T08:39:32.005Z',
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                destinationDefinition: {
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  displayName: 'Hubspot',
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                transformations: [],
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-              },
-            },
-            {
-              batchedRequest: {
-                version: '1',
-                type: 'REST',
-                method: 'POST',
-                endpoint: 'https://api.hubapi.com/contacts/v1/contact/batch/',
-                headers: { 'Content-Type': 'application/json' },
-                params: { hapikey: 'dummy-apikey' },
-                body: {
-                  JSON: {},
-                  JSON_ARRAY: {
-                    batch: JSON.stringify([
-                      {
-                        email: 'testhubspot4@email.com',
-                        properties: [{ property: 'firstname', value: 'Test Hubspot4' }],
-                      },
-                    ]),
-                  },
-                  XML: {},
-                  FORM: {},
-                },
-                files: {},
-              },
-              metadata: [{ jobId: 4, userId: 'u1' }],
-              batched: true,
-              statusCode: 200,
-              destination: {
-                Config: { apiKey: 'dummy-apikey', hubID: 'dummy-hubId' },
-                secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                name: 'Hubspot',
-                enabled: true,
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-                deleted: false,
-                createdAt: '2020-12-30T08:39:32.005Z',
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                destinationDefinition: {
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  displayName: 'Hubspot',
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                transformations: [],
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-              },
-            },
+            legacyApiKeyMissingAccessTokenOutput(1),
+            legacyApiKeyMissingAccessTokenOutput(2),
+            legacyApiKeyMissingAccessTokenOutput(4),
           ],
         },
       },
@@ -1027,6 +887,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/lead/batch/update',
+                endpointPath: '/crm/v3/objects/lead/batch/update',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader1,
@@ -1110,6 +971,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/lead/batch/create',
+                endpointPath: '/crm/v3/objects/lead/batch/create',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader1,
@@ -1633,6 +1495,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert',
+                endpointPath: '/crm/v3/objects/contacts/batch/upsert',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: 'Bearer hs1',
@@ -1746,6 +1609,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/events/v3/send',
+                endpointPath: '/events/v3/send',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: 'Bearer hs1',
@@ -1849,6 +1713,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert',
+                endpointPath: '/crm/v3/objects/contacts/batch/upsert',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: 'Bearer hs1',
@@ -2008,7 +1873,7 @@ export const data = [
                   hubspotEvents: [],
                 },
                 secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
+                ID: 'hs-router-retl-dedup-dest',
                 name: 'Hubspot',
                 enabled: true,
                 workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
@@ -2044,6 +1909,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/update',
+                endpointPath: '/crm/v3/objects/contacts/batch/update',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader3,
@@ -2078,7 +1944,7 @@ export const data = [
                   hubspotEvents: [],
                 },
                 secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
+                ID: 'hs-router-retl-dedup-dest',
                 name: 'Hubspot',
                 enabled: true,
                 workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
@@ -2462,6 +2328,7 @@ export const data = [
                   XML: {},
                 },
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert',
+                endpointPath: '/crm/v3/objects/contacts/batch/upsert',
                 files: {},
                 headers: {
                   Authorization: authHeader1,
@@ -2558,6 +2425,7 @@ export const data = [
                   XML: {},
                 },
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert',
+                endpointPath: '/crm/v3/objects/contacts/batch/upsert',
                 files: {},
                 headers: {
                   Authorization: authHeader1,
@@ -2645,6 +2513,7 @@ export const data = [
                   XML: {},
                 },
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert',
+                endpointPath: '/crm/v3/objects/contacts/batch/upsert',
                 files: {},
                 headers: {
                   Authorization: authHeader1,
@@ -2923,6 +2792,7 @@ export const data = [
                   XML: {},
                 },
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert',
+                endpointPath: '/crm/v3/objects/contacts/batch/upsert',
                 files: {},
                 headers: {
                   Authorization: authHeader1,
@@ -3271,6 +3141,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert',
+                endpointPath: '/crm/v3/objects/contacts/batch/upsert',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader1,
@@ -3325,6 +3196,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/events/v3/send',
+                endpointPath: '/events/v3/send',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader1,
@@ -3361,6 +3233,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/events/v3/send',
+                endpointPath: '/events/v3/send',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader1,
@@ -3394,6 +3267,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/events/v3/send',
+                endpointPath: '/events/v3/send',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader1,
@@ -3427,6 +3301,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/events/v3/send',
+                endpointPath: '/events/v3/send',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader1,
@@ -3460,6 +3335,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/events/v3/send',
+                endpointPath: '/events/v3/send',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader1,
@@ -3493,6 +3369,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert',
+                endpointPath: '/crm/v3/objects/contacts/batch/upsert',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader1,
@@ -3692,124 +3569,8 @@ export const data = [
         status: 200,
         body: {
           output: [
-            {
-              batched: false,
-              destination: {
-                Config: {
-                  apiKey: 'invalid-api-key',
-                  hubID: 'dummy-hubId',
-                },
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                createdAt: '2020-12-30T08:39:32.005Z',
-                deleted: false,
-                destinationDefinition: {
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  displayName: 'Hubspot',
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                enabled: true,
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-                name: 'Hubspot',
-                secretConfig: {},
-                transformations: [],
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-              },
-              error: JSON.stringify({
-                message:
-                  'Failed to get hubspot properties: {"status":"error","message":"The API key provided is invalid. View or manage your API key here: https://app.hubspot.com/l/api-key/","correlationId":"correlation-id","category":"INVALID_AUTHENTICATION","links":{"api key":"https://app.hubspot.com/l/api-key/"}}',
-                destinationResponse: {
-                  response: {
-                    status: 'error',
-                    message:
-                      'The API key provided is invalid. View or manage your API key here: https://app.hubspot.com/l/api-key/',
-                    correlationId: 'correlation-id',
-                    category: 'INVALID_AUTHENTICATION',
-                    links: {
-                      'api key': 'https://app.hubspot.com/l/api-key/',
-                    },
-                  },
-                  status: 401,
-                },
-              }),
-              metadata: [
-                {
-                  jobId: 2,
-                  userId: 'u1',
-                },
-              ],
-              statTags: {
-                destType: 'HS',
-                errorCategory: 'network',
-                errorType: 'aborted',
-                feature: 'router',
-                implementation: 'native',
-                module: 'destination',
-              },
-              statusCode: 401,
-            },
-            {
-              batched: false,
-              destination: {
-                Config: {
-                  apiKey: 'invalid-api-key',
-                  hubID: 'dummy-hubId',
-                },
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                createdAt: '2020-12-30T08:39:32.005Z',
-                deleted: false,
-                destinationDefinition: {
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  displayName: 'Hubspot',
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                enabled: true,
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-                name: 'Hubspot',
-                secretConfig: {},
-                transformations: [],
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-              },
-              error: JSON.stringify({
-                message:
-                  'Failed to get hubspot properties: {"status":"error","message":"The API key provided is invalid. View or manage your API key here: https://app.hubspot.com/l/api-key/","correlationId":"correlation-id","category":"INVALID_AUTHENTICATION","links":{"api key":"https://app.hubspot.com/l/api-key/"}}',
-                destinationResponse: {
-                  response: {
-                    status: 'error',
-                    message:
-                      'The API key provided is invalid. View or manage your API key here: https://app.hubspot.com/l/api-key/',
-                    correlationId: 'correlation-id',
-                    category: 'INVALID_AUTHENTICATION',
-                    links: {
-                      'api key': 'https://app.hubspot.com/l/api-key/',
-                    },
-                  },
-                  status: 401,
-                },
-              }),
-              metadata: [
-                {
-                  jobId: 3,
-                  userId: 'u1',
-                },
-              ],
-              statTags: {
-                destType: 'HS',
-                errorCategory: 'network',
-                errorType: 'aborted',
-                feature: 'router',
-                implementation: 'native',
-                module: 'destination',
-              },
-              statusCode: 401,
-            },
+            legacyApiKeyMissingAccessTokenOutput(2, 'invalid-api-key'),
+            legacyApiKeyMissingAccessTokenOutput(3, 'invalid-api-key'),
           ],
         },
       },
@@ -4072,6 +3833,7 @@ export const data = [
                   XML: {},
                 },
                 endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert',
+                endpointPath: '/crm/v3/objects/contacts/batch/upsert',
                 files: {},
                 headers: {
                   Authorization: authHeader2,
@@ -4278,123 +4040,8 @@ export const data = [
         status: 200,
         body: {
           output: [
-            {
-              batchedRequest: {
-                version: '1',
-                type: 'REST',
-                method: 'POST',
-                endpoint: 'https://api.hubapi.com/crm/v3/objects/lead/batch/create',
-                headers: { 'Content-Type': 'application/json' },
-                params: { hapikey: 'dummy-apikey' },
-                body: {
-                  JSON: {
-                    inputs: [
-                      {
-                        properties: {
-                          firstname: 'Test Create',
-                          anonymousId: '123451',
-                          country: 'India',
-                          email: 'testhubspot@email.com',
-                        },
-                      },
-                    ],
-                  },
-                  JSON_ARRAY: {},
-                  XML: {},
-                  FORM: {},
-                },
-                files: {},
-              },
-              metadata: [
-                {
-                  jobId: 1,
-                  userId: 'u1',
-                  dontBatch: true,
-                },
-              ],
-              batched: true,
-              statusCode: 200,
-              destination: {
-                Config: { apiKey: 'dummy-apikey', hubID: 'dummy-hubId' },
-                secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                name: 'Hubspot',
-                enabled: true,
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-                deleted: false,
-                createdAt: '2020-12-30T08:39:32.005Z',
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                destinationDefinition: {
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  displayName: 'Hubspot',
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                transformations: [],
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-              },
-            },
-            {
-              batchedRequest: {
-                version: '1',
-                type: 'REST',
-                method: 'POST',
-                endpoint: 'https://api.hubapi.com/crm/v3/objects/lead/batch/update',
-                headers: { 'Content-Type': 'application/json' },
-                params: { hapikey: 'dummy-apikey' },
-                body: {
-                  JSON: {
-                    inputs: [
-                      {
-                        properties: {
-                          firstname: 'Test Update',
-                          anonymousId: '12345',
-                          country: 'India',
-                          email: 'testhubspot2@email.com',
-                        },
-                        id: '103605',
-                      },
-                    ],
-                  },
-                  JSON_ARRAY: {},
-                  XML: {},
-                  FORM: {},
-                },
-                files: {},
-              },
-              metadata: [
-                {
-                  jobId: 2,
-                  userId: 'u1',
-                  dontBatch: true,
-                },
-              ],
-              batched: true,
-              statusCode: 200,
-              destination: {
-                Config: { apiKey: 'dummy-apikey', hubID: 'dummy-hubId' },
-                secretConfig: {},
-                ID: '1mMy5cqbtfuaKZv1IhVQKnBdVwe',
-                name: 'Hubspot',
-                enabled: true,
-                workspaceId: '1TSN08muJTZwH8iCDmnnRt1pmLd',
-                deleted: false,
-                createdAt: '2020-12-30T08:39:32.005Z',
-                updatedAt: '2021-02-03T16:22:31.374Z',
-                destinationDefinition: {
-                  id: '1aIXqM806xAVm92nx07YwKbRrO9',
-                  name: 'HS',
-                  displayName: 'Hubspot',
-                  createdAt: '2020-04-09T09:24:31.794Z',
-                  updatedAt: '2021-01-11T11:03:28.103Z',
-                },
-                transformations: [],
-                isConnectionEnabled: true,
-                isProcessorEnabled: true,
-              },
-            },
+            legacyApiKeyMissingAccessTokenOutput(1, 'dummy-apikey', { dontBatch: true }),
+            legacyApiKeyMissingAccessTokenOutput(2, 'dummy-apikey', { dontBatch: true }),
           ],
         },
       },
@@ -4454,6 +4101,7 @@ export const data = [
                 type: 'REST',
                 method: 'POST',
                 endpoint: 'https://api.hubapi.com/events/v3/send',
+                endpointPath: '/events/v3/send',
                 headers: {
                   'Content-Type': 'application/json',
                   Authorization: authHeader1,
@@ -4491,4 +4139,344 @@ export const data = [
     },
   },
   ...upsertData,
+  ...errorValidationData,
+  // --- migrated event-stream / legacy router cases (see helpers above) ---
+  // searchContacts create/update happy paths
+  successCase({
+    id: 'hs_router_es_identify_create',
+    description: '(newApi) event-stream identify creates a contact when searchContacts finds none',
+    message: esIdentifyMessage,
+    config: esCfg(secret1),
+    batched: true,
+    batchedRequest: {
+      version: '1',
+      type: 'REST',
+      method: 'POST',
+      endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/create',
+      endpointPath: '/crm/v3/objects/contacts/batch/create',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader1 },
+      params: {},
+      body: {
+        JSON: {
+          inputs: [{ properties: { phone: '9999999999', firstname: 'CI', lastname: 'ES' } }],
+        },
+        JSON_ARRAY: {},
+        XML: {},
+        FORM: {},
+      },
+      files: {},
+    },
+  }),
+  successCase({
+    id: 'hs_router_es_identify_update',
+    description: '(newApi) event-stream identify updates an existing contact via searchContacts',
+    message: esIdentifyMessage,
+    config: esCfg(secret2),
+    batched: true,
+    batchedRequest: {
+      version: '1',
+      type: 'REST',
+      method: 'POST',
+      endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/update',
+      endpointPath: '/crm/v3/objects/contacts/batch/update',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader2 },
+      params: {},
+      body: {
+        JSON: {
+          inputs: [
+            { id: '103604', properties: { phone: '9999999999', firstname: 'CI', lastname: 'ES' } },
+          ],
+        },
+        JSON_ARRAY: {},
+        XML: {},
+        FORM: {},
+      },
+      files: {},
+    },
+  }),
+  successCase({
+    id: 'hs_router_es_identify_create_access_token_only',
+    description:
+      '(newApi + accessToken only) event-stream identify creates a contact without authorizationType',
+    message: esIdentifyMessage,
+    config: esAccessTokenOnlyCfg(secret1),
+    batched: true,
+    batchedRequest: {
+      version: '1',
+      type: 'REST',
+      method: 'POST',
+      endpoint: 'https://api.hubapi.com/crm/v3/objects/contacts/batch/create',
+      endpointPath: '/crm/v3/objects/contacts/batch/create',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader1 },
+      params: {},
+      body: {
+        JSON: {
+          inputs: [{ properties: { phone: '9999999999', firstname: 'CI', lastname: 'ES' } }],
+        },
+        JSON_ARRAY: {},
+        XML: {},
+        FORM: {},
+      },
+      files: {},
+    },
+  }),
+  // searchContacts edge/error branches
+  errCase({
+    id: 'hs_router_es_multiple_contacts',
+    description: '(newApi) event-stream identify: searchContacts finds >1 contact is aborted',
+    message: {
+      type: 'identify',
+      traits: { phone: '9', firstname: 'A' },
+      context: { mappedToDestination: false },
+    },
+    config: esCfg(secret4),
+    statusCode: 400,
+    error:
+      'Unable to get single Hubspot contact. More than one contacts found. Retry with unique lookupPropertyName and lookupValue',
+    statTags: enrich('network', 'aborted', { meta: 'instrumentation' }),
+  }),
+  errCase({
+    id: 'hs_router_es_invalid_lookup_traits',
+    description: '(newApi) event-stream identify with no traits for lookup is aborted',
+    message: { type: 'identify', context: { mappedToDestination: false } },
+    config: esCfg(secret1),
+    statusCode: 400,
+    error: 'Identify - Invalid traits value for lookup field',
+    statTags: enrich('dataValidation', 'instrumentation'),
+  }),
+  errCase({
+    id: 'hs_router_property_type_mismatch',
+    description: '(newApi) identify with a trait value type mismatching the HS property type',
+    message: { type: 'identify', traits: { phone: '9', days_to_close: 'notnum' } },
+    config: esCfg(secret1),
+    statusCode: 400,
+    error:
+      'Property days_to_close data type string is not matching with Hubspot property data type number',
+    statTags: enrich('dataValidation', 'instrumentation'),
+  }),
+  // track event-config validation
+  errCase({
+    id: 'hs_router_track_no_event_mappings',
+    description: '(newApi) track without Config.hubspotEvents is aborted',
+    message: { type: 'track', event: 'Purchase', properties: {} },
+    config: { authorizationType: 'newPrivateAppApi', apiVersion: 'newApi', accessToken: secret1 },
+    statusCode: 400,
+    error: 'Event and property mappings are required for track call',
+    statTags: enrich('dataValidation', 'instrumentation'),
+  }),
+  errCase({
+    id: 'hs_router_track_event_not_configured',
+    description: '(newApi) track whose event has no hubspotEvents mapping is aborted',
+    message: { type: 'track', event: 'Purchase', properties: {} },
+    config: {
+      authorizationType: 'newPrivateAppApi',
+      apiVersion: 'newApi',
+      accessToken: secret1,
+      hubspotEvents: [{ rsEventName: 'Other', hubspotEventName: 'pe_o', eventProperties: [] }],
+    },
+    statusCode: 400,
+    error: "Event name 'purchase' mappings are not configured in the destination",
+    statTags: enrich('dataValidation', 'configuration'),
+  }),
+  // RETL search failure (mappedToDestination; not event-stream, grouped here with the migrated cases)
+  errCase({
+    id: 'hs_router_retl_search_failure',
+    description: '(newApi) RETL object-record search failure surfaces a retryable error',
+    message: {
+      type: 'identify',
+      context: {
+        mappedToDestination: true,
+        externalId: [{ type: 'HS-contacts', identifierType: 'email', id: 'a@b.com' }],
+      },
+      traits: { email: 'a@b.com' },
+    },
+    config: {
+      authorizationType: 'newPrivateAppApi',
+      apiVersion: 'newApi',
+      accessToken: 'search-fail-token',
+      lookupField: 'email',
+    },
+    statusCode: 500,
+    error:
+      '{"message":"rETL - Error during searching object record. \\"boom\\"","destinationResponse":{"response":{"message":"boom"},"status":500}}',
+    statTags: enrich('network', 'retryable'),
+  }),
+  // legacy API-key auth is no longer supported, regardless of API version or flow.
+  errCase({
+    id: 'hs_router_legacy_missing_hub_id',
+    // no properties/traits so the batch-level getProperties fetch is skipped and
+    // config validation (which runs inside processSingleMessage) is what aborts.
+    description: '(legacyApiKey) missing hubID in config is aborted',
+    message: { type: 'track', event: 'Purchase' },
+    config: legacyCfg({ hubID: '' }),
+    statusCode: 400,
+    error: unsupportedLegacyAuthError,
+    statTags: enrich('dataValidation', 'configuration'),
+  }),
+  errCase({
+    id: 'hs_router_legacy_missing_api_key',
+    description: '(legacyApiKey) missing apiKey in config is aborted',
+    message: { type: 'track', event: 'Purchase' },
+    config: legacyCfg({ apiKey: '' }),
+    statusCode: 400,
+    error: unsupportedLegacyAuthError,
+    statTags: enrich('dataValidation', 'configuration'),
+  }),
+  errCase({
+    id: 'hs_router_legacy_identify_no_email',
+    description: '(legacyApi) event-stream identify without email is aborted',
+    message: {
+      type: 'identify',
+      traits: { firstname: 'A' },
+      context: { mappedToDestination: false },
+    },
+    config: legacyCfg(),
+    statusCode: 400,
+    error: unsupportedLegacyAuthError,
+    statTags: enrich('dataValidation', 'configuration'),
+  }),
+  errCase({
+    id: 'hs_router_newapi_hapikey_identify',
+    description: '(newApi + legacyApiKey) identify uses hapikey auth for property lookup + create',
+    message: {
+      type: 'identify',
+      traits: { phone: '9', firstname: 'A' },
+      context: { mappedToDestination: false },
+    },
+    config: {
+      authorizationType: 'legacyApiKey',
+      apiVersion: 'newApi',
+      apiKey: 'dummy-apikeysuccess',
+      hubID: '123',
+      lookupField: 'phone',
+    },
+    statusCode: 400,
+    error: unsupportedLegacyAuthError,
+    statTags: enrich('dataValidation', 'configuration'),
+  }),
+  errCase({
+    id: 'hs_router_retl_legacy_auth_newapi_identify_rejected',
+    description: '(newApi + legacyApiKey) rETL identify is rejected before lookup/search',
+    message: {
+      type: 'identify',
+      context: {
+        mappedToDestination: true,
+        externalId: [{ type: 'HS-contacts', identifierType: 'email', id: 'legacy@example.com' }],
+      },
+      traits: { email: 'legacy@example.com', firstname: 'Legacy' },
+    },
+    config: legacyCfg({ apiVersion: 'newApi', lookupField: 'email' }),
+    statusCode: 400,
+    error: unsupportedLegacyAuthError,
+    statTags: enrich('dataValidation', 'configuration'),
+  }),
+  errCase({
+    id: 'hs_router_retl_legacy_auth_legacyapi_identify_rejected',
+    description: '(legacyApi + legacyApiKey) rETL identify is rejected before lookup/search',
+    message: {
+      type: 'identify',
+      context: {
+        mappedToDestination: true,
+        externalId: [{ type: 'HS-lead', identifierType: 'email', id: 'legacy-v1@example.com' }],
+      },
+      traits: { email: 'legacy-v1@example.com', firstname: 'Legacy V1' },
+    },
+    config: legacyCfg(),
+    statusCode: 400,
+    error: unsupportedLegacyAuthError,
+    statTags: enrich('dataValidation', 'configuration'),
+  }),
+  // legacy v1 endpoints with private-app auth
+  successCase({
+    id: 'hs_router_v1_identify_private_app',
+    description: '(legacyApi + private-app) identify hits contacts/v1 with Bearer auth',
+    message: {
+      type: 'identify',
+      traits: { email: 'v1@e.com', firstname: 'A' },
+      context: { mappedToDestination: false },
+    },
+    config: {
+      authorizationType: 'newPrivateAppApi',
+      apiVersion: 'legacyApi',
+      accessToken: secret1,
+      hubID: '123',
+      lookupField: 'email',
+    },
+    batched: true,
+    batchedRequest: {
+      version: '1',
+      type: 'REST',
+      method: 'POST',
+      endpoint: 'https://api.hubapi.com/contacts/v1/contact/batch/',
+      endpointPath: '/contacts/v1/contact/batch/',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader1 },
+      params: {},
+      body: {
+        JSON: {},
+        JSON_ARRAY: {
+          batch: '[{"email":"v1@e.com","properties":[{"property":"firstname","value":"A"}]}]',
+        },
+        XML: {},
+        FORM: {},
+      },
+      files: {},
+    },
+  }),
+  successCase({
+    id: 'hs_router_v1_identify_access_token_only',
+    description:
+      '(legacyApi + accessToken only) identify hits contacts/v1 without authorizationType',
+    message: {
+      type: 'identify',
+      traits: { email: 'v1@e.com', firstname: 'A' },
+      context: { mappedToDestination: false },
+    },
+    config: esAccessTokenOnlyCfg(secret1, { apiVersion: 'legacyApi', lookupField: 'email' }),
+    batched: true,
+    batchedRequest: {
+      version: '1',
+      type: 'REST',
+      method: 'POST',
+      endpoint: 'https://api.hubapi.com/contacts/v1/contact/batch/',
+      endpointPath: '/contacts/v1/contact/batch/',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader1 },
+      params: {},
+      body: {
+        JSON: {},
+        JSON_ARRAY: {
+          batch: '[{"email":"v1@e.com","properties":[{"property":"firstname","value":"A"}]}]',
+        },
+        XML: {},
+        FORM: {},
+      },
+      files: {},
+    },
+  }),
+  successCase({
+    id: 'hs_router_v1_track_private_app',
+    description: '(legacyApi + private-app) track hits track.hubspot.com/v1/event with Bearer auth',
+    message: { type: 'track', event: 'Purchase', properties: { email: 'v1@e.com' } },
+    config: {
+      authorizationType: 'newPrivateAppApi',
+      apiVersion: 'legacyApi',
+      accessToken: secret1,
+      hubID: '123',
+      hubspotEvents: [{ rsEventName: 'Purchase', hubspotEventName: 'pe_p', eventProperties: [] }],
+    },
+    batched: false,
+    batchedRequest: {
+      version: '1',
+      type: 'REST',
+      method: 'GET',
+      endpoint: 'https://track.hubspot.com/v1/event',
+      endpointPath: '/v1/event',
+      headers: { 'Content-Type': 'application/json', Authorization: authHeader1 },
+      params: { _a: '123', _n: 'Purchase', email: 'v1@e.com' },
+      body: { JSON: {}, JSON_ARRAY: {}, XML: {}, FORM: {} },
+      files: {},
+    },
+  }),
 ];
+
+// Dedicated rETL upsert fixtures are appended after the base fixtures.
+export const data = [...baseData, ...retlUpsertData];

@@ -6,13 +6,14 @@ import { RouteActivationMiddleware } from '../middlewares/routeActivation';
 import { SecretSpreader } from '../middlewares/arraySpreader';
 import { DestTransformCompactedPayloadV1Middleware } from '../middlewares/destTransformCompactedPayloadV1';
 import { RouterTransformCompactedPayloadV1Middleware } from '../middlewares/routerTransformCompactedPayloadV1';
+import { DestinationValidationMiddleware } from '../middlewares/destinationValidation';
 
 const router = new Router();
 
 router.post(
   '/:version/destinations/:destination',
+  DestinationValidationMiddleware.pathParam,
   RouteActivationMiddleware.isDestinationRouteActive,
-  RouteActivationMiddleware.destinationProcFilter,
   FeatureFlagMiddleware.handle,
   DestTransformCompactedPayloadV1Middleware,
   DestinationController.destinationTransformAtProcessor,
@@ -20,7 +21,7 @@ router.post(
 router.post(
   '/routerTransform',
   RouteActivationMiddleware.isDestinationRouteActive,
-  RouteActivationMiddleware.destinationRtFilter,
+  DestinationValidationMiddleware.bodyDestType,
   FeatureFlagMiddleware.handle,
   RouterTransformCompactedPayloadV1Middleware,
   SecretSpreader.middleware(),
@@ -29,13 +30,17 @@ router.post(
 router.post(
   '/batch',
   RouteActivationMiddleware.isDestinationRouteActive,
-  RouteActivationMiddleware.destinationBatchFilter,
+  DestinationValidationMiddleware.bodyDestType,
   FeatureFlagMiddleware.handle,
   RouterTransformCompactedPayloadV1Middleware,
   DestinationController.batchProcess,
 );
 
-router.post('/deleteUsers', RegulationController.deleteUsers);
+router.post(
+  '/deleteUsers',
+  DestinationValidationMiddleware.userDeletionBody,
+  RegulationController.deleteUsers,
+);
 
 const destinationRoutes = router.routes();
 export default destinationRoutes;

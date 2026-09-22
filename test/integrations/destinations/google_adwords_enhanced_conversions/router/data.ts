@@ -1,3 +1,4 @@
+import sha256 from 'sha256';
 import { authHeader1, secret1 } from '../maskedSecrets';
 import { newData as batchingData } from './batching-data';
 
@@ -492,6 +493,99 @@ const events = [
       },
     },
   },
+  {
+    metadata: {
+      secret: {
+        access_token: secret1,
+        refresh_token: 'efgh5678',
+        developer_token: 'ijkl91011',
+      },
+      jobId: 9,
+      userId: 'u2',
+    },
+    destination: {
+      hasDynamicConfig: false,
+      Config: {
+        rudderAccountId: '25u5whFH7gVTnCiAjn4ykoCLGoC',
+        customerId: '1234567890',
+        subAccount: true,
+        loginCustomerId: '11',
+        listOfConversions: [{ conversions: 'Page View' }, { conversions: 'Product Added' }],
+        authStatus: 'active',
+      },
+    },
+    message: {
+      channel: 'web',
+      context: {
+        app: {
+          build: '1.0.0',
+          name: 'RudderLabs JavaScript SDK',
+          namespace: 'com.rudderlabs.javascript',
+          version: '1.0.0',
+        },
+        traits: {
+          phone: '912382193',
+          firstName: 'John',
+          lastName: 'Gomes',
+          city: 'London',
+          state: 'UK',
+          streetAddress: '71 Cherry Court SOUTHAMPTON SO53 5PD UK',
+        },
+        library: { name: 'RudderLabs JavaScript SDK', version: '1.0.0' },
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
+        locale: 'en-US',
+        ip: '0.0.0.0',
+        os: { name: '', version: '' },
+        screen: { density: 2 },
+      },
+      event: 'Page View',
+      type: 'track',
+      messageId: '5e10d13a-bf9a-44bf-b884-43a9e591ea72',
+      originalTimestamp: '2019-10-14T11:15:18.299Z',
+      anonymousId: '00000000000000000000000001',
+      userId: '67890',
+      properties: {
+        gclid: 'gclid1234',
+        conversionDateTime: '2022-01-01 12:32:45-08:00',
+        adjustedValue: '10',
+        currency: 'INR',
+        adjustmentDateTime: '2022-01-01 12:32:45-08:00',
+        partialFailure: true,
+        campaignId: '1',
+        templateId: '0',
+        order_id: 10000,
+        total: 1000,
+        products: [
+          {
+            product_id: '507f1f77bcf86cd799439011',
+            sku: '45790-32',
+            name: 'Monopoly: 3rd Edition',
+            price: '19',
+            position: '1',
+            category: 'cars',
+            url: 'https://www.example.com/product/path',
+            image_url: 'https://www.example.com/product/path.jpg',
+            quantity: '2',
+          },
+          {
+            product_id: '507f1f77bcf86cd7994390112',
+            sku: '45790-322',
+            name: 'Monopoly: 3rd Edition2',
+            price: '192',
+            quantity: 22,
+            position: '12',
+            category: 'Cars2',
+            url: 'https://www.example.com/product/path2',
+            image_url: 'https://www.example.com/product/path.jpg2',
+          },
+        ],
+      },
+      integrations: { All: true },
+      name: 'ApplicationLoaded',
+      sentAt: '2019-10-14T11:15:53.296Z',
+    },
+  },
 ];
 
 const invalidRtTfCases = [
@@ -595,14 +689,14 @@ const invalidRtTfCases = [
 export const data = [
   {
     name: 'google_adwords_enhanced_conversions',
-    description: 'Test 0',
+    description: 'Test 0 - valid static config batches a Page View event',
     feature: 'router',
     module: 'destination',
     version: 'v0',
     input: {
       request: {
         body: {
-          input: events,
+          input: [events[0], events[7]],
           destType: 'google_adwords_enhanced_conversions',
         },
         method: 'POST',
@@ -614,7 +708,7 @@ export const data = [
         body: {
           output: [
             {
-              batched: false,
+              batched: true,
               batchedRequest: {
                 body: {
                   FORM: {},
@@ -636,18 +730,47 @@ export const data = [
                           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
                         userIdentifiers: [
                           {
-                            hashedPhoneNumber:
-                              '04387707e6cbed8c4538c81cc570ed9252d579469f36c273839b26d784e4bdbe',
+                            hashedPhoneNumber: sha256('+912382193'),
                           },
                           {
                             addressInfo: {
                               city: 'London',
-                              hashedFirstName:
-                                'a8cfcd74832004951b4408cdb0a5dbcd8c7e52d43f7fe244bf720582e05241da',
-                              hashedLastName:
-                                '1c574b17eefa532b6d61c963550a82d2d3dfca4a7fb69e183374cfafd5328ee4',
-                              hashedStreetAddress:
-                                '9a4d2e50828448f137f119a3ebdbbbab8d6731234a67595fdbfeb2a2315dd550',
+                              hashedFirstName: sha256('john'),
+                              hashedLastName: sha256('gomes'),
+                              hashedStreetAddress: sha256(
+                                '71 cherry court southampton so53 5pd uk',
+                              ),
+                              state: 'UK',
+                            },
+                          },
+                        ],
+                      },
+                      {
+                        adjustmentDateTime: '2022-01-01 12:32:45-08:00',
+                        adjustmentType: 'ENHANCEMENT',
+                        gclidDateTimePair: {
+                          conversionDateTime: '2022-01-01 12:32:45-08:00',
+                          gclid: 'gclid1234',
+                        },
+                        orderId: '10000',
+                        restatementValue: {
+                          adjustedValue: 10,
+                          currencyCode: 'INR',
+                        },
+                        userAgent:
+                          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
+                        userIdentifiers: [
+                          {
+                            hashedPhoneNumber: sha256('+912382193'),
+                          },
+                          {
+                            addressInfo: {
+                              city: 'London',
+                              hashedFirstName: sha256('john'),
+                              hashedLastName: sha256('gomes'),
+                              hashedStreetAddress: sha256(
+                                '71 cherry court southampton so53 5pd uk',
+                              ),
                               state: 'UK',
                             },
                           },
@@ -660,6 +783,7 @@ export const data = [
                   XML: {},
                 },
                 endpoint: '',
+                endpointPath: '/uploadConversionAdjustments',
                 files: {},
                 headers: {
                   Authorization: authHeader1,
@@ -705,9 +829,43 @@ export const data = [
                   },
                   userId: 'u1',
                 },
+                {
+                  jobId: 9,
+                  secret: {
+                    access_token: secret1,
+                    developer_token: 'ijkl91011',
+                    refresh_token: 'efgh5678',
+                  },
+                  userId: 'u2',
+                },
               ],
               statusCode: 200,
             },
+          ],
+        },
+      },
+    },
+  },
+  {
+    name: 'google_adwords_enhanced_conversions',
+    description: 'Test 0 - identify events fail input validation',
+    feature: 'router',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: {
+          input: [events[1]],
+          destType: 'google_adwords_enhanced_conversions',
+        },
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: {
+          output: [
             {
               batched: false,
               destination: {
@@ -728,7 +886,8 @@ export const data = [
                   subAccount: true,
                 },
               },
-              error: 'Message Type identify is not supported. Aborting message.',
+              error:
+                'message.type: Message Type is not supported. Only track events are supported.; message.event: Required',
               metadata: [
                 {
                   jobId: 2,
@@ -750,6 +909,31 @@ export const data = [
               },
               statusCode: 400,
             },
+          ],
+        },
+      },
+    },
+  },
+  {
+    name: 'google_adwords_enhanced_conversions',
+    description: 'Test 0 - missing OAuth secret fails authentication',
+    feature: 'router',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: {
+          input: [events[2]],
+          destType: 'google_adwords_enhanced_conversions',
+        },
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: {
+          output: [
             {
               batched: false,
               destination: {
@@ -789,8 +973,33 @@ export const data = [
               },
               statusCode: 500,
             },
+          ],
+        },
+      },
+    },
+  },
+  {
+    name: 'google_adwords_enhanced_conversions',
+    description: 'Test 0 - templated static config events batch together',
+    feature: 'router',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: {
+          input: [events[3], events[4]],
+          destType: 'google_adwords_enhanced_conversions',
+        },
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: {
+          output: [
             {
-              batched: false,
+              batched: true,
               batchedRequest: {
                 body: {
                   FORM: {},
@@ -812,18 +1021,47 @@ export const data = [
                           'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
                         userIdentifiers: [
                           {
-                            hashedPhoneNumber:
-                              '04387707e6cbed8c4538c81cc570ed9252d579469f36c273839b26d784e4bdbe',
+                            hashedPhoneNumber: sha256('+912382193'),
                           },
                           {
                             addressInfo: {
                               city: 'London',
-                              hashedFirstName:
-                                'a8cfcd74832004951b4408cdb0a5dbcd8c7e52d43f7fe244bf720582e05241da',
-                              hashedLastName:
-                                '1c574b17eefa532b6d61c963550a82d2d3dfca4a7fb69e183374cfafd5328ee4',
-                              hashedStreetAddress:
-                                '9a4d2e50828448f137f119a3ebdbbbab8d6731234a67595fdbfeb2a2315dd550',
+                              hashedFirstName: sha256('john'),
+                              hashedLastName: sha256('gomes'),
+                              hashedStreetAddress: sha256(
+                                '71 cherry court southampton so53 5pd uk',
+                              ),
+                              state: 'UK',
+                            },
+                          },
+                        ],
+                      },
+                      {
+                        adjustmentDateTime: '2022-01-01 12:32:45-08:00',
+                        adjustmentType: 'ENHANCEMENT',
+                        gclidDateTimePair: {
+                          conversionDateTime: '2022-01-01 12:32:45-08:00',
+                          gclid: 'gclid1234',
+                        },
+                        orderId: '10000',
+                        restatementValue: {
+                          adjustedValue: 10,
+                          currencyCode: 'INR',
+                        },
+                        userAgent:
+                          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
+                        userIdentifiers: [
+                          {
+                            hashedPhoneNumber: sha256('+912382193'),
+                          },
+                          {
+                            addressInfo: {
+                              city: 'London',
+                              hashedFirstName: sha256('john'),
+                              hashedLastName: sha256('gomes'),
+                              hashedStreetAddress: sha256(
+                                '71 cherry court southampton so53 5pd uk',
+                              ),
                               state: 'UK',
                             },
                           },
@@ -836,6 +1074,7 @@ export const data = [
                   XML: {},
                 },
                 endpoint: '',
+                endpointPath: '/uploadConversionAdjustments',
                 files: {},
                 headers: {
                   Authorization: authHeader1,
@@ -881,92 +1120,6 @@ export const data = [
                   },
                   userId: 'u1',
                 },
-              ],
-              statusCode: 200,
-            },
-            {
-              batched: false,
-              batchedRequest: {
-                body: {
-                  FORM: {},
-                  JSON: {
-                    conversionAdjustments: [
-                      {
-                        adjustmentDateTime: '2022-01-01 12:32:45-08:00',
-                        adjustmentType: 'ENHANCEMENT',
-                        gclidDateTimePair: {
-                          conversionDateTime: '2022-01-01 12:32:45-08:00',
-                          gclid: 'gclid1234',
-                        },
-                        orderId: '10000',
-                        restatementValue: {
-                          adjustedValue: 10,
-                          currencyCode: 'INR',
-                        },
-                        userAgent:
-                          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
-                        userIdentifiers: [
-                          {
-                            hashedPhoneNumber:
-                              '04387707e6cbed8c4538c81cc570ed9252d579469f36c273839b26d784e4bdbe',
-                          },
-                          {
-                            addressInfo: {
-                              city: 'London',
-                              hashedFirstName:
-                                'a8cfcd74832004951b4408cdb0a5dbcd8c7e52d43f7fe244bf720582e05241da',
-                              hashedLastName:
-                                '1c574b17eefa532b6d61c963550a82d2d3dfca4a7fb69e183374cfafd5328ee4',
-                              hashedStreetAddress:
-                                '9a4d2e50828448f137f119a3ebdbbbab8d6731234a67595fdbfeb2a2315dd550',
-                              state: 'UK',
-                            },
-                          },
-                        ],
-                      },
-                    ],
-                    partialFailure: true,
-                  },
-                  JSON_ARRAY: {},
-                  XML: {},
-                },
-                endpoint: '',
-                files: {},
-                headers: {
-                  Authorization: authHeader1,
-                  'Content-Type': 'application/json',
-                  'login-customer-id': '{{event.context.subaccountID || "" }}',
-                },
-                method: 'POST',
-                params: {
-                  accessToken: 'google_adwords_enhanced_conversions1',
-                  customerId: '{{event.context.customerID || "" }}',
-                  event: 'Page View',
-                  loginCustomerId: '{{event.context.subaccountID || "" }}',
-                  subAccount: true,
-                },
-                type: 'REST',
-                version: '1',
-              },
-              destination: {
-                hasDynamicConfig: false,
-                Config: {
-                  authStatus: 'active',
-                  customerId: '{{event.context.customerID || "" }}',
-                  listOfConversions: [
-                    {
-                      conversions: 'Page View',
-                    },
-                    {
-                      conversions: 'Product Added',
-                    },
-                  ],
-                  loginCustomerId: '{{event.context.subaccountID || "" }}',
-                  rudderAccountId: '25u5whFH7gVTnCiAjn4ykoCLGoC',
-                  subAccount: true,
-                },
-              },
-              metadata: [
                 {
                   jobId: 5,
                   secret: {
@@ -979,6 +1132,31 @@ export const data = [
               ],
               statusCode: 200,
             },
+          ],
+        },
+      },
+    },
+  },
+  {
+    name: 'google_adwords_enhanced_conversions',
+    description: 'Test 0 - object loginCustomerId fails config validation',
+    feature: 'router',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: {
+          input: [events[5]],
+          destType: 'google_adwords_enhanced_conversions',
+        },
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: {
+          output: [
             {
               batched: false,
               destination: {
@@ -1022,6 +1200,31 @@ export const data = [
               },
               statusCode: 400,
             },
+          ],
+        },
+      },
+    },
+  },
+  {
+    name: 'google_adwords_enhanced_conversions',
+    description: 'Test 0 - missing loginCustomerId fails sub-account config validation',
+    feature: 'router',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: {
+          input: [events[6]],
+          destType: 'google_adwords_enhanced_conversions',
+        },
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: {
+          output: [
             {
               batched: false,
               statusCode: 400,
@@ -1048,13 +1251,17 @@ export const data = [
               destination: {
                 hasDynamicConfig: false,
                 Config: {
-                  customerId: '1234567890',
-                  subAccount: true,
-                  listOfConversions: [
-                    { conversions: 'Page View' },
-                    { conversions: 'Product Added' },
-                  ],
                   authStatus: 'active',
+                  customerId: '1234567890',
+                  listOfConversions: [
+                    {
+                      conversions: 'Page View',
+                    },
+                    {
+                      conversions: 'Product Added',
+                    },
+                  ],
+                  subAccount: true,
                 },
               },
             },

@@ -24,6 +24,20 @@ describe('Misc tests', () => {
       require(`../../${version}/destinations/intercom/deleteUsers`),
     );
   });
+
+  test('should resolve handler aliases for capability-specific handlers', async () => {
+    const version = 'v0';
+
+    expect(MiscService.getDeletionHandler('ga360', version)).toEqual(
+      require(`../../${version}/destinations/ga/deleteUsers`),
+    );
+  });
+
+  test('should reject unknown destination names before require', async () => {
+    expect(() => MiscService.getDestHandler('not_a_destination', 'v0')).toThrow(
+      'Invalid destination: not_a_destination',
+    );
+  });
 });
 
 describe('Misc | getFeatures', () => {
