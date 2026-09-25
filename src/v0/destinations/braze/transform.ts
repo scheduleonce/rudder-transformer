@@ -7,7 +7,7 @@ import {
   BrazeDedupUtility,
   CustomAttributeOperationUtil,
   processDeduplication,
-  processBatch,
+  processBatchWithDeliveryMapping,
   addAppId,
   setExternalIdOrAliasObject,
   getPurchaseObjs,
@@ -18,6 +18,8 @@ import {
   handleReservedProperties,
   getEndpointFromConfig,
   formatGender,
+  formatEmail,
+  validateDestinationConfig,
 } from './util';
 import type {
   BrazeDestination,
@@ -58,6 +60,7 @@ import {
   CustomAttributeOperationTypes,
   DESTINATION,
 } from './config';
+import { buildEcommerceEventProperties, getEcommerceMapping } from './ecommerceUtil';
 
 import logger from '../../../logger';
 import { handleHttpRequest } from '../../../adapters/network';
@@ -127,7 +130,10 @@ function populateCustomAttributesWithOperation(
         });
     }
   } catch (exp: any) {
-    logger.info('Failure occurred during custom attributes operations', exp);
+    logger.debug(
+      'Failure occurred during custom attributes operations',
+      exp?.message ?? String(exp),
+    );
   }
 }
 
@@ -172,11 +178,7 @@ function getUserAttributesObject(
           value = formatGender(value);
           break;
         case 'email':
-          if (typeof value === 'string') {
-            value = value.toLowerCase();
-          } else if (isDefinedAndNotNull(value)) {
-            throw new InstrumentationError('Invalid email, email must be a valid string');
-          }
+          value = formatEmail(value);
           break;
         default:
           break;
@@ -350,6 +352,35 @@ function processTrackEvent(
     }
   }
 
+  // New recommended-events path. Gated by destination config; falls through to legacy
+  // for unmapped events. Preserves attributes[] + dedup built above.
+  if (messageType === EventType.TRACK && destination.Config.useEcommerceRecommendedEvents) {
+    const ecomMapping = getEcommerceMapping(eventName);
+    if (ecomMapping) {
+      const { timestamp } = message;
+      const ecomProperties = buildEcommerceEventProperties(
+        message,
+        ecomMapping.brazeEvent,
+        ecomMapping.action,
+        destination,
+      );
+      let ecomEvent: Record<string, unknown> = {
+        name: ecomMapping.brazeEvent,
+        time: timestamp,
+        properties: ecomProperties,
+      };
+      ecomEvent = setExternalIdOrAliasObject(ecomEvent, message);
+      ecomEvent = addAppId(ecomEvent, message);
+      requestJson.events = [ecomEvent];
+      return buildResponse(
+        message,
+        destination,
+        requestJson,
+        getTrackEndPoint(getEndpointFromConfig(destination)),
+      );
+    }
+  }
+
   if (
     messageType === EventType.TRACK &&
     typeof eventName === 'string' &&
@@ -502,6 +533,7 @@ async function process(
 ): Promise<ProcessorTransformationOutput> {
   let response;
   const { message, destination } = event;
+  validateDestinationConfig(destination);
   const messageType = message.type.toLowerCase();
 
   let category = ConfigCategory.DEFAULT;
@@ -586,6 +618,9 @@ const processRouterDest = async (
   const userStore = new Map<string, BrazeUser>();
   let failedLookupIdentifiers = new Set<string>();
   const { destination } = inputs[0];
+  // Checked before the dedup lookup below, which would otherwise spend a Braze
+  // round trip on a request that cannot authenticate.
+  validateDestinationConfig(destination);
   if (destination.Config.supportDedup) {
     let lookupResult: { users: BrazeUser[]; failedIdentifiers: Set<string> } | undefined;
     try {
@@ -629,7 +664,7 @@ const processRouterDest = async (
   }
 
   const allTransfomredEvents = lodash.flatMap(output);
-  return processBatch(allTransfomredEvents);
+  return processBatchWithDeliveryMapping(allTransfomredEvents);
 };
 
 export { process, processRouterDest };

@@ -1,0 +1,105 @@
+/**
+ * Delivery handling for Google Ads Enhanced Conversions.
+ *
+ * Two things are destination-specific:
+ *
+ * 1. Partial failure arrives on a **2xx** carrying `partialFailureError`, with a positional
+ *    `results` array in which an empty entry means that adjustment failed. Keyed on '2xx' rather
+ *    than 200 because the check it replaces is `isHttpStatusSuccess(status)`.
+ * 2. Google Ads is OAuth-backed, so the auth category is real and is derived from the response
+ *    body (2SV-not-enrolled and CUSTOMER_NOT_FOUND mean the grant is gone, not that the token is
+ *    stale). The framework never infers auth from a status, so this is declared explicitly.
+ *
+ * With the transport flag enabled, the framework sends the prepared request directly and this spec
+ * injects the developer token at delivery time so it never appears in persisted router output.
+ */
+import { NetworkError } from '@rudderstack/integrations-lib';
+import { isEmptyObject } from '../../util';
+import tags from '../../util/tags';
+import {
+  abort,
+  authExpired,
+  authRevoked,
+  perItem,
+  success,
+  type DeliverySpec,
+  type StatusOverrideMap,
+} from '../../../services/destination/destinationIntegration/destinationIntegration';
+
+const { getAuthErrCategory, getDeveloperToken } = require('../../util/googleUtils');
+const {
+  REFRESH_TOKEN,
+  AUTH_STATUS_INACTIVE,
+} = require('../../../adapters/networkhandler/authConstants');
+
+export const extractGaecErrorMessage = (response: unknown): string =>
+  (response as { error?: { message?: string } })?.error?.message || 'unknown error';
+
+const gaecStatusOverrides: StatusOverrideMap = {
+  '2xx': (ctx, fallback) => {
+    const body = ctx.response as
+      | { partialFailureError?: { code?: number; message?: string }; results?: unknown[] }
+      | undefined;
+    const partialFailureError = body?.partialFailureError;
+
+    // code 0 is Google's "no error"; treat it the same as an absent field.
+    if (!partialFailureError || partialFailureError.code === 0) return fallback();
+
+    const reason = partialFailureError.message || 'unknown error format';
+    const results = Array.isArray(body?.results) ? body.results : [];
+
+    // Indexed off the *posted* adjustments rather than off `results`, matching what customerio and
+    // braze_audience do with their own request bodies. This destination is strictly 1:1
+    // (routerTransform.ts:44 emits one adjustment per event), so the posted array is the one array
+    // guaranteed to be the same length as the job list — which keeps the bridge's attribution
+    // guard out of the picture entirely.
+    //
+    // Reading a missing `results` entry as failed is deliberate and reproduces the legacy handler's
+    // `results?.[i] ?? {}`. Google omits or truncates `results` on some partial failures, and the
+    // alternative — losing attribution and retrying the batch — would re-upload adjustments Google
+    // has already accepted, which come back as duplicate-enhancement failures on every attempt.
+    const items = (ctx.request.body?.JSON as { conversionAdjustments?: unknown[] })
+      ?.conversionAdjustments;
+    const positions = Array.isArray(items) ? items : results;
+
+    return perItem(
+      positions.map((_item, index) =>
+        isEmptyObject(results[index] ?? {}) ? abort(reason) : success(),
+      ),
+    );
+  },
+
+  '4xx': (ctx, fallback) => {
+    const category = getAuthErrCategory({ response: ctx.response, status: ctx.status });
+    if (category === REFRESH_TOKEN) return authExpired(extractGaecErrorMessage(ctx.response));
+    if (category === AUTH_STATUS_INACTIVE) {
+      return authRevoked(extractGaecErrorMessage(ctx.response));
+    }
+    return fallback();
+  },
+};
+
+export const gaecDelivery: DeliverySpec = {
+  statusOverrides: gaecStatusOverrides,
+  failureReason: (ctx) => extractGaecErrorMessage(ctx.response),
+  prepareRequest: (request) => {
+    // An empty endpoint means legacy, params-based router output reached the framework transport
+    // because the transport flag flipped on while these jobs were queued — sending it would POST
+    // to ''. Retryable, so the job re-transforms into the new shape and succeeds on the retry.
+    // The mirror of this guard, new shape reaching the legacy proxy, lives in ./networkHandler.
+    if (!request.endpoint) {
+      const error = new NetworkError(
+        '[Google Ads Enhanced Conversions] old-shape payload reached framework transport after transport flag flip',
+        500,
+        { [tags.TAG_NAMES.ERROR_TYPE]: tags.ERROR_TYPES.RETRYABLE },
+        { status: 500, response: 'old-shape payload reached framework transport' },
+      );
+      error.statTags[tags.TAG_NAMES.META] = 'gaec_transport_flag_shape_mismatch_old_to_framework';
+      throw error;
+    }
+    return {
+      ...request,
+      headers: { ...request.headers, 'developer-token': getDeveloperToken() },
+    };
+  },
+};

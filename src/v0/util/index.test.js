@@ -516,6 +516,94 @@ describe('validateEventAndLowerCaseConversion Tests', () => {
   });
 });
 
+describe('setValueForUntrustedPath', () => {
+  const setValuePkg = require('set-value');
+  const { setValueForUntrustedPath } = utilities;
+
+  describe('paths set-value accepts behave exactly like set-value', () => {
+    it.each([
+      ['flat key', 'email', 'a@b.com'],
+      ['nested path', 'user.address.city', 'Berlin'],
+      ['escaped dot is one literal key', 'a\\.constructor', 1],
+      ['key merely containing a reserved word', 'myConstructor', 1],
+      ['reserved word differing in case', 'CONSTRUCTOR', 1],
+    ])('%s', (_name, path, value) => {
+      expect(setValueForUntrustedPath({}, path, value)).toEqual(setValuePkg({}, path, value));
+    });
+
+    it('returns the target it was given', () => {
+      const target = {};
+      expect(setValueForUntrustedPath(target, 'email', 'a@b.com')).toBe(target);
+    });
+  });
+
+  describe('paths set-value rejects become a 4xx instead of a 500', () => {
+    // These are exactly the paths that produced `Cannot set unsafe key: "constructor"` in
+    // production. Asserting set-value still throws keeps this suite honest if the library's
+    // rules ever change — setValueForUntrustedPath deliberately keeps no copy of them.
+    it.each([
+      'constructor',
+      '__proto__',
+      'prototype',
+      'user_properties.constructor',
+      'a.__proto__',
+    ])('raises an InstrumentationError for "%s"', (path) => {
+      expect(() => setValuePkg({}, path, 'boom')).toThrow(/Cannot set unsafe key/);
+
+      expect(() => setValueForUntrustedPath({}, path, 'boom')).toThrow(InstrumentationError);
+    });
+
+    it('reports a 400 status so the event aborts instead of being retried', () => {
+      let status;
+      try {
+        setValueForUntrustedPath({}, 'user_properties.constructor', 'boom');
+      } catch (error) {
+        status = utilities.getErrorStatusCode(error);
+      }
+      expect(status).toBe(400);
+    });
+
+    it('names the offending path and keeps the library message', () => {
+      expect(() => setValueForUntrustedPath({}, 'user_properties.constructor', 'boom')).toThrow(
+        'Invalid key in event payload at "user_properties.constructor": Cannot set unsafe key: "constructor"',
+      );
+    });
+
+    it('leaves Object.prototype alone', () => {
+      expect(() => setValueForUntrustedPath({}, '__proto__.polluted', 'yes')).toThrow(
+        InstrumentationError,
+      );
+      expect(() => setValueForUntrustedPath({}, 'constructor.prototype.polluted', 'yes')).toThrow(
+        InstrumentationError,
+      );
+      expect({}.polluted).toBeUndefined();
+    });
+  });
+
+  describe('failures that are not about the path still surface unchanged', () => {
+    it('rethrows the target error rather than reclassifying it', () => {
+      const target = {};
+      Object.defineProperty(target, 'email', {
+        set() {
+          throw new TypeError('target rejected email');
+        },
+      });
+
+      expect(() => setValueForUntrustedPath(target, 'email', 'a@b.com')).toThrow(
+        'target rejected email',
+      );
+      expect(() => setValueForUntrustedPath(target, 'email', 'a@b.com')).not.toThrow(
+        InstrumentationError,
+      );
+    });
+
+    it('is a no-op for a falsy path, as set-value itself is', () => {
+      expect(setValueForUntrustedPath({ a: 1 }, undefined, 'x')).toEqual({ a: 1 });
+      expect(setValueForUntrustedPath({ a: 1 }, '', 'x')).toEqual({ a: 1 });
+    });
+  });
+});
+
 describe('extractCustomFields', () => {
   // Handle reserved words in message keys
   it('should handle reserved word "prototype" in message keys when keys are provided', () => {
@@ -909,29 +997,6 @@ describe('groupRouterTransformEvents', () => {
 
     expect(result.length).toBe(1); // 1 group because configs are equivalent
     expect(result[0].length).toBe(2); // Both events in the same group
-  });
-});
-
-describe('applyJSONStringTemplate', () => {
-  it('should apply JSON string template to the payload', () => {
-    const payload = {
-      domain: 'abc',
-    };
-    const template = '`https://{{$.domain}}.com`';
-
-    const result = utilities.applyJSONStringTemplate(payload, template);
-    expect(result).toEqual('https://abc.com');
-  });
-
-  it('should apply JSON string template to the payload multiple times', () => {
-    const payload = {
-      domain: 'abc',
-      subdomain: 'def',
-    };
-    const template = '`https://{{$.subdomain}}.{{$.domain}}.com`';
-
-    const result = utilities.applyJSONStringTemplate(payload, template);
-    expect(result).toEqual('https://def.abc.com');
   });
 });
 
@@ -1533,5 +1598,81 @@ describe('getType', () => {
 
   test.each(testCases)('$description', ({ input, expected }) => {
     expect(utilities.getType(input)).toBe(expected);
+  });
+});
+
+describe('applyCustomMappings (chokepoint)', () => {
+  const WS = 'ws-chokepoint';
+
+  afterEach(() => {
+    delete process.env.RS_CHOKE_SECRET;
+    delete process.env.CUSTOM_MAPPINGS_SANDBOX_ENABLED;
+  });
+
+  it('is async and resolves a valid mapping via the sandbox (flag default on)', async () => {
+    const out = await utilities.applyCustomMappings({ a: 1 }, [{ from: '$.a', to: 'b' }], WS);
+    expect(out).toEqual({ b: 1 });
+  });
+
+  it('does not leak env via the sandbox path', async () => {
+    process.env.RS_CHOKE_SECRET = 'sekret';
+    // process is undefined inside the isolate, so referencing it throws rather than leaking.
+    await expect(
+      utilities.applyCustomMappings(
+        { a: 1 },
+        [{ from: 'process.env.RS_CHOKE_SECRET || $.a', to: 'b' }],
+        WS,
+      ),
+    ).rejects.toThrow(/process is not defined/);
+  });
+
+  it('falls back to in-process eval when flag is disabled', async () => {
+    process.env.CUSTOM_MAPPINGS_SANDBOX_ENABLED = 'false';
+    const out = await utilities.applyCustomMappings({ a: 5 }, [{ from: '$.a', to: 'b' }], WS);
+    expect(out).toEqual({ b: 5 });
+  });
+});
+
+describe('E.164 phone number helpers', () => {
+  const { getValidE164PhoneNumber, isValidE164PhoneNumber } = utilities;
+
+  // Separators are stripped before parsing, so an authored spelling validates on the
+  // strength of its sanitized form and getValidE164PhoneNumber returns that form.
+  const validCases = [
+    ['+15551234567', '+15551234567'],
+    ['+1 (555) 123-4567', '+15551234567'],
+    ['+44 20 7183 8750', '+442071838750'],
+    ['+91-9876543210', '+919876543210'],
+  ];
+
+  const invalidCases = [
+    ['missing leading +', '15551234567'],
+    ['not a number', 'abcdef'],
+    ['empty string', ''],
+    ['invalid country code', '+00000000000'],
+    ['null', null],
+    ['undefined', undefined],
+  ];
+
+  it.each(validCases)('returns the sanitized E.164 form for %s', (input, expected) => {
+    expect(getValidE164PhoneNumber(input)).toBe(expected);
+    expect(isValidE164PhoneNumber(input)).toBe(true);
+  });
+
+  it.each(invalidCases)('returns null for %s', (_label, input) => {
+    expect(getValidE164PhoneNumber(input)).toBeNull();
+    expect(isValidE164PhoneNumber(input)).toBe(false);
+  });
+
+  // The pair must not drift: the boolean is derived from the value-returning function, so
+  // anything that validates has a sanitized form to send, and vice versa.
+  it('keeps the two helpers in agreement', () => {
+    const inputs = [
+      ...validCases.map(([input]) => input),
+      ...invalidCases.map(([, input]) => input),
+    ];
+    inputs.forEach((input) => {
+      expect(isValidE164PhoneNumber(input)).toBe(getValidE164PhoneNumber(input) !== null);
+    });
   });
 });

@@ -33,12 +33,12 @@ jobs:
       tag_name: ${{ steps.gen_tag_names.outputs.tag_name }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
 
@@ -85,17 +85,19 @@ jobs:
 
     env:
       UT_TAG_NAME: ${{ needs.generate-tag-names.outputs.tag_name_ut }}
+      # Single rolling branch so the same devops PR is reused (and updated) every release.
+      BRANCH: shared-user-transformer-upgrade
     outputs:
       pr_url: ${{ steps.shared-pr.outputs.pr_url }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Generate GitHub App Token
         id: generate-token
-        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ vars.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_PRIVATE_KEY }}
@@ -104,7 +106,7 @@ jobs:
           repositories: rudder-devops # to access cross-repo
 
       - name: Checkout Devops Repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: rudderlabs/rudder-devops
           token: ${{ steps.generate-token.outputs.token }}
@@ -118,23 +120,39 @@ jobs:
           cd ../../../../config-be-rudder-transformer/environment/prod
           yq eval -i ".config-be-user-transformer.image.tag=\"$UT_TAG_NAME\"" base.yaml
 
-      - name: Create shared user-transformers branch on remote
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "No image tag changes for shared user-transformers; nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or reset shared user-transformers branch on remote
+        if: steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
+          # Point the rolling branch at the current master HEAD so the PR diff stays a single clean bump.
           BASE_SHA=$(git rev-parse HEAD)
-          gh api repos/rudderlabs/rudder-devops/git/refs \
-            --method POST \
-            -f ref="refs/heads/shared-user-transformer-$UT_TAG_NAME" \
-            -f sha="$BASE_SHA"
+          if gh api "repos/rudderlabs/rudder-devops/git/refs/heads/$BRANCH" >/dev/null 2>&1; then
+            gh api "repos/rudderlabs/rudder-devops/git/refs/heads/$BRANCH" \
+              --method PATCH -f sha="$BASE_SHA" -F force=true
+          else
+            gh api repos/rudderlabs/rudder-devops/git/refs \
+              --method POST -f ref="refs/heads/$BRANCH" -f sha="$BASE_SHA"
+          fi
 
       - name: Create verified commit for shared user-transformers
-        uses: ryancyq/github-signed-commit@d046f1493ec46c6df96e7c5a76ccbf2b1786bdf7 # use main branch with repository support
+        if: steps.diff.outputs.changed == 'true'
+        uses: ryancyq/github-signed-commit@cb9b21ee83578fe8e26a9eda530015aedf0c7c5b # use main branch with repository support
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         with:
           repository: rudderlabs/rudder-devops
-          branch-name: shared-user-transformer-${{ env.UT_TAG_NAME }}
+          branch-name: ${{ env.BRANCH }}
           commit-message: 'chore: upgrade shared user-transformers to ${{ env.UT_TAG_NAME }}'
           files: |
             helm-charts/shared-services/per-az/environment/production/production.yaml
@@ -142,18 +160,26 @@ jobs:
             helm-charts/shared-services/per-az/environment/production/multi-tenant/multi-tenant.yaml
             helm-charts/config-be-rudder-transformer/environment/prod/base.yaml
 
-      - name: Create PR for shared user-transformers
+      - name: Create or update PR for shared user-transformers
         id: shared-pr
+        if: steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          PR_TITLE: 'chore: upgrade shared user-transformers to ${{ env.UT_TAG_NAME }}'
+          PR_BODY: 'Automated PR to update production shared user-transformers image to ${{ env.UT_TAG_NAME }}'
         run: |
-          PR_URL=$(gh pr create \
-            --repo rudderlabs/rudder-devops \
-            --base master \
-            --head "shared-user-transformer-$UT_TAG_NAME" \
-            --title "chore: upgrade shared user-transformers to $UT_TAG_NAME" \
-            --body "Automated PR to update production shared user-transformers image to $UT_TAG_NAME")
-          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          # Reuse the open PR for the rolling branch if one exists; otherwise create it.
+          PR_NUMBER=$(gh pr list --repo rudderlabs/rudder-devops --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr edit "$PR_NUMBER" --repo rudderlabs/rudder-devops --title "$PR_TITLE" --body "$PR_BODY"
+            PR_URL=$(gh pr view "$PR_NUMBER" --repo rudderlabs/rudder-devops --json url --jq .url)
+          else
+            PR_URL=$(gh pr create --repo rudderlabs/rudder-devops --base master --head "$BRANCH" \
+              --title "$PR_TITLE" --body "$PR_BODY")
+          fi
+          # Request the standard reviewers (idempotent — no-op if already requested).
+          gh pr edit "$PR_URL" --repo rudderlabs/rudder-devops --add-reviewer itsmihir,fracasula || echo "::warning::could not request reviewers"
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
 
   create-pull-request-hosted-user-transformer:
     name: Create PR for Hosted User-Transformer (devops)
@@ -165,17 +191,19 @@ jobs:
 
     env:
       UT_TAG_NAME: ${{ needs.generate-tag-names.outputs.tag_name_ut }}
+      # Single rolling branch so the same devops PR is reused (and updated) every release.
+      BRANCH: hosted-user-transformer-upgrade
     outputs:
       pr_url: ${{ steps.hosted-pr.outputs.pr_url }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Generate GitHub App Token
         id: generate-token
-        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ vars.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_PRIVATE_KEY }}
@@ -184,7 +212,7 @@ jobs:
           repositories: rudder-devops # to access cross-repo
 
       - name: Checkout Devops Repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: rudderlabs/rudder-devops
           token: ${{ steps.generate-token.outputs.token }}
@@ -194,39 +222,63 @@ jobs:
           cd customer-objects/multi-tenant-us
           yq eval -i ".spec.user-transformer.image.version=\"$UT_TAG_NAME\"" hostedmtedmt.yaml
 
-      - name: Create hosted user-transformer branch on remote
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "No image tag changes for hosted user-transformer; nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or reset hosted user-transformer branch on remote
+        if: steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
+          # Point the rolling branch at the current master HEAD so the PR diff stays a single clean bump.
           BASE_SHA=$(git rev-parse HEAD)
-          gh api repos/rudderlabs/rudder-devops/git/refs \
-            --method POST \
-            -f ref="refs/heads/hosted-user-transformer-$UT_TAG_NAME" \
-            -f sha="$BASE_SHA"
+          if gh api "repos/rudderlabs/rudder-devops/git/refs/heads/$BRANCH" >/dev/null 2>&1; then
+            gh api "repos/rudderlabs/rudder-devops/git/refs/heads/$BRANCH" \
+              --method PATCH -f sha="$BASE_SHA" -F force=true
+          else
+            gh api repos/rudderlabs/rudder-devops/git/refs \
+              --method POST -f ref="refs/heads/$BRANCH" -f sha="$BASE_SHA"
+          fi
 
       - name: Create verified commit for hosted user-transformer
-        uses: ryancyq/github-signed-commit@d046f1493ec46c6df96e7c5a76ccbf2b1786bdf7 # use main branch with repository support
+        if: steps.diff.outputs.changed == 'true'
+        uses: ryancyq/github-signed-commit@cb9b21ee83578fe8e26a9eda530015aedf0c7c5b # use main branch with repository support
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         with:
           repository: rudderlabs/rudder-devops
-          branch-name: hosted-user-transformer-${{ env.UT_TAG_NAME }}
+          branch-name: ${{ env.BRANCH }}
           commit-message: 'chore: upgrade hosted user-transformer to ${{ env.UT_TAG_NAME }}'
           files: |
             customer-objects/multi-tenant-us/hostedmtedmt.yaml
 
-      - name: Create PR for hosted user-transformer
+      - name: Create or update PR for hosted user-transformer
         id: hosted-pr
+        if: steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          PR_TITLE: 'chore: upgrade hosted user-transformer to ${{ env.UT_TAG_NAME }}'
+          PR_BODY: 'Automated PR to update production hosted user-transformer image to ${{ env.UT_TAG_NAME }}'
         run: |
-          PR_URL=$(gh pr create \
-            --repo rudderlabs/rudder-devops \
-            --base master \
-            --head "hosted-user-transformer-$UT_TAG_NAME" \
-            --title "chore: upgrade hosted user-transformer to $UT_TAG_NAME" \
-            --body "Automated PR to update production hosted user-transformer image to $UT_TAG_NAME")
-          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          # Reuse the open PR for the rolling branch if one exists; otherwise create it.
+          PR_NUMBER=$(gh pr list --repo rudderlabs/rudder-devops --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr edit "$PR_NUMBER" --repo rudderlabs/rudder-devops --title "$PR_TITLE" --body "$PR_BODY"
+            PR_URL=$(gh pr view "$PR_NUMBER" --repo rudderlabs/rudder-devops --json url --jq .url)
+          else
+            PR_URL=$(gh pr create --repo rudderlabs/rudder-devops --base master --head "$BRANCH" \
+              --title "$PR_TITLE" --body "$PR_BODY")
+          fi
+          # Request the standard reviewers (idempotent — no-op if already requested).
+          gh pr edit "$PR_URL" --repo rudderlabs/rudder-devops --add-reviewer itsmihir,fracasula || echo "::warning::could not request reviewers"
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
 
   create-pull-request-dedicated-user-transformers:
     name: Create PR for Dedicated User-Transformers (devops)
@@ -238,18 +290,19 @@ jobs:
 
     env:
       UT_TAG_NAME: ${{ needs.generate-tag-names.outputs.tag_name_ut }}
-      TAG_NAME: ${{ needs.generate-tag-names.outputs.tag_name }}
+      # Single rolling branch so the same devops PR is reused (and updated) every release.
+      BRANCH: dedicated-user-transformer-upgrade
     outputs:
       pr_url: ${{ steps.dedicated-pr.outputs.pr_url }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Generate GitHub App Token
         id: generate-token
-        uses: actions/create-github-app-token@67018539274d69449ef7c02e8e71183d1719ab42 # v2.1.4
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           app-id: ${{ vars.RELEASE_APP_ID }}
           private-key: ${{ secrets.RELEASE_PRIVATE_KEY }}
@@ -258,7 +311,7 @@ jobs:
           repositories: rudder-devops # to access cross-repo
 
       - name: Checkout Devops Repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: rudderlabs/rudder-devops
           token: ${{ steps.generate-token.outputs.token }}
@@ -303,38 +356,62 @@ jobs:
             echo "EOF"
           } >> $GITHUB_OUTPUT
 
-      - name: Create dedicated user-transformer branch on remote
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet; then
+            echo "No version changes for dedicated user-transformers; nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or reset dedicated user-transformer branch on remote
+        if: steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
+          # Point the rolling branch at the current master HEAD so the PR diff stays a single clean bump.
           BASE_SHA=$(git rev-parse HEAD)
-          gh api repos/rudderlabs/rudder-devops/git/refs \
-            --method POST \
-            -f ref="refs/heads/dedicated-user-transformer-$TAG_NAME" \
-            -f sha="$BASE_SHA"
+          if gh api "repos/rudderlabs/rudder-devops/git/refs/heads/$BRANCH" >/dev/null 2>&1; then
+            gh api "repos/rudderlabs/rudder-devops/git/refs/heads/$BRANCH" \
+              --method PATCH -f sha="$BASE_SHA" -F force=true
+          else
+            gh api repos/rudderlabs/rudder-devops/git/refs \
+              --method POST -f ref="refs/heads/$BRANCH" -f sha="$BASE_SHA"
+          fi
 
       - name: Create verified commit for dedicated user-transformers
-        uses: ryancyq/github-signed-commit@d046f1493ec46c6df96e7c5a76ccbf2b1786bdf7 # use main branch with repository support
+        if: steps.diff.outputs.changed == 'true'
+        uses: ryancyq/github-signed-commit@cb9b21ee83578fe8e26a9eda530015aedf0c7c5b # use main branch with repository support
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         with:
           repository: rudderlabs/rudder-devops
-          branch-name: dedicated-user-transformer-${{ env.TAG_NAME }}
-          commit-message: 'chore: upgrade dedicated user transformers to ${{ env.TAG_NAME }}'
+          branch-name: ${{ env.BRANCH }}
+          commit-message: 'chore: upgrade dedicated user-transformers to ${{ env.UT_TAG_NAME }}'
           files: ${{ steps.collect-dedicated-files.outputs.files }}
 
-      - name: Create PR for dedicated user-transformers
+      - name: Create or update PR for dedicated user-transformers
         id: dedicated-pr
+        if: steps.diff.outputs.changed == 'true'
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          PR_TITLE: 'chore: upgrade dedicated user-transformers to ${{ env.UT_TAG_NAME }}'
+          PR_BODY: 'Automated PR to update dedicated user-transformer default version to ${{ env.UT_TAG_NAME }}'
         run: |
-          PR_URL=$(gh pr create \
-            --repo rudderlabs/rudder-devops \
-            --base master \
-            --head "dedicated-user-transformer-$TAG_NAME" \
-            --title "chore: upgrade dedicated user transformers to $TAG_NAME" \
-            --body "Automated PR to update dedicated user transformer default version to $TAG_NAME")
-          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          # Reuse the open PR for the rolling branch if one exists; otherwise create it.
+          PR_NUMBER=$(gh pr list --repo rudderlabs/rudder-devops --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$PR_NUMBER" ]; then
+            gh pr edit "$PR_NUMBER" --repo rudderlabs/rudder-devops --title "$PR_TITLE" --body "$PR_BODY"
+            PR_URL=$(gh pr view "$PR_NUMBER" --repo rudderlabs/rudder-devops --json url --jq .url)
+          else
+            PR_URL=$(gh pr create --repo rudderlabs/rudder-devops --base master --head "$BRANCH" \
+              --title "$PR_TITLE" --body "$PR_BODY")
+          fi
+          # Request the standard reviewers (idempotent — no-op if already requested).
+          gh pr edit "$PR_URL" --repo rudderlabs/rudder-devops --add-reviewer itsmihir,fracasula || echo "::warning::could not request reviewers"
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
 
   notify-control-plane:
     name: Notify Control Plane Team
@@ -346,12 +423,12 @@ jobs:
       - create-pull-request-dedicated-user-transformers
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Notify Control Plane Team
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         continue-on-error: true
         with:
           method: chat.postMessage

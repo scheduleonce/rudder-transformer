@@ -1,35 +1,92 @@
-import { z, ZodType } from 'zod';
+import { z } from 'zod';
 import {
-  BatchDestination,
+  DestinationIntegration,
   TransformedEvent,
   ChunkBatchStrategy,
-} from '../../../services/destination/nativeBatching/batchDestination';
-import type { BatchStrategy } from '../../../services/destination/nativeBatching/types';
-import type { RouterTransformationRequestData } from '../../../types/destinationTransformation';
+  makeRouterInputSchema,
+} from '../../../services/destination/destinationIntegration/destinationIntegration';
+import type { BatchStrategy } from '../../../services/destination/destinationIntegration/types';
 // `process` (from transform.js) builds the single-event delivery request synchronously and is
 // reused here so no transform logic is duplicated.
 import { process as transformSingleEvent } from './transform';
-import { MAX_CONVERSION_ADJUSTMENTS_PER_BATCH } from './config';
+import {
+  destType,
+  getUploadConversionAdjustmentsEndpoint,
+  UPLOAD_CONVERSION_ADJUSTMENTS_ENDPOINT_PATH,
+  MAX_CONVERSION_ADJUSTMENTS_PER_BATCH,
+} from './config';
+import { gaecDelivery } from './delivery';
+import { getConversionActionId } from './utils';
+import type { ConversionAdjustment, GaecRouterRequest } from './types';
+import { isBatchingFrameworkTransportEnabled } from '../../../constants/destinationIntegrationsMap';
+import { getAccessToken } from '../../util';
 
-// Each batched item is a single Google Ads conversion adjustment.
-type ConversionAdjustment = Record<string, unknown>;
+const gaecInputSchema = makeRouterInputSchema({
+  message: z
+    .object({
+      type: z.string().refine((type) => type.toLowerCase() === 'track', {
+        message: 'Message Type is not supported. Only track events are supported.',
+      }),
+      event: z.string().min(1, 'event is required for track calls'),
+    })
+    .passthrough(),
+});
 
-class GoogleAdwordsEnhancedConversionsIntegration extends BatchDestination<ConversionAdjustment> {
-  transformEvent(input: RouterTransformationRequestData): TransformedEvent<ConversionAdjustment> {
+type GaecBatchInput = z.infer<typeof gaecInputSchema> & GaecRouterRequest;
+
+class GoogleAdwordsEnhancedConversionsIntegration extends DestinationIntegration<
+  ConversionAdjustment,
+  typeof gaecInputSchema
+> {
+  // Partial failure on a 2xx, plus body-derived auth categories; see ./delivery.
+  static readonly delivery = gaecDelivery;
+
+  /**
+   * Async only on the framework-transport path, where the conversion action resource name has to
+   * be resolved before the adjustment is complete. The lookup is cache-backed and keyed on
+   * (conversion name, customerId), so a batch pays at most one request per distinct conversion
+   * name and every later event in the call is a hit.
+   *
+   * Resolving here rather than at delivery is what lets events with *different* conversion names
+   * share a batch: the name no longer has to sit in `params` as a grouping key, and a name that
+   * fails to resolve fails only its own job instead of the whole formed request.
+   */
+  async transformEvent(
+    input: z.infer<typeof gaecInputSchema>,
+  ): Promise<TransformedEvent<ConversionAdjustment>> {
     // Reuse the existing per-event transform untouched. It returns a delivery request whose
     // body.JSON is `{ conversionAdjustments: [<single adjustment>], partialFailure: true }`.
-    const result = transformSingleEvent(input);
+    const gaecInput = input as GaecBatchInput;
+    const result = transformSingleEvent(gaecInput);
+
+    if (!isBatchingFrameworkTransportEnabled(destType, gaecInput.metadata.workspaceId)) {
+      return {
+        body: result.body.JSON.conversionAdjustments![0],
+        endpoint: result.endpoint, // '' — delivery is handled by the networkHandler/proxy
+        endpointPath: '/uploadConversionAdjustments',
+        method: result.method,
+        headers: result.headers,
+        // Legacy shape: params carries event (conversion name), customerId, loginCustomerId,
+        // subAccount and accessToken, keeping flag-off output byte-identical.
+        params: result.params,
+      };
+    }
+
+    const customerId = result.params.customerId!;
+    const conversionAction = await getConversionActionId({
+      event: gaecInput.message.event,
+      customerId,
+      loginCustomerId: result.params.subAccount ? String(result.params.loginCustomerId) : '',
+      accessToken: String(getAccessToken(gaecInput.metadata, 'access_token')),
+    });
 
     return {
-      body: result.body.JSON.conversionAdjustments[0],
-      endpoint: result.endpoint, // '' — delivery is handled by the networkHandler/proxy
-      endpointPath: '/uploadConversionAdjustments',
+      body: { ...result.body.JSON.conversionAdjustments![0], conversionAction },
+      endpoint: getUploadConversionAdjustmentsEndpoint(customerId),
+      endpointPath: UPLOAD_CONVERSION_ADJUSTMENTS_ENDPOINT_PATH,
       method: result.method,
       headers: result.headers,
-      // params carries event (conversion name), customerId, loginCustomerId, subAccount and
-      // accessToken — all part of the framework's grouping key, so events only batch together
-      // when they target the same conversion action + customer, as the Google Ads API requires.
-      params: result.params,
+      params: {},
     };
   }
 
@@ -43,19 +100,8 @@ class GoogleAdwordsEnhancedConversionsIntegration extends BatchDestination<Conve
     });
   }
 
-  getInputSchema(): ZodType {
-    return z
-      .object({
-        message: z
-          .object({
-            type: z.string().refine((type) => type.toLowerCase() === 'track', {
-              message: 'Message Type is not supported. Only track events are supported.',
-            }),
-            event: z.string().min(1, 'event is required for track calls'),
-          })
-          .passthrough(),
-      })
-      .passthrough();
+  getInputSchema() {
+    return gaecInputSchema;
   }
 }
 

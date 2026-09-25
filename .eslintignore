@@ -7,7 +7,6 @@ dist/
 dist-test/
 **/warehouse/
 **/lambda/
-**/openfaas/
 *.md
 *.test.js
 *.test.ts
@@ -31,4 +30,5 @@ scripts/create-github-release.js
 Dockerfile*
 *.properties
 *.go
+*.env
 CODEOWNERS

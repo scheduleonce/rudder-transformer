@@ -1,0 +1,267 @@
+# Live (real-destination) integration tests.
+#
+# Drives transformed events through transform -> deliver against REAL destination
+# accounts. Credentials come from the dev HashiCorp Vault via GitHub-OIDC (JWT auth),
+# so no long-lived secret is stored in GitHub. Runs one matrix job per destination.
+#
+# Vault (KV v2): each destination's full LiveSecret JSON is stored as a field on the shared path
+#   engineering_shared/data/integrations_team/e2e_test/rudder-transformer
+# named after the env var the resolver expects — e.g. field `LIVE_SECRET_HS`.
+
+name: Live Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    types: ['opened', 'reopened', 'synchronize']
+  push:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # for actions/checkout
+
+jobs:
+  detect-affected:
+    name: detect affected destinations
+    runs-on: ubuntu-latest
+    outputs:
+      affected: ${{ steps.detect.outputs.affected }}
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Detect affected destinations
+        id: detect
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || '' }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+
+          set_affected() {
+            echo "affected=$1" >> "$GITHUB_OUTPUT"
+          }
+
+          is_irrelevant_path() {
+            case "$1" in
+              .github/workflows/live-integration-tests.yml|.github/scripts/live-test-matrix.js)
+                return 1
+                ;;
+              docs/*|memory-bank/*|prompts/*|swagger/*)
+                return 0
+                ;;
+              *.md|README*|CHANGELOG*|CONTRIBUTING*|LICENSE|CODEOWNERS|RUDDER_TEST_DESTINATION_PLAN.md)
+                return 0
+                ;;
+              .claude/*|.cursor/*|.github/*|.vscode/*)
+                return 0
+                ;;
+              .dockerignore|.eslintignore|.eslintrc.json|.gitignore|.prettierignore|.prettierrc|.truffleignore|.versionrc)
+                return 0
+                ;;
+              codecov.yml|commitlint.config.js|sonar-project.properties)
+                return 0
+                ;;
+              *)
+                return 1
+                ;;
+            esac
+          }
+
+          # Preserve the previous run-all behavior for protected branch pushes and release PRs.
+          if [ "$EVENT_NAME" = "push" ]; then
+            set_affected all
+            exit 0
+          fi
+
+          if [[ "$PR_HEAD_REF" == release/* || "$PR_HEAD_REF" == hotfix-release/* ]]; then
+            set_affected all
+            exit 0
+          fi
+
+          # PR diff metadata should be present; if not, fail safe to the full live suite.
+          if [[ -z "$BASE_SHA" || -z "$HEAD_SHA" ]]; then
+            set_affected all
+            exit 0
+          fi
+
+          # Make sure both commits exist locally before diffing. If fetch/diff fails, run all.
+          if ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$BASE_SHA" || true
+          fi
+
+          if ! git cat-file -e "${HEAD_SHA}^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$HEAD_SHA" || true
+          fi
+
+          if ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null || ! git cat-file -e "${HEAD_SHA}^{commit}" 2>/dev/null; then
+            set_affected all
+            exit 0
+          fi
+
+          if ! changed_files=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA"); then
+            set_affected all
+            exit 0
+          fi
+
+          destinations=()
+          changed_count=0
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            changed_count=$((changed_count + 1))
+
+            if [[ "$file" =~ ^src/v0/destinations/([^/]+)/ ]]; then
+              destinations+=("${BASH_REMATCH[1]}")
+            elif [[ "$file" =~ ^src/v1/destinations/([^/]+)/ ]]; then
+              destinations+=("${BASH_REMATCH[1]}")
+            elif [[ "$file" =~ ^test/integrations/destinations/([^/]+)/ ]]; then
+              destinations+=("${BASH_REMATCH[1]}")
+            elif is_irrelevant_path "$file"; then
+              continue
+            else
+              set_affected all
+              exit 0
+            fi
+          done <<< "$changed_files"
+
+          if [ "$changed_count" -eq 0 ] || [ "${#destinations[@]}" -eq 0 ]; then
+            set_affected none
+            exit 0
+          fi
+
+          affected=$(printf '%s\n' "${destinations[@]}" | sort -u | paste -sd, -)
+          set_affected "$affected"
+
+  discover:
+    needs: detect-affected
+    name: discover live destinations
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.gen.outputs.matrix }}
+      has_work: ${{ steps.gen.outputs.has_work }}
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build matrix from live specs
+        id: gen
+        # Feature PRs run changed live-enabled destinations only; pushes, release/hotfix-release PRs,
+        # and shared/infrastructure changes use `all` to preserve full live coverage.
+        env:
+          AFFECTED_DESTINATIONS: ${{ needs.detect-affected.outputs.affected }}
+        run: node .github/scripts/live-test-matrix.js >> "$GITHUB_OUTPUT"
+
+  live:
+    needs: discover
+    if: needs.discover.outputs.has_work == 'true'
+    name: live (${{ matrix.destination }})
+    # required: puts the job in infra1-us → PrivateLink path to dev Vault
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 30
+    permissions:
+      id-token: write # required: lets the job mint the GitHub OIDC JWT
+      contents: read # for actions/checkout
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # prepare builds isolated-vm's native addon (skipped by ignore-scripts on `npm ci`).
+        run: npm ci && npm run prepare
+
+      - name: Resolve secret name
+        id: secret
+        run: echo "name=LIVE_SECRET_$(echo '${{ matrix.destination }}' | tr 'a-z' 'A-Z')" >> "$GITHUB_OUTPUT"
+
+      - name: Import secrets from dev Vault (OIDC/JWT)
+        id: vault
+        uses: hashicorp/vault-action@892a26828f195e65540a40b4768ae4571f51ebfc # v4.0.0
+        with:
+          url: ${{ vars.VAULT_ADDR }}
+          method: jwt
+          path: ${{ vars.VAULT_JWT_AUTH_PATH }} # = vault_jwt_auth_backend.path
+          role: ${{ vars.VAULT_JWT_ROLE }} # = vault_jwt_auth_backend_role.role_name
+          jwtGithubAudience: ${{ vars.VAULT_ADDR }} # MUST match bound_audiences, else auth fails
+          exportToken: false # keep the raw Vault token out of env
+          secrets: |
+            engineering_shared/data/integrations_team/e2e_test/rudder-transformer ${{ steps.secret.outputs.name }} | ${{ steps.secret.outputs.name }} ;
+            ${{ matrix.oauth && 'control-plane/data/external-services *' || '' }}
+
+      - name: Configure AWS credentials for ECR (OIDC)
+        if: matrix.oauth
+        uses: aws-actions/configure-aws-credentials@cbe3b392738ccf3f987d68400dafcf4b0624a56c # v6.2.4
+        with:
+          role-to-assume: ${{ vars.AWS_ECR_IAM_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Log in to Amazon ECR
+        if: matrix.oauth
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # 2.1.7
+
+      - name: Pre-pull rudder-auth image (surface ECR/pull errors before the test run)
+        if: matrix.oauth
+        run: docker pull 422074288268.dkr.ecr.us-east-1.amazonaws.com/rudderstack/rudder-auth:develop
+
+      - name: Run live tests
+        # LOG_LEVEL=100 suppresses body logging so tokens can't leak.
+        run: LOG_LEVEL=100 npm run test:live -- --destination=${{ matrix.destination }}
+
+      - name: Notify Slack on failure
+        # Notify on push to main/develop, and on PRs from release/hotfix-release branches only.
+        if: >-
+          ${{ failure() && (github.event_name == 'push' || (github.event_name == 'pull_request' && (startsWith(github.event.pull_request.head.ref, 'release/') || startsWith(github.event.pull_request.head.ref, 'hotfix-release/')))) }}
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        continue-on-error: true # a failed notification must not mask the test failure
+        env:
+          CHANNEL_ID: ${{ secrets.SLACK_LIVE_TEST_CHANNEL_ID }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REPO_URL: https://github.com/${{ github.repository }}
+          REF_NAME: ${{ github.head_ref || github.ref_name }}
+          BRANCH_URL: https://github.com/${{ github.repository }}/tree/${{ github.head_ref || github.ref_name }}
+          ONCALL_MENTION: "${{ format('\nCC: <!subteam^{0}>', secrets.SLACK_ONCALL_GROUP_ID) }}"
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          errors: true
+          retries: rapid
+          payload: |
+            {
+              "channel": "${{ env.CHANNEL_ID }}",
+              "text": ":rotating_light: Live integration tests failed in <${{ env.REPO_URL }}|${{ github.repository }}>\n• Destination: `${{ matrix.destination }}`\n• Branch: <${{ env.BRANCH_URL }}|${{ env.REF_NAME }}>\n• Run: <${{ env.RUN_URL }}|view workflow run>${{ env.ONCALL_MENTION }}"
+            }

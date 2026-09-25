@@ -2,7 +2,7 @@ import { InstrumentationError } from '@rudderstack/integrations-lib';
 
 import { HashingType, processAudienceRecord, type AudienceField } from '../../util/audienceUtils';
 
-import { EVENT_TYPES } from '../../util/recordUtils';
+import { RecordAction } from '../../../types/rudderEvents';
 import { AUTHENTICATION_TYPES, ERROR_MESSAGES } from './constants';
 import type {
   Action,
@@ -31,7 +31,7 @@ export const lookupActionConfig = (
     if (!insertConfig) {
       throw new InstrumentationError(ERROR_MESSAGES.NO_ACTION_CONFIG('insert'));
     }
-    return { action: EVENT_TYPES.INSERT as Action, config: insertConfig };
+    return { action: RecordAction.INSERT, config: insertConfig };
   }
   return { action, config: actionConfig };
 };
@@ -55,8 +55,12 @@ export const resolveEndpoint = (
       },
       { connection },
     );
-    if (value === undefined || value === null) {
-      throw new InstrumentationError(ERROR_MESSAGES.ENDPOINT_RESOLUTION_FAILED(`{{${path}}}`));
+    // An empty string counts as unset. A blank audienceId can reach us as ''
+    // rather than undefined (older connections persisted the empty form field),
+    // and interpolating it would quietly yield "/audiences//members" instead of
+    // surfacing the misconfiguration.
+    if (value === undefined || value === null || value === '') {
+      throw new InstrumentationError(ERROR_MESSAGES.ENDPOINT_RESOLUTION_FAILED(path));
     }
     return String(value);
   });
