@@ -9,7 +9,10 @@
  * same grouping key) are combined into a single request with multiple conversionAdjustments.
  */
 
+import sha256 from 'sha256';
 import { authHeader1, secret1 } from '../maskedSecrets';
+
+const API_VERSION = 'v25';
 
 const sharedConfig = {
   rudderAccountId: '25u5whFH7gVTnCiAjn4ykoCLGoC',
@@ -18,6 +21,15 @@ const sharedConfig = {
   loginCustomerId: '11',
   listOfConversions: [{ conversions: 'Page View' }, { conversions: 'Product Added' }],
   authStatus: 'active',
+};
+
+// The conversion-action cache is keyed on (conversion name, customerId) and is shared by the
+// transform-time and delivery-time lookups, so it outlives a single component test case. The
+// transport test gets a customerId of its own: on the shared one it would either warm the entry
+// another case expects to miss, or read one that case had already warmed.
+const transportConfig = {
+  ...sharedConfig,
+  customerId: '1234567892',
 };
 
 const trackMessage = (event: string) => ({
@@ -72,14 +84,14 @@ const enhancementAdjustment = {
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36',
   userIdentifiers: [
     {
-      hashedPhoneNumber: '04387707e6cbed8c4538c81cc570ed9252d579469f36c273839b26d784e4bdbe',
+      hashedPhoneNumber: sha256('+912382193'),
     },
     {
       addressInfo: {
         city: 'London',
-        hashedFirstName: 'a8cfcd74832004951b4408cdb0a5dbcd8c7e52d43f7fe244bf720582e05241da',
-        hashedLastName: '1c574b17eefa532b6d61c963550a82d2d3dfca4a7fb69e183374cfafd5328ee4',
-        hashedStreetAddress: '9a4d2e50828448f137f119a3ebdbbbab8d6731234a67595fdbfeb2a2315dd550',
+        hashedFirstName: sha256('john'),
+        hashedLastName: sha256('gomes'),
+        hashedStreetAddress: sha256('71 cherry court southampton so53 5pd uk'),
         state: 'UK',
       },
     },
@@ -90,7 +102,92 @@ const envOverrides = {
   GOOGLE_ADWORDS_ENHANCED_CONVERSIONS_BATCHING_FRAMEWORK_ENABLED_WORKSPACE_IDS: 'ALL',
 };
 
+const transportEnvOverrides = {
+  ...envOverrides,
+  GOOGLE_ADWORDS_ENHANCED_CONVERSIONS_BATCHING_FRAMEWORK_TRANSPORT_ENABLED_WORKSPACE_IDS: 'ALL',
+  GOOGLE_ADS_DEVELOPER_TOKEN: 'test-developer-token-12345',
+};
+
 export const newData = [
+  {
+    name: 'google_adwords_enhanced_conversions',
+    description:
+      'Batching Framework Transport: events with different conversion names share one upload request after transform-time lookup',
+    feature: 'router',
+    module: 'destination',
+    version: 'v0',
+    input: {
+      request: {
+        body: {
+          input: [
+            {
+              metadata: { secret, jobId: 1, userId: 'u1', workspaceId: 'ws-1' },
+              destination: { hasDynamicConfig: false, Config: transportConfig },
+              message: trackMessage('Page View'),
+            },
+            {
+              metadata: { secret, jobId: 2, userId: 'u1', workspaceId: 'ws-1' },
+              destination: { hasDynamicConfig: false, Config: transportConfig },
+              message: trackMessage('Product Added'),
+            },
+          ],
+          destType: 'google_adwords_enhanced_conversions',
+        },
+        method: 'POST',
+      },
+    },
+    output: {
+      response: {
+        status: 200,
+        body: {
+          output: [
+            {
+              batchedRequest: {
+                version: '1',
+                type: 'REST',
+                method: 'POST',
+                endpoint: `https://googleads.googleapis.com/${API_VERSION}/customers/1234567892:uploadConversionAdjustments`,
+                endpointPath: '/uploadConversionAdjustments',
+                headers: {
+                  Authorization: authHeader1,
+                  'Content-Type': 'application/json',
+                  'login-customer-id': '11',
+                },
+                params: {},
+                body: {
+                  JSON: {
+                    conversionAdjustments: [
+                      {
+                        ...enhancementAdjustment,
+                        conversionAction: 'customers/1234567892/conversionActions/123000001',
+                      },
+                      {
+                        ...enhancementAdjustment,
+                        conversionAction: 'customers/1234567892/conversionActions/123000002',
+                      },
+                    ],
+                    partialFailure: true,
+                  },
+                  JSON_ARRAY: {},
+                  XML: {},
+                  FORM: {},
+                },
+                files: {},
+              },
+              metadata: [
+                { secret, jobId: 1, userId: 'u1', workspaceId: 'ws-1' },
+                { secret, jobId: 2, userId: 'u1', workspaceId: 'ws-1' },
+              ],
+              destination: { hasDynamicConfig: false, Config: transportConfig },
+              batched: true,
+              statusCode: 200,
+            },
+          ],
+        },
+      },
+    },
+    envOverrides: transportEnvOverrides,
+  },
   {
     name: 'google_adwords_enhanced_conversions',
     description:

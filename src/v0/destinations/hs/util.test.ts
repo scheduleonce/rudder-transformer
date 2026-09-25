@@ -17,6 +17,7 @@ import {
   removeHubSpotSystemField,
   isLookupFieldUnique,
   getUTCMidnightTimeStampValue,
+  validateDestinationConfig,
 } from './util';
 import { primaryToSecondaryFields } from './config';
 import { HubspotRudderMessage } from './types';
@@ -30,6 +31,35 @@ const propertyMap: Record<string, string> = {
   isPaidPlan: 'bool',
   address: 'enumeration',
 };
+
+const unsupportedLegacyAuthError =
+  'HubSpot API Key authentication is no longer supported. Use Private Apps authentication.';
+
+describe('Validate destination config utility function test cases', () => {
+  it('should reject unsupported legacy API key authentication before checking legacy fields', () => {
+    expect(() =>
+      validateDestinationConfig({
+        Config: { authorizationType: 'legacyApiKey' },
+      } as any),
+    ).toThrow(unsupportedLegacyAuthError);
+  });
+
+  it('should require accessToken for Private Apps authentication', () => {
+    expect(() =>
+      validateDestinationConfig({
+        Config: {},
+      } as any),
+    ).toThrow('Access Token not found. Aborting');
+  });
+
+  it('should accept access token authentication without authorizationType', () => {
+    expect(() =>
+      validateDestinationConfig({
+        Config: { accessToken: 'test-token' },
+      } as any),
+    ).not.toThrow();
+  });
+});
 
 describe('Validate payload data types utility function test cases', () => {
   it('Should validate payload data type and return it', () => {
@@ -330,7 +360,7 @@ describe('isLookupFieldUnique utility test cases', () => {
     const result = await isLookupFieldUnique(mockDestination as any, 'email', mockMetadata as any);
 
     expect(result).toBe(true);
-    expect(mockCacheGet).toHaveBeenCalledWith('dest-123');
+    expect(mockCacheGet).toHaveBeenCalledWith('dest-123:contacts');
     expect(httpGET).not.toHaveBeenCalled();
   });
 
@@ -363,7 +393,7 @@ describe('isLookupFieldUnique utility test cases', () => {
     expect(result).toBe(true);
     expect(httpGET).toHaveBeenCalled();
     expect(mockCacheSet).toHaveBeenCalledWith(
-      'dest-123',
+      'dest-123:contacts',
       expect.objectContaining({ email: true, new_custom_field: true }),
     );
   });
@@ -386,7 +416,7 @@ describe('isLookupFieldUnique utility test cases', () => {
     expect(httpGET).toHaveBeenCalled();
     expect((httpGET as jest.Mock).mock.calls[0][0]).toContain('/crm/v3/properties/contacts');
     expect(mockCacheSet).toHaveBeenCalledWith(
-      'dest-123',
+      'dest-123:contacts',
       expect.objectContaining({ email: true, hs_object_id: true }),
     );
   });
@@ -405,6 +435,52 @@ describe('isLookupFieldUnique utility test cases', () => {
     );
 
     expect(result).toBe(false);
+  });
+
+  it('should use companies-scoped cache key and properties endpoint when objectType is companies', async () => {
+    mockCacheGet.mockResolvedValue(undefined);
+
+    (httpGET as jest.Mock).mockResolvedValue(
+      createV3ApiResponse([{ name: 'domain', hasUniqueValue: true }]),
+    );
+
+    const result = await isLookupFieldUnique(
+      mockDestination as any,
+      'domain',
+      mockMetadata as any,
+      'companies',
+    );
+
+    expect(result).toBe(true);
+    expect(mockCacheGet).toHaveBeenCalledWith('dest-123:companies');
+    expect((httpGET as jest.Mock).mock.calls[0][0]).toContain('/crm/v3/properties/companies');
+    expect(mockCacheSet).toHaveBeenCalledWith(
+      'dest-123:companies',
+      expect.objectContaining({ domain: true }),
+    );
+  });
+
+  it('should use contacts-scoped cache key and properties endpoint when objectType is explicitly contacts', async () => {
+    mockCacheGet.mockResolvedValue(undefined);
+
+    (httpGET as jest.Mock).mockResolvedValue(
+      createV3ApiResponse([{ name: 'email', hasUniqueValue: true }]),
+    );
+
+    const result = await isLookupFieldUnique(
+      mockDestination as any,
+      'email',
+      mockMetadata as any,
+      'contacts',
+    );
+
+    expect(result).toBe(true);
+    expect(mockCacheGet).toHaveBeenCalledWith('dest-123:contacts');
+    expect((httpGET as jest.Mock).mock.calls[0][0]).toContain('/crm/v3/properties/contacts');
+    expect(mockCacheSet).toHaveBeenCalledWith(
+      'dest-123:contacts',
+      expect.objectContaining({ email: true }),
+    );
   });
 });
 

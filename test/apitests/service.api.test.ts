@@ -88,8 +88,90 @@ describe('features tests', () => {
 });
 
 describe('Api tests with a mock source/destination', () => {
+  test.each([
+    {
+      name: 'processor path destination',
+      request: () => request(server).post('/v0/destinations/not_a_destination').send([]),
+      expectedError: 'Unknown destination: not_a_destination',
+    },
+    {
+      name: 'routerTransform body destType',
+      request: () =>
+        request(server).post('/routerTransform').send({ input: [], destType: 'not_a_destination' }),
+      expectedError: 'Unknown destination: not_a_destination',
+    },
+    {
+      name: 'batch body destType',
+      request: () =>
+        request(server).post('/batch').send({ input: [], destType: 'not_a_destination' }),
+      expectedError: 'Unknown destination: not_a_destination',
+    },
+    {
+      name: 'deleteUsers body destType',
+      request: () =>
+        request(server)
+          .post('/deleteUsers')
+          .send([{ destType: 'not_a_destination' }]),
+      expectedError: 'Unknown destination: not_a_destination',
+    },
+    {
+      name: 'deleteUsers body with later missing destType',
+      request: () =>
+        request(server)
+          .post('/deleteUsers')
+          .send([{ destType: 'ga' }, { userId: 'user-1' }]),
+      expectedError: 'Unknown destination: undefined',
+    },
+    {
+      name: 'v0 proxy path destination',
+      request: () => request(server).post('/v0/destinations/not_a_destination/proxy').send({}),
+      expectedError: 'Unknown destination: not_a_destination',
+    },
+    {
+      name: 'v1 proxy path destination',
+      request: () => request(server).post('/v1/destinations/not_a_destination/proxy').send({}),
+      expectedError: 'Unknown destination: not_a_destination',
+    },
+    {
+      name: 'proxyTest path destination',
+      request: () => request(server).post('/v0/destinations/not_a_destination/proxyTest').send({}),
+      expectedError: 'Unknown destination: not_a_destination',
+    },
+    {
+      name: 'public test-router path destination',
+      request: () => request(server).post('/test-router/v0/not_a_destination').send({ events: [] }),
+      expectedError: 'Unknown destination: not_a_destination',
+    },
+    {
+      name: 'public test-router batch path destination',
+      request: () =>
+        request(server).post('/test-router/v0/not_a_destination/batch').send({ events: [] }),
+      expectedError: 'Unknown destination: not_a_destination',
+    },
+  ])(
+    'rejects invalid destination before handler lookup: $name',
+    async ({ request: makeRequest, expectedError }) => {
+      const getDestHandlerSpy = jest.spyOn(FetchHandler, 'getDestHandler');
+      const getDeletionHandlerSpy = jest.spyOn(FetchHandler, 'getDeletionHandler');
+      const getDestinationIntegrationHandlerSpy = jest.spyOn(
+        FetchHandler,
+        'getDestinationIntegrationHandler',
+      );
+      const getNetworkHandlerSpy = jest.spyOn(networkHandlerFactory, 'getNetworkHandler');
+
+      const response = await makeRequest().set('Accept', 'application/json');
+
+      expect(response.status).toEqual(404);
+      expect(JSON.parse(response.text).error).toEqual(expectedError);
+      expect(getDestHandlerSpy).not.toHaveBeenCalled();
+      expect(getDeletionHandlerSpy).not.toHaveBeenCalled();
+      expect(getDestinationIntegrationHandlerSpy).not.toHaveBeenCalled();
+      expect(getNetworkHandlerSpy).not.toHaveBeenCalled();
+    },
+  );
+
   test('(mock destination) Processor transformation scenario with single event', async () => {
-    const destType = '__rudder_test__';
+    const destType = 'rudder_test';
     const version = 'v0';
 
     const getInputData = () => {
@@ -126,7 +208,7 @@ describe('Api tests with a mock source/destination', () => {
     ];
 
     const response = await request(server)
-      .post('/v0/destinations/__rudder_test__')
+      .post('/v0/destinations/rudder_test')
       .set('Accept', 'application/json')
       .send(getInputData());
 
@@ -136,7 +218,7 @@ describe('Api tests with a mock source/destination', () => {
   });
 
   test('(mock destination) Batching', async () => {
-    const destType = '__rudder_test__';
+    const destType = 'rudder_test';
     const version = 'v0';
 
     const getBatchInputData = () => {
@@ -179,7 +261,7 @@ describe('Api tests with a mock source/destination', () => {
   });
 
   test('(mock destination) Router transformation', async () => {
-    const destType = '__rudder_test__';
+    const destType = 'rudder_test';
     const version = 'v0';
 
     const getRouterTransformInputData = () => {
@@ -222,7 +304,7 @@ describe('Api tests with a mock source/destination', () => {
   });
 
   test('(mock destination) v0 proxy', async () => {
-    const destType = '__rudder_test__';
+    const destType = 'rudder_test';
     const version = 'v0';
 
     const getData = () => {
@@ -265,7 +347,7 @@ describe('Api tests with a mock source/destination', () => {
       });
 
     const response = await request(server)
-      .post('/v0/destinations/__rudder_test__/proxy')
+      .post('/v0/destinations/rudder_test/proxy')
       .set('Accept', 'application/json')
       .send(getData());
 
@@ -277,7 +359,7 @@ describe('Api tests with a mock source/destination', () => {
   });
 
   test('(mock destination) v1 proxy', async () => {
-    const destType = '__rudder_test__';
+    const destType = 'rudder_test';
     const version = 'v1';
 
     const getData = () => {
@@ -326,7 +408,7 @@ describe('Api tests with a mock source/destination', () => {
       });
 
     const response = await request(server)
-      .post('/v1/destinations/__rudder_test__/proxy')
+      .post('/v1/destinations/rudder_test/proxy')
       .set('Accept', 'application/json')
       .send(getData());
 

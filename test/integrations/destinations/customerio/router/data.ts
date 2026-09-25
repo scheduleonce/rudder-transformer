@@ -1,5 +1,7 @@
 import { authHeader1, secret1, secret2 } from '../maskedSecrets';
-export const data = [
+import { dataV2 } from './dataV2';
+import { dataEventStreamV1 } from './dataEventStreamV1';
+const dataV1 = [
   {
     name: 'customerio',
     description: 'Test 0',
@@ -226,11 +228,9 @@ export const data = [
                   FORM: {},
                 },
                 files: {},
-                userId: '123456',
-                statusCode: 200,
               },
               metadata: [{ jobId: 1, userId: 'u1' }],
-              batched: false,
+              batched: true,
               statusCode: 200,
               destination: {
                 Config: {
@@ -266,11 +266,9 @@ export const data = [
                   FORM: {},
                 },
                 files: {},
-                userId: '12345',
-                statusCode: 200,
               },
               metadata: [{ jobId: 2, userId: 'u1' }],
-              batched: false,
+              batched: true,
               statusCode: 200,
               destination: {
                 Config: {
@@ -328,7 +326,7 @@ export const data = [
                 { jobId: 3, userId: 'u1' },
                 { jobId: 4, userId: 'u1' },
               ],
-              batched: false,
+              batched: true,
               statusCode: 200,
               destination: {
                 Config: {
@@ -343,3 +341,5 @@ export const data = [
     },
   },
 ];
+
+export const data = [...dataV1, ...dataV2, ...dataEventStreamV1];

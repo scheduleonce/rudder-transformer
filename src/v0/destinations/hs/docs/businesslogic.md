@@ -24,8 +24,8 @@ This document details the business logic, field mappings, and transformation flo
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  1. Validate Destination Config                         │
-│     - Check authorizationType                           │
-│     - Verify apiKey + hubID OR accessToken              │
+│     - Reject legacy API-key auth                        │
+│     - Verify accessToken                                │
 └─────────────────────────────────────────────────────────┘
                            ↓
 ┌─────────────────────────────────────────────────────────┐
@@ -59,19 +59,19 @@ This document details the business logic, field mappings, and transformation flo
 │     - Endpoint: /contacts/v1/contact/createOrUpdate/    │
 │                 email/:contact_email                    │
 │     - Method: POST                                      │
-│     - Auth: hapikey param OR Bearer token               │
+│     - Auth: Bearer token                                │
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Code Reference**: [HSTransform-v1.js:56-131](../HSTransform-v1.js#L56-L131)
+**Code Reference**: [es-retl-v1.ts:56-131](../es-retl-v1.ts#L56-L131)
 
 ### New API (v3) - Non-rETL
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  1. Validate Destination Config                         │
-│     - Check authorizationType                           │
-│     - Verify apiKey + hubID OR accessToken              │
+│     - Reject legacy API-key auth                        │
+│     - Verify accessToken                                │
 │     - Verify lookupField configuration                  │
 └─────────────────────────────────────────────────────────┘
                            ↓
@@ -141,7 +141,7 @@ This document details the business logic, field mappings, and transformation flo
 └─────────────────────┘          └─────────────────────┘
 ```
 
-**Code Reference**: [HSTransform-v2.js:75-193](../HSTransform-v2.js#L75-L193)
+**Code Reference**: [es-retl-v3.ts:75-193](../es-retl-v3.ts#L75-L193)
 
 ### rETL Flow (Both APIs)
 
@@ -271,7 +271,7 @@ HubSpot accepts empty string to clear property values:
 ┌─────────────────────────────────────────────────────────┐
 │  1. Validate Destination Config                         │
 │     - Verify Hub ID exists                              │
-│     - Check authorizationType                           │
+│     - Reject legacy API-key auth                        │
 └─────────────────────────────────────────────────────────┘
                            ↓
 ┌─────────────────────────────────────────────────────────┐
@@ -300,11 +300,11 @@ HubSpot accepts empty string to clear property values:
 │  5. Build Request                                       │
 │     - Endpoint: https://track.hubspot.com/v1/event      │
 │     - Method: GET (with query parameters)               │
-│     - Auth: hapikey param OR Bearer token               │
+│     - Auth: Bearer token                                │
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Code Reference**: [HSTransform-v1.js:141-181](../HSTransform-v1.js#L141-L181)
+**Code Reference**: [es-retl-v1.ts:141-181](../es-retl-v1.ts#L141-L181)
 
 **Limitations**:
 
@@ -317,7 +317,7 @@ HubSpot accepts empty string to clear property values:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  1. Validate Destination Config                         │
-│     - Check authorizationType                           │
+│     - Reject legacy API-key auth                        │
 │     - Verify event mappings configured (hubspotEvents)  │
 └─────────────────────────────────────────────────────────┘
                            ↓
@@ -352,12 +352,12 @@ HubSpot accepts empty string to clear property values:
 │  6. Build Request                                       │
 │     - Endpoint: /events/v3/send                         │
 │     - Method: POST                                      │
-│     - Auth: hapikey param OR Bearer token               │
+│     - Auth: Bearer token                                │
 │     - Body: { eventName, properties, occurredAt, ... }  │
 └─────────────────────────────────────────────────────────┘
 ```
 
-**Code Reference**: [HSTransform-v2.js:202-246](../HSTransform-v2.js#L202-L246)
+**Code Reference**: [es-retl-v3.ts:202-246](../es-retl-v3.ts#L202-L246)
 
 ## Track Field Mappings
 
@@ -490,7 +490,7 @@ Custom event properties are mapped via the `hubspotEvents` configuration:
 
 **Note**: Payload is JSON stringified into `batch` field
 
-**Code Reference**: [HSTransform-v1.js:247-391](../HSTransform-v1.js#L247-L391)
+**Code Reference**: [es-retl-v1.ts:247-391](../es-retl-v1.ts#L247-L391)
 
 ### Identify Batching (New API v3)
 
@@ -553,7 +553,7 @@ Update Contacts:
 }
 ```
 
-**Code Reference**: [HSTransform-v2.js:373-505](../HSTransform-v2.js#L373-L505)
+**Code Reference**: [es-retl-v3.ts:373-505](../es-retl-v3.ts#L373-L505)
 
 ### Track Batching
 
@@ -589,15 +589,11 @@ Update Contacts:
 3. **Authorization**:
 
    ```javascript
-   // Legacy API
-   if (!Config.hubID) {
-     throw new ConfigurationError('Hub ID not found. Aborting');
+   if (Config.authorizationType === 'legacyApiKey') {
+     throw new ConfigurationError(
+       'HubSpot API Key authentication is no longer supported. Use Private Apps authentication.',
+     );
    }
-   if (!Config.apiKey) {
-     throw new ConfigurationError('API Key not found. Aborting');
-   }
-
-   // New Private App API
    if (!Config.accessToken) {
      throw new ConfigurationError('Access Token not found. Aborting');
    }
@@ -750,9 +746,9 @@ Update Contacts:
 - [util.js:48-63](../util.js#L48-L63)
 - [util.js:334-347](../util.js#L334-L347)
 - [util.js:167-195](../util.js#L167-L195)
-- [HSTransform-v2.js:80-82](../HSTransform-v2.js#L80-L82)
-- [HSTransform-v2.js:143-145](../HSTransform-v2.js#L143-L145)
-- [HSTransform-v2.js:217-222](../HSTransform-v2.js#L217-L222)
+- [es-retl-v3.ts:80-82](../es-retl-v3.ts#L80-L82)
+- [es-retl-v3.ts:143-145](../es-retl-v3.ts#L143-L145)
+- [es-retl-v3.ts:217-222](../es-retl-v3.ts#L217-L222)
 
 ## Use Cases
 
@@ -1107,13 +1103,13 @@ Only fetch properties when needed:
 
 ### API Version Implementations
 
-- **HSTransform-v1.js**: Legacy API (v1)
+- **es-retl-v1.ts**: Legacy API (v1)
 
   - `processLegacyIdentify()` - Identify transformation
   - `processLegacyTrack()` - Track transformation
   - `legacyBatchEvents()` - Batch handler
 
-- **HSTransform-v2.js**: New API (v3)
+- **es-retl-v3.ts**: New API (v3)
   - `processIdentify()` - Identify transformation
   - `processTrack()` - Track transformation
   - `batchEvents()` - Batch handler with deduplication

@@ -4,7 +4,6 @@ import type {
   BatchedRequestBody,
   RouterTransformationRequestData,
   ProcessorTransformationOutput,
-  ProcessorTransformationRequest,
   BatchedRequest,
 } from '../../../types/destinationTransformation';
 
@@ -17,9 +16,8 @@ import type {
  * Ref: https://developers.hubspot.com/docs/api/crm/contacts
  */
 export interface HubSpotDestinationConfig {
-  authorizationType: 'newPrivateAppApi' | 'legacyApiKey';
+  authorizationType?: 'newPrivateAppApi' | 'legacyApiKey';
   accessToken?: string;
-  apiKey?: string;
   hubID?: string;
   apiVersion?: 'legacyApi' | 'newApi';
   lookupField?: string;
@@ -277,36 +275,9 @@ export interface HubSpotBatchRequestOutput {
 export interface HubspotRudderMessage extends Omit<RudderMessage, 'context' | 'event'> {
   context: RudderMessage['context'] & {
     externalId: HubSpotExternalIdObject[];
-    hubspotOperation: 'createObject' | 'updateObject';
+    hubspotOperation: 'createObject' | 'updateObject' | 'upsertObject';
   };
   event: string;
-}
-
-/**
- * Router input where message may be raw (HubspotRudderMessage) or already transformed (statusCode set)
- */
-export type HubspotRouterInput =
-  | { message: HubspotRudderMessage; metadata: Metadata; destination: HubSpotDestination }
-  | {
-      message: HubspotProcessorTransformationOutput;
-      metadata: Metadata;
-      destination: HubSpotDestination;
-    };
-
-/**
- * Type guard: message has already been transformed (processor output shape)
- */
-export function isProcessorOutput(
-  msg: HubspotRudderMessage | HubspotProcessorTransformationOutput,
-): msg is HubspotProcessorTransformationOutput {
-  return (
-    typeof msg === 'object' &&
-    msg !== null &&
-    'statusCode' in msg &&
-    'body' in msg &&
-    typeof (msg as Record<string, unknown>).statusCode === 'number' &&
-    (msg as Record<string, unknown>).body !== undefined
-  );
 }
 
 /**
@@ -385,16 +356,6 @@ export function isHubSpotSearchResponse(value: unknown): value is HubSpotSearchR
   return isRecord(value) && ('results' in value || 'total' in value || 'paging' in value);
 }
 
-/**
- * HubSpot Transformed Message (internal)
- */
-export type HubspotProcessorRequest = ProcessorTransformationRequest<
-  HubspotRudderMessage,
-  Metadata,
-  HubSpotDestination,
-  undefined
->;
-
 export type HubspotRouterRequest = RouterTransformationRequestData<
   HubspotRudderMessage,
   HubSpotDestination,
@@ -408,6 +369,7 @@ export interface HubspotProcessorTransformationOutput
   operation?:
     | 'createObject'
     | 'updateObject'
+    | 'upsertObject'
     | 'createContacts'
     | 'updateContacts'
     | 'upsertContacts'
